@@ -157,6 +157,9 @@ class Wp_Dosf {
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
 
+		$this->loader->add_action(  'admin_menu', $plugin_admin, 'dosf_menu' );
+		$this->loader->add_action( 'admin_init', $plugin_admin, 'dosf_settings_init' );
+
 	}
 
 	/**

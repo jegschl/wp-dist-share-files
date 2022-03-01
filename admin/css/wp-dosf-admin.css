@@ -2,3 +2,36 @@
  * All of the CSS for your admin-specific functionality should be
  * included in this file.
  */
+
+ .ads-img-lnks-wrapper .action-wrapper,
+.ads-img-lnks-wrapper .title-wrapper{
+    display: inline-block;
+}
+.ads-img-lnks-wrapper label{
+    width: 150px;
+    display: inline-block;
+}
+.ads-img-lnks-wrapper input[type="text"]{
+    width: 300px;
+}
+.img_url_fld_wrapper{
+    margin-bottom: 5px;
+}
+
+.ads-img-lnks-wrapper .fa-plus-circle{
+    color: green;
+    font-size: 30px ;
+}
+
+.ads-img-lnks-wrapper .fa-minus-circle{
+    color: red;
+    font-size: 30px ;
+}
+
+.ads-img-lnks-wrapper .desc-wrapper{
+    text-align: center;
+}
+
+.col-action-wrapper{
+    text-align: center;
+}
