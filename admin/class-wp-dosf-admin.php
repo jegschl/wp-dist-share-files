@@ -10,6 +10,9 @@
  * @subpackage Wp_Dosf/admin
  */
 
+ define('HTML_DOSF_ID','dosf-data-tbl');
+ define('DOSF_APIREST_BASE_ROUTE','dosf/');
+
 /**
  * The admin-specific functionality of the plugin.
  *
@@ -98,6 +101,23 @@ class Wp_Dosf_Admin {
 
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/wp-dosf-admin.js', array( 'jquery' ), $this->version, false );
 
+		wp_localize_script( 
+			'dosf_jquery_datatable', 
+			'dosf_config',
+			array(
+				'urlGetSOs'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .'shdobjs/' ),
+			) 
+		);
+		
+		$script_fl = 'https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js';
+		wp_enqueue_script(
+			'dosf_jquery_datatable', 
+			$script_fl,
+			array('jquery'),
+			null,
+			false
+		);
+
 	}
 
 	/**** Creando una pgina en el admin para configurar las imgenes de los ads y los links de cada una ****/
@@ -125,7 +145,7 @@ class Wp_Dosf_Admin {
 			<?php
 			settings_fields( 'dosf' );
 			do_settings_sections( 'dosf' );
-			submit_button();
+			//submit_button();
 			?>
 
 		</form>
@@ -181,56 +201,47 @@ class Wp_Dosf_Admin {
 	}
 
 	public function file_data_set_stack_field_render(){
+		global $wpdb;
+		$tbl_nm_dosf = $wpdb->prefix . 'dosf_shared_objs';
+		$limis_prms = "10";
+		$isql_select = "SELECT * FROM $tbl_nm_dosf";
+		$isql_limit = "LIMIT $limis_prms";
 		?>
 
-		<div class="ads-img-lnks-wrapper">
-			<table>
-				<thead>
-					<tr>
-						<td>Seleccionar</td>
-						<td class="desc-wrapper">
-							<div class="title-wrapper">Archivo</div>
-							<div id="addPil" class="action-wrapper"><i class="fas fa-plus-circle"></i></div>
-							<div id="remPil" class="action-wrapper"><i class="fas fa-minus-circle"></i></div>
-						</td>
-						<td>
-							Acciones
-						</td>
-					</tr>
-
-				</thead>
-				<tbody id="rows_pils">
-					<?php
-						$pils = get_option('dosf_settings',true);
-						if(!empty($pils)) {
-							$i = 0;
-							foreach($pils as $pil){
-								?>
-					<tr>
-						<td>
-							<input type="checkbox" name="pil_selection">
-						</td>
-						<td>
-							<div class="img_url_fld_wrapper">
-								<label for="img_url[<?php echo $i; ?>]">Url de la Imagen</label>
-								<input type="text" name="img_url[<?php echo $i; ?>]" value="<?php echo $pil['img_url']; ?>">
-							</div>
-							<div class="ads_url_fld_wrapper">
-								<label for="ads_url[<?php echo $i; ?>]">Url del Ads </label>
-								<input type="text" name="ads_url[<?php echo $i; ?>]" value="<?php echo $pil['ads_url']; ?>">
-							</div>
-						</td>
-						<td class="col-action-wrapper"><div class="action-wrapper remCurrentPil"><i class="fas fa-minus-circle"></i></div></td>
-					</tr>
-								<?php
-								$i++;
-							}
-						}
-					?>
+		<div class="dosf-admin-header">
+			
+			<div id="add-dosf" class="action-wrapper"><i class="fas fa-plus-circle"></i>Agregar nuevo archivo para compartir</div>
+			<div id="rem-dosf" class="action-wrapper"><i class="fas fa-minus-circle"></i>Remover seleccionados</div>
 					
-				</tbody>
-			</table>
 		</div>
+
+		<div id="<?=HTML_DOSF_ID?>" style="display:block;">
+			
+			<table id="tabla" class="display" style="width:100%">
+				
+				<thead class="thead">
+					<tr class="tr">
+						<th>Seleccionar</th>
+						<th>Título</th>
+						<th>Archivo</th>
+						<th>RUTs asociados</th>
+					</tr>
+				</thead>
+				<!--body-->
+				<tfoot>
+					<tr class="tr">
+						<th>Seleccionar</th>
+						<th>Título</th>
+						<th>Archivo</th>
+						<th>RUTs asociados</th>
+					</tr>
+				</tfoot>
+			</table>
+
+		</div>
+
+
+		
 		<?php
 	}
 
