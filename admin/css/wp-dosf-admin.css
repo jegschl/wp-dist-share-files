@@ -28,3 +28,13 @@
     display: flex;
     justify-content: flex-start;
 }
+
+.fields-wrapper{
+    display:flex;
+    justify-content: space-between;
+}
+
+.actions-wrapper{
+    display: flex;
+    justify-content: flex-start;
+}
