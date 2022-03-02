@@ -29,9 +29,12 @@
 	 * practising this, we should strive to set a better example in our own work.
 	 */
 
+	var dttbl = null;
+
 	(function( $ ) {
 	'use strict';
 	$(document).ready(function ($) {
+		debugger;
 		dttbl = $('#tabla').DataTable( {
 			processing: true,
 			serverSide: true,
