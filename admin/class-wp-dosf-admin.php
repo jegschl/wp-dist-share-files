@@ -251,6 +251,8 @@ class Wp_Dosf_Admin {
 				<thead class="thead">
 					<tr class="tr">
 						<th>Seleccionar</th>
+						<th>Id</th>
+						<th>WP Obj Id</th>
 						<th>Título</th>
 						<th>Archivo</th>
 						<th>RUTs asociados</th>
@@ -260,6 +262,8 @@ class Wp_Dosf_Admin {
 				<tfoot>
 					<tr class="tr">
 						<th>Seleccionar</th>
+						<th>Id</th>
+						<th>WP Obj Id</th>
 						<th>Título</th>
 						<th>Archivo</th>
 						<th>RUTs asociados</th>
@@ -331,7 +335,21 @@ class Wp_Dosf_Admin {
 
 	public function send_so_data($r){
 		global $wpdb;
+		
+		$limit = '';
+		if(isset($_GET['length']) && $_GET['length']>0)
+            $limit = ' LIMIT ' . $_GET['start'] . ',' . $_GET['length'];
+        
+		$where = '';
+        if(isset($_GET['search']) && !empty($_GET['search'])){
+            $sv = $_GET['search']['value'];
+            $where  = ' WHERE file_name LIKE "%'. $sv . '%"';
+            $where .= ' OR wdsrl.rut LIKE "%' . $sv . '%"';
+            $where .= ' OR title LIKE "%' . $sv . '%"';
+        }
+
 		$isql = "SELECT 
+					wdso.id,
 					title,
 					file_name,
 					wp_file_obj_id,
@@ -339,8 +357,9 @@ class Wp_Dosf_Admin {
 				FROM wp_dosf_shared_objs wdso 
 				JOIN wp_dosf_so_ruts_links wdsrl 
 					ON wdso.id = wdsrl.so_id 
+				$where 
 				GROUP BY wdso.id
-				LIMIT 10";
+				$limit";
 		$qry = 'SELECT FOUND_ROWS() AS total_rcds';
 		
 		$sos = $wpdb->get_results($isql, OBJECT);
@@ -351,11 +370,12 @@ class Wp_Dosf_Admin {
         foreach($sos as $c){
             
             $rc[] = array(
-				'id'			  => $c->id,
-                'title'           => $c->title,
+				'id'		  => $c->id,
+                'title'       => $c->title,
                 'file_name'   => $c->file_name,
-                'wp_obj_id'      => $c->wp_file_obj_id,
-                'linked_ruts'       => $c->linked_ruts,
+                'wp_obj_id'   => $c->wp_file_obj_id,
+                'linked_ruts' => $c->linked_ruts,
+				'selection'	  => ''
             );
         }
 
