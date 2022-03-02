@@ -40,7 +40,20 @@
 				url: 'https://cdn.datatables.net/plug-ins/1.11.3/i18n/es-cl.json'
 			},
 			columns: [
-				
+				/* 'id'			  => $c->id,
+                'title'           => $c->title,
+                'file_name'   => $c->file_name,
+                'wp_obj_id'      => $c->wp_file_obj_id,
+                'linked_ruts'       => $c->linked_ruts, */
+				{
+					data: 'id'
+				},
+				{
+					data: 'wp_obj_id'
+				},
+				{
+					data: 'selection'
+				},
 				{
 					data: 'title'
 				},
@@ -48,7 +61,7 @@
 					data: 'file_name'
 				},
 				{
-					data: 'ruts_linked'
+					data: 'linked_ruts'
 				}
 			]
 		} );			

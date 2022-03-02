@@ -12,6 +12,10 @@
 
  define('HTML_DOSF_ID','dosf-data-tbl');
  define('DOSF_APIREST_BASE_ROUTE','dosf/');
+ define('DOSF_URI_ID_GET','list');
+ define('DOSF_URI_ID_ADD_SO','add');
+ define('DOSF_URI_ID_UPD_SO','update');
+ define('DOSF_URI_ID_REM_SO','rem');
 
 /**
  * The admin-specific functionality of the plugin.
@@ -105,7 +109,10 @@ class Wp_Dosf_Admin {
 			'dosf_jquery_datatable', 
 			'dosf_config',
 			array(
-				'urlGetSOs'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .'shdobjs/' ),
+				'urlGetSOs'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_GET . '/' ),
+				'urlAddSO'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_ADD_SO . '/' ),
+				'urlRemSO'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_REM_SO . '/' ),
+				'urlUpdSO'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_UPD_SO . '/' )
 			) 
 		);
 		
@@ -215,7 +222,29 @@ class Wp_Dosf_Admin {
 					
 		</div>
 
-		<div id="<?=HTML_DOSF_ID?>" style="display:block;">
+		<div class="dosf-admin-add-so">
+			<div class="fields-wrapper">
+				<div class="fld-so">
+					<label>Seleccionar archivo...</label>
+					<button>Buscar</button>
+					<div class="file-selected"></div>
+				</div>
+				<div class="fld-title">
+					<label>Título</label>
+					<input name="so_title" type="text" />
+				</div>
+				<div class="fld-ruts"> 
+					<label>RUTs asociados</label>
+					<input type="text" name="so_ruts_linked"/>
+				</div>
+			</div>
+			<div class="actions-wrapper">
+				<div class="save"><button>Guardar</button></div>
+				<div class="cancel"><button>Cancelar</button></div>
+			</div>
+		</div>
+
+		<div id="<?=HTML_DOSF_ID?>">
 			
 			<table id="tabla" class="display" style="width:100%">
 				
@@ -243,6 +272,107 @@ class Wp_Dosf_Admin {
 
 		
 		<?php
+	}
+
+	//add_action( 'rest_api_init', 'emp_set_endpoints');
+    public function set_endpoints(){
+        register_rest_route(
+            DOSF_APIREST_BASE_ROUTE,
+            '/'. DOSF_URI_ID_GET . '/',
+            array(
+                'methods'  => 'GET',
+                'callback' => array(
+                    $this,
+                    'send_so_data'
+                ),
+                'permission_callback' => '__return_true'
+            )
+        );
+
+        register_rest_route(
+            DOSF_APIREST_BASE_ROUTE,
+            '/'.DOSF_URI_ID_ADD_SO.'/',
+            array(
+                'methods'  => 'POST',
+                'callback' => array(
+                    $this,
+                    'receive_new_dosf_data_set'
+                ),
+                'permission_callback' => '__return_true',
+            )
+        );
+
+		register_rest_route(
+            DOSF_APIREST_BASE_ROUTE,
+            '/'.DOSF_URI_ID_UPD_SO.'/(?P<dosf_id>\d+)',
+            array(
+                'methods'  => 'UPDATE',
+                'callback' => array(
+                    $this,
+                    'receive_update_dosf_data_set'
+                ),
+                'permission_callback' => '__return_true',
+            )
+        );
+
+		register_rest_route(
+            DOSF_APIREST_BASE_ROUTE,
+            '/'.DOSF_URI_ID_REM_SO.'/(?P<dosf_id>\d+)',
+            array(
+                'methods'  => 'DELETE',
+                'callback' => array(
+                    $this,
+                    'receive_remove_dosf'
+                ),
+                'permission_callback' => '__return_true',
+            )
+        );
+    }
+
+	public function send_so_data($r){
+		global $wpdb;
+		$isql = "SELECT 
+					title,
+					file_name,
+					wp_file_obj_id,
+					GROUP_CONCAT(wdsrl.rut) AS linked_ruts
+				FROM wp_dosf_shared_objs wdso 
+				JOIN wp_dosf_so_ruts_links wdsrl 
+					ON wdso.id = wdsrl.so_id 
+				GROUP BY wdso.id
+				LIMIT 10";
+		$qry = 'SELECT FOUND_ROWS() AS total_rcds';
+		
+		$sos = $wpdb->get_results($isql, OBJECT);
+		$frs = $wpdb->get_row($qry, OBJECT);
+        
+		$rc = array();
+        
+        foreach($sos as $c){
+            
+            $rc[] = array(
+				'id'			  => $c->id,
+                'title'           => $c->title,
+                'file_name'   => $c->file_name,
+                'wp_obj_id'      => $c->wp_file_obj_id,
+                'linked_ruts'       => $c->linked_ruts,
+            );
+        }
+
+        if($sos && empty($wpdb->last_error) ){
+            $res = array(
+                'draw' => $_GET['draw'],
+                "recordsTotal" =>  intval($frs->total_rcds),
+                "recordsFiltered" => intval($frs->total_rcds),
+                'data' => $rc
+            );
+            $response = new WP_REST_Response( $res );
+            $response->set_status( 200 );
+            
+        } else {
+            $response = new WP_Error( 'cant-read-dosf-sos', __( 'Can\'t get shared objects', 'wp-dosf' ), array( 'status' => 500 ) );
+        }
+        return $response;
 	}
 
 }
