@@ -106,7 +106,7 @@ class Wp_Dosf_Admin {
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/wp-dosf-admin.js', array( 'jquery' ), $this->version, false );
 
 		wp_localize_script( 
-			'dosf_jquery_datatable', 
+			$this->plugin_name, 
 			'dosf_config',
 			array(
 				'urlGetSOs'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_GET . '/' ),
