@@ -370,6 +370,7 @@ class Wp_Dosf_Admin {
         foreach($sos as $c){
             
             $rc[] = array(
+				'DT_RowId'	  => $c->id,
 				'id'		  => $c->id,
                 'title'       => $c->title,
                 'file_name'   => $c->file_name,
@@ -390,7 +391,15 @@ class Wp_Dosf_Admin {
             $response->set_status( 200 );
             
         } else {
-            $response = new WP_Error( 'cant-read-dosf-sos', __( 'Can\'t get shared objects', 'wp-dosf' ), array( 'status' => 500 ) );
+			$res = array(
+                'draw' => $_GET['draw'],
+                "recordsTotal" =>  intval($frs->total_rcds),
+                "recordsFiltered" => intval($frs->total_rcds),
+                'data' => array(),
+				//'error' => new WP_Error( 'cant-read-dosf-sos', __( 'Can\'t get shared objects', 'wp-dosf' ), array( 'status' => 500 ) )
+            );
+            $response = new WP_REST_Response( $res );
+            $response->set_status( 200 );
         }
         return $response;
 	}
