@@ -31,10 +31,23 @@
 
 	var dttbl = null;
 
+	function selection_data_render(data, type) {
+        if (type === 'display') {
+            let selection = '';
+            if(data == true){
+                selection = 'checked';
+            }
+
+            return '<input type="checkbox" ' + selection + ' />' ;
+        }
+         
+        return data;
+    }
+
 	(function( $ ) {
 	'use strict';
 	$(document).ready(function ($) {
-		debugger;
+		//debugger;
 		dttbl = $('#tabla').DataTable( {
 			processing: true,
 			serverSide: true,
@@ -49,13 +62,14 @@
                 'wp_obj_id'      => $c->wp_file_obj_id,
                 'linked_ruts'       => $c->linked_ruts, */
 				{
+					data: 'selection',
+					render: selection_data_render
+				},
+				{
 					data: 'id'
 				},
 				{
 					data: 'wp_obj_id'
-				},
-				{
-					data: 'selection'
 				},
 				{
 					data: 'title'
