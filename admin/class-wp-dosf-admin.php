@@ -208,11 +208,7 @@ class Wp_Dosf_Admin {
 	}
 
 	public function file_data_set_stack_field_render(){
-		global $wpdb;
-		$tbl_nm_dosf = $wpdb->prefix . 'dosf_shared_objs';
-		$limis_prms = "10";
-		$isql_select = "SELECT * FROM $tbl_nm_dosf";
-		$isql_limit = "LIMIT $limis_prms";
+		wp_enqueue_media();
 		?>
 
 		<div class="dosf-admin-header">
@@ -222,20 +218,26 @@ class Wp_Dosf_Admin {
 					
 		</div>
 
-		<div class="dosf-admin-add-so">
+		<div class="dosf-admin-add-so" style="display: none;">
 			<div class="fields-wrapper">
 				<div class="fld-so">
-					<label>Seleccionar archivo...</label>
-					<button>Buscar</button>
-					<div class="file-selected"></div>
+					<label>Seleccionar archivo</label>
+					<button class="dosf-button" id="browse-file">Buscar...</button>
+					<div class="file-selected" id="dosf-file-selectd"></div>
+					<input type='hidden' name='dosf_fl_attachment_id' id='dosf_attachment_id' value='' />
 				</div>
 				<div class="fld-title">
 					<label>Título</label>
-					<input name="so_title" type="text" />
+					<input name="dosf_so_title" id="dosf_so_title" type="text" />
 				</div>
 				<div class="fld-ruts"> 
 					<label>RUTs asociados</label>
-					<input type="text" name="so_ruts_linked"/>
+					<input 
+						type="text" 
+						id="dosf_so_ruts_linked"
+						name="dosf_so_ruts_linked"
+						placeholder="Separar RUTs con comas y sin puntos ni guines"
+					>
 				</div>
 			</div>
 			<div class="actions-wrapper">
@@ -402,6 +404,39 @@ class Wp_Dosf_Admin {
             $response->set_status( 200 );
         }
         return $response;
+	}
+
+	public function receive_new_dosf_data_set($r){
+		$data = $r->get_json_params();
+		// validaciones del lado del server.
+		global $wpdb;
+		$tbl_nm_shared_objs = $wpdb->prefix . 'dosf_shared_objs';
+		$tbl_nm_so_ruts_links = $wpdb->prefix . 'dosf_so_ruts_links'; 
+		
+		$wpdb->insert(
+			$tbl_nm_shared_objs,
+			array(
+				'title' 		 => $data['title'],
+				'file_name' 	 => $data['file_name'],
+				'wp_file_obj_id' => $data['wp_obj_file_id']
+			)
+		);
+		$so_id = $wpdb->insert_id;
+		if( $so_id !== false ){
+			foreach($data["linked_ruts"] as $rut){
+				$wpdb->insert(
+					$tbl_nm_so_ruts_links,
+					array(
+						'so_id' => intval($so_id),
+						'rut' 	=> $rut
+					)
+				);
+			}
+		} 
+
+		return [
+			'dosfAddNew_post_status' => 'ok'
+		];
 	}
 
 }
