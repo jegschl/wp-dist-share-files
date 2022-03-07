@@ -2,3 +2,23 @@
  * All of the CSS for your public-facing functionality should be
  * included in this file.
  */
+
+.dosf-search-res-row {
+    padding: 5px 15px;
+    margin-bottom: 10px;
+    border-style: solid;
+    border-radius: 10px;
+    border-color: var(--color-primary);
+}
+
+.dosf-search-res-wrapper{
+    margin-top: 22px;
+    margin-bottom: 22px;
+}
+
+.dosf-search-res-wrapper .link i{
+    font-family: 'FontAwesome';
+    font-style: normal;
+    font-size: 20px;
+    margin-right: 13px;
+}

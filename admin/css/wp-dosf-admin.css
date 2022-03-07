@@ -101,12 +101,3 @@
   }
 
   /* fin de los estilos para el datatable */
-
-  .dosf-search-res-row {
-    padding: 25px;
-    margin-top: 25px;
-    margin-bottom: 25px;
-    border-style: solid;
-    border-radius: 10px;
-    border-color: var(--color-primary);
-   }
