@@ -100,4 +100,81 @@ class Wp_Dosf_Public {
 
 	}
 
+	public function sc_browser(){
+		$rut = filter_input(INPUT_GET, 'dosf-search-rut');
+		if( $rut !== false && !is_null($rut)){
+			global $wpdb;
+			$tbl_nm_shared_objs = $wpdb->prefix . 'dosf_shared_objs';
+			$tbl_nm_so_ruts_links = $wpdb->prefix . 'dosf_so_ruts_links'; 
+
+			$select = "SELECT title,wp_file_obj_id 
+					   FROM $tbl_nm_shared_objs wdso
+					   JOIN $tbl_nm_so_ruts_links wdsrl
+					   	ON wdsrl.so_id = wdso.id 
+					   WHERE wdsrl.rut LIKE \"%{rut}%\"";
+
+			$sql = str_replace("{rut}",$rut,$select);
+			$res = $wpdb->get_results($sql);
+			?>
+			<div id="dosf-browser-wrapper">
+				<form method="get">
+					<div class="input-text">
+						<label>Introduce tu RUT (sin puntos ni guión)</label>
+						<input type="text" name="dosf-search-rut" value="<?=$rut?>">
+					</div>
+					<input type="submit" value="Volver a buscar">
+				</form>
+			</div>
+			<?php
+			if(is_array($res) || count($res)>0){
+				?>
+				<div class="dosf-search-res-wrapper">
+				<?php
+				foreach($res as $i => $so){
+					$wfo_id = $so->wp_file_obj_id;
+					$hr = wp_get_attachment_url($wfo_id);
+					?>
+					<div class="dosf-search-res-row">
+						<div class="link">
+							<a href="<?= $hr ?>"><?= $so->title ?></a>
+						</div>	
+					</div>
+					<?php
+				}
+				?>
+				</div>
+				<?php
+			} else {
+				?>
+				<div class="dosf-search-no-res-wrapper">
+					Sin resultados
+				</div>
+				<?php
+			}
+			?>
+			<div id="dosf-browser-wrapper">
+				<form method="get">
+					<div class="input-text">
+						<label>Introduce tu RUT (sin puntos ni guión)</label>
+						<input type="text" name="dosf-search-rut" value="<?=$rut?>">
+					</div>
+					<input type="submit" value="Volver a buscar">
+				</form>
+			</div>
+			<?php
+		} else {
+			?>
+			<div id="dosf-browser-wrapper">
+				<form method="get">
+					<div class="input-text">
+						<label>Introduce tu RUT (sin puntos ni guión)</label>
+						<input type="text" name="dosf-search-rut">
+					</div>
+					<input type="submit">
+				</form>
+			</div>
+			<?php
+		}
+	}
+
 }

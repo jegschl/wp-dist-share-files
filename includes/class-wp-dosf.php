@@ -177,6 +177,7 @@ class Wp_Dosf {
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
 
+		add_shortcode('dosf_browser',array($plugin_public,'sc_browser'));
 	}
 
 	/**
