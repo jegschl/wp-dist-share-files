@@ -136,7 +136,8 @@ class Wp_Dosf_Public {
 					?>
 					<div class="dosf-search-res-row">
 						<div class="link">
-							<a href="<?= $hr ?>"><?= $so->title ?></a>
+							<a href="<?= $hr ?>"><i class="fa-solid fa-download"></i></a>
+							<span class="title"><?= $so->title ?></span>
 						</div>	
 					</div>
 					<?php
