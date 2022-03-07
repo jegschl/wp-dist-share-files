@@ -312,7 +312,7 @@ class Wp_Dosf_Admin {
             DOSF_APIREST_BASE_ROUTE,
             '/'.DOSF_URI_ID_UPD_SO.'/(?P<dosf_id>\d+)',
             array(
-                'methods'  => 'UPDATE',
+                'methods'  => 'PUT',
                 'callback' => array(
                     $this,
                     'receive_update_dosf_data_set'
