@@ -145,17 +145,18 @@ class Wp_Dosf_Admin {
 	/* renderiza el contenido de la pgina de configuracin de ads-imgs */
 	public function dosf_admin_page(){
 		?>
-		<form action='options.php' method='post'>
+		<!-- <form action='options.php' method='post'> -->
 
 			<h2>Compartir o distribuir archivos</h2>
-
+			<div class="dosf-admin-main-container">
 			<?php
-			settings_fields( 'dosf' );
-			do_settings_sections( 'dosf' );
+			//settings_fields( 'dosf' );
+			//do_settings_sections( 'dosf' );
+			$this->file_data_set_stack_field_render()
 			//submit_button();
 			?>
-
-		</form>
+			</div>
+		<!-- </form> -->
 		<?php
 	}
 
