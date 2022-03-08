@@ -66,12 +66,6 @@
 					render: selection_data_render
 				},
 				{
-					data: 'id'
-				},
-				{
-					data: 'wp_obj_id'
-				},
-				{
 					data: 'title'
 				},
 				{

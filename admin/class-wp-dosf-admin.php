@@ -253,9 +253,7 @@ class Wp_Dosf_Admin {
 				
 				<thead class="thead">
 					<tr class="tr">
-						<th>Seleccionar</th>
-						<th>Id</th>
-						<th>WP Obj Id</th>
+						<th>Seleccionar</th>						
 						<th>Título</th>
 						<th>Archivo</th>
 						<th>RUTs asociados</th>
@@ -265,8 +263,6 @@ class Wp_Dosf_Admin {
 				<tfoot>
 					<tr class="tr">
 						<th>Seleccionar</th>
-						<th>Id</th>
-						<th>WP Obj Id</th>
 						<th>Título</th>
 						<th>Archivo</th>
 						<th>RUTs asociados</th>
@@ -276,7 +272,16 @@ class Wp_Dosf_Admin {
 
 		</div>
 
-
+		<div class="dosf-plus-options">
+			<h2>Otras opciones</h2>
+			<div class="input">
+				<input id="especific-match" type="checkbox" name="especific-match">
+				<label for="especific-match">Coincidencias específicas en las búsquedas</label>
+			</div>
+			<div class="dosf-plus-options-actions">
+				<button id="dosf-plus-options-save">Guardar otras opciones</button>
+			</div>
+		</div>
 		
 		<?php
 	}
