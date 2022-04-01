@@ -240,6 +240,15 @@ class Wp_Dosf_Admin {
 						placeholder="Separar RUTs con comas y sin puntos ni guines"
 					>
 				</div>
+				<div class="fld-email"> 
+					<label>Correo electrónico</label>
+					<input 
+						type="text" 
+						id="dosf_so_email"
+						name="dosf_so_email"
+						placeholder="Ingrese email para enviar código de descarga"
+					>
+				</div>
 			</div>
 			<div class="actions-wrapper">
 				<div class="save"><button>Guardar</button></div>
@@ -257,6 +266,8 @@ class Wp_Dosf_Admin {
 						<th>Título</th>
 						<th>Archivo</th>
 						<th>RUTs asociados</th>
+						<th>Correo electrónico</th>
+						<th>Acciones</th>
 					</tr>
 				</thead>
 				<!--body-->
@@ -266,6 +277,8 @@ class Wp_Dosf_Admin {
 						<th>Título</th>
 						<th>Archivo</th>
 						<th>RUTs asociados</th>
+						<th>Correo electrónico</th>
+						<th>Acciones</th>
 					</tr>
 				</tfoot>
 			</table>
@@ -361,7 +374,8 @@ class Wp_Dosf_Admin {
 					title,
 					file_name,
 					wp_file_obj_id,
-					GROUP_CONCAT(wdsrl.rut) AS linked_ruts
+					GROUP_CONCAT(wdsrl.rut) AS linked_ruts,
+					email
 				FROM wp_dosf_shared_objs wdso 
 				JOIN wp_dosf_so_ruts_links wdsrl 
 					ON wdso.id = wdsrl.so_id 
@@ -384,7 +398,9 @@ class Wp_Dosf_Admin {
                 'file_name'   => $c->file_name,
                 'wp_obj_id'   => $c->wp_file_obj_id,
                 'linked_ruts' => $c->linked_ruts,
-				'selection'	  => ''
+				'email'		  => $c->email,
+				'selection'	  => '',
+				'actions'	  => ''
             );
         }
 
@@ -412,19 +428,35 @@ class Wp_Dosf_Admin {
         return $response;
 	}
 
+	private function generate_download_code($length = 6, $chars = null){
+	
+		if(is_null($chars))
+			$characters = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+		$string = '';
+
+		for ($i = 0; $i < $length; $i++) {
+			$string .= $characters[mt_rand(0, strlen($characters) - 1)];
+		}
+
+		return $string;
+
+	}
+
 	public function receive_new_dosf_data_set($r){
 		$data = $r->get_json_params();
 		// validaciones del lado del server.
 		global $wpdb;
 		$tbl_nm_shared_objs = $wpdb->prefix . 'dosf_shared_objs';
 		$tbl_nm_so_ruts_links = $wpdb->prefix . 'dosf_so_ruts_links'; 
-		
+		$dowld_code = $this->generate_download_code();
 		$wpdb->insert(
 			$tbl_nm_shared_objs,
 			array(
 				'title' 		 => $data['title'],
 				'file_name' 	 => $data['file_name'],
-				'wp_file_obj_id' => $data['wp_obj_file_id']
+				'wp_file_obj_id' => $data['wp_obj_file_id'],
+				'email'			 => $data['email'],
+				'download_code'  => $dowld_code
 			)
 		);
 		$so_id = $wpdb->insert_id;
@@ -439,10 +471,64 @@ class Wp_Dosf_Admin {
 				);
 			}
 		} 
+		$wp_upload_dir_info = wp_upload_dir(); 
+		$attachment_id = intval($data['wp_obj_file_id']);
+		$file_path = get_attached_file($attachment_id);
+		$dce_args = array(
+						'email' => $data['email'],
+						'download_code' => $dowld_code,
+						'file' => $file_path
+					);
+
+
+		$mail_sent_res = $this->send_download_code_email($dce_args);
 
 		return [
-			'dosfAddNew_post_status' => 'ok'
+			'dosfAddNew_post_status' => 'ok',
+			'dosfAddNew_email_sent' => $mail_sent_res
 		];
+	}
+
+	public function send_download_code_email($args){
+		if(!isset($args['email']) || !isset($args['download_code']) )
+			return false;
+
+		if( empty($args['email']) || empty($args['download_code']) )
+			return false;
+
+		$content_template_path = apply_filters(
+									'dosf_eml_tpl_new_obj_content_path',
+									WP_DOSF_PLUGIN_PATH . '/templates/emails/email_new_dosf_content.tpl'
+								);
+
+		$mail_sent_res = false;
+		if(file_exists($content_template_path)){
+			$email = $args['email'];
+			$content = file_get_contents($content_template_path);
+			$content = str_replace(
+							'{download_code}',
+							$args['download_code'],
+							$content
+						);
+			$subject = apply_filters(
+							'dosf_eml_new_obj_eml_subject',
+							'medicoatuomicilio.cl :: Descarga tu nuevo resultado de examen'
+						);
+
+			$header = array('Content-Type: text/html; charset=UTF-8');
+			$header = apply_filters(
+						'dosf_eml_new_obj_eml_header',
+						$header
+					);
+			
+			$attachments = array();
+			if(isset($args['file']) && !empty($args['file'])){
+				$attachments[] = $args['file'];
+			}
+			$mail_sent_res = wp_mail($email,$subject,$content,$header,$attachments);
+		}
+
+		return $mail_sent_res;
 	}
 
 }

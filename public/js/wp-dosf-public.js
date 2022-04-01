@@ -29,4 +29,77 @@
 	 * practising this, we should strive to set a better example in our own work.
 	 */
 
+	 function getUrlParameter(sParam) {
+		var sPageURL = window.location.search.substring(1),
+			sURLVariables = sPageURL.split('&'),
+			sParameterName,
+			i;
+	
+		for (i = 0; i < sURLVariables.length; i++) {
+			sParameterName = sURLVariables[i].split('=');
+	
+			if (sParameterName[0] === sParam) {
+				return sParameterName[1] === undefined ? true : decodeURIComponent(sParameterName[1]);
+			}
+		}
+		return false;
+	};
+
+	function onDosfGetUrlError( jqXHR, textStatus, errorThrown ){
+		console.log('Error al intentar recuperar la URL de un dosf desde el server.');
+		console.log(jqXHR);
+	}
+
+	function onDosfGetUrlSuccess(  data,  textStatus,  jqXHR ){
+		console.log('URL del dosf recuperada correctamente.');
+		console.log(data);
+		const downloadLink = data['download-link'];
+		window.location = downloadLink;
+	}
+
+	function onDosfGetUrlComplete( jqXHR, textStatus ){
+		PUM.close(popupDownloadCode);
+	}
+
+	let popupDownloadCode = null;
+
+	$(document).ready(function(){
+		const dosSearchRut = getUrlParameter('dosf-search-rut');
+		if(dosSearchRut !== false){
+			$('.dosf-search-res-row .link a').click(function(e){
+				e.preventDefault();
+				const falseURL = $(this).attr('href');
+				const objid = falseURL.substring(7);
+				$('#obj-id').val(objid);
+				$('#input-download-code').text('');
+				$('#input-download-code').val('');
+				
+				const pmDldCodeId = dosfDt.pmDldCodeId;
+				popupDownloadCode= PUM.getPopup(parseInt(pmDldCodeId));
+				PUM.open(popupDownloadCode);
+			});
+
+			$('#send-download-code').click(function(e){
+				e.preventDefault();
+				const dt = {
+					'objid': $('#obj-id').val(),
+					'dldcd': $('#input-download-code').val()
+				};
+
+				const ajxsettings = {
+					method: 'POST',
+					url	: dosfDt.urlGetDosfURL,
+					accepts: 'application/json; charset=UTF-8',
+					contentType: 'application/json; charset=UTF-8',
+					data: JSON.stringify(dt),
+					complete: onDosfGetUrlComplete,
+					success: onDosfGetUrlSuccess,
+					error: onDosfGetUrlError
+				};
+
+				$.ajax(ajxsettings);
+			});
+		}
+	});
+
 })( jQuery );

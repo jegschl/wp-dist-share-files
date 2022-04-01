@@ -20,6 +20,9 @@
  * @subpackage Wp_Dosf/public
  * @author     Jorge Garrido <jegschl@gmail.com>
  */
+
+ define('DOSF_URI_GET_OBJ_URL','get-dosf-url');
+
 class Wp_Dosf_Public {
 
 	/**
@@ -97,7 +100,66 @@ class Wp_Dosf_Public {
 		 */
 
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/wp-dosf-public.js', array( 'jquery' ), $this->version, false );
+		
+		$dosfData = array();
+		$dosfData['pmDldCodeId'] = apply_filters(
+									'dosf/front/search-rut/download-code/popupmakerId',
+									13761
+								);
+		$dosfData['urlGetDosfURL'] = rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_GET_OBJ_URL . '/' );
+		wp_localize_script(
+			$this->plugin_name,
+			'dosfDt',
+			$dosfData
+		);
+	}
 
+	public function set_public_endpoints(){
+		register_rest_route(
+            DOSF_APIREST_BASE_ROUTE,
+            DOSF_URI_GET_OBJ_URL.'/',
+            array(
+                'methods'  => 'POST',
+                'callback' => array(
+                    $this,
+                    'receive_object_download_code'
+                ),
+                'permission_callback' => '__return_true',
+            )
+        );
+	}
+
+	public function receive_object_download_code($r){
+		global $wpdb;
+		$data = $r->get_json_params();
+		$tbl_nm_shared_objs = $wpdb->prefix . 'dosf_shared_objs';
+		$dldURL = '';
+		$res = array();
+		$select = "SELECT id,wp_file_obj_id,download_code
+					FROM $tbl_nm_shared_objs wdso
+					WHERE wdso.id = {id}";
+		$select = str_replace('{id}',$data['objid'],$select);
+		$sos = $wpdb->get_results($select, OBJECT);
+		if(count($sos)>0){
+			if($sos[0]->download_code == $data['dldcd']){
+				$wpoi = $sos[0]->wp_file_obj_id;
+				$dldURL = wp_get_attachment_url($wpoi);
+			} else {
+				$res['error'] = true;
+				$res['message'] = 'Código de descarga no válido';
+				return $res;
+			}
+		}
+
+		if(empty($dldURL)){
+			$res['error'] = true;
+			$res['message'] = 'Sin url de descarga'; 
+		} else {
+			$res['error'] = false;
+			$res['download-link'] = $dldURL;
+		}
+
+		return $res;
 	}
 
 	public function sc_browser(){
@@ -107,7 +169,7 @@ class Wp_Dosf_Public {
 			$tbl_nm_shared_objs = $wpdb->prefix . 'dosf_shared_objs';
 			$tbl_nm_so_ruts_links = $wpdb->prefix . 'dosf_so_ruts_links'; 
 
-			$select = "SELECT title,wp_file_obj_id 
+			$select = "SELECT wdso.id,title 
 					   FROM $tbl_nm_shared_objs wdso
 					   JOIN $tbl_nm_so_ruts_links wdsrl
 					   	ON wdsrl.so_id = wdso.id 
@@ -116,6 +178,7 @@ class Wp_Dosf_Public {
 			$sql = str_replace("{rut}",$rut,$select);
 			$res = $wpdb->get_results($sql);
 			?>
+			
 			<div id="dosf-browser-wrapper">
 				<form method="get">
 					<div class="input-text">
@@ -131,8 +194,8 @@ class Wp_Dosf_Public {
 				<div class="dosf-search-res-wrapper">
 				<?php
 				foreach($res as $i => $so){
-					$wfo_id = $so->wp_file_obj_id;
-					$hr = wp_get_attachment_url($wfo_id);
+					$wfo_id = $so->id;
+					$hr = "/objid/" . $wfo_id;
 					?>
 					<div class="dosf-search-res-row">
 						<div class="link">

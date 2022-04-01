@@ -22,3 +22,24 @@
     font-size: 20px;
     margin-right: 13px;
 }
+
+.dosf-dcdb-hidden{
+    display: none;
+    visibility: hidden;
+}
+
+.dosf-dcdb-showed{
+    display:block;
+    
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+#ask-download-code{
+    width: 400px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: blue;
+}

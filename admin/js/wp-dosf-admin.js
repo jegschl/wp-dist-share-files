@@ -44,6 +44,30 @@
         return data;
     }
 
+	function actions_data_render(data, type){
+		if (type === 'display') {
+			var output = '';
+			output += '<div class="actions">';
+
+			output += '<div class="action edit-dosf">';
+			output += '<i class="fas fa-edit"></i>';
+			output += '</div>';
+
+			output += '<div class="action send-dosf-download-code">';
+			output += '<i class="fas fa-paper-plane"></i>';
+			output += '</div>';
+
+			output += '<div class="action remove-dosf">';
+			output += '<i class="fas fa-minus-circle"></i>';
+			output += '</div>';
+
+			output += '</div>';
+            return output ;
+        }
+         
+        return data;
+	}
+
 	(function( $ ) {
 	'use strict';
 	$(document).ready(function ($) {
@@ -73,6 +97,13 @@
 				},
 				{
 					data: 'linked_ruts'
+				},
+				{
+					data: 'email'
+				},
+				{
+					data: 'actions',
+					render: actions_data_render
 				}
 			]
 		} );	
@@ -189,7 +220,8 @@
 				'wp_obj_file_id': $('#dosf_attachment_id').val(),
 				'file_name': $( '#dosf-file-selectd' ).text(),
 				'linked_ruts': ruts,
-				'title': $('#dosf_so_title').val()
+				'title': $('#dosf_so_title').val(),
+				'email': $('#dosf_so_email').val()
 			};
 
 			// pendiente agregar validaciones.
