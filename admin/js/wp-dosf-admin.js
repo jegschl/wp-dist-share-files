@@ -123,7 +123,7 @@
 			const dosf_id = $(this).parent().parent().parent().attr('id');
 			const ajxSettings = {
 				method: 'GET',
-				url: dosf_config.urlSndDC + '/' + dosf_id,
+				url: dosf_config.urlSndDC + dosf_id,
 				accepts: 'application/json; charset=UTF-8',
 				contentType: 'application/json; charset=UTF-8',
 				complete: onDosfReqSendDwldCdComplete,
@@ -131,6 +131,7 @@
 				error: onDosfReqSendDwldCdError
 			}
 			
+			$.ajax(ajxSettings);
 		}
 
 		function onDosfReqSendDwldCdComplete( jqXHR, textStatus ){

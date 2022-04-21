@@ -16,6 +16,7 @@
  define('DOSF_URI_ID_ADD_SO','add');
  define('DOSF_URI_ID_UPD_SO','update');
  define('DOSF_URI_ID_REM_SO','rem');
+ define('DOSF_URI_ID_SEND_DWNL_CD','send-download-code');
 
 /**
  * The admin-specific functionality of the plugin.
@@ -112,7 +113,8 @@ class Wp_Dosf_Admin {
 				'urlGetSOs'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_GET . '/' ),
 				'urlAddSO'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_ADD_SO . '/' ),
 				'urlRemSO'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_REM_SO . '/' ),
-				'urlUpdSO'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_UPD_SO . '/' )
+				'urlUpdSO'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_UPD_SO . '/' ),
+				'urlSndDC'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_SEND_DWNL_CD . '/' )
 			) 
 		);
 		
@@ -352,6 +354,19 @@ class Wp_Dosf_Admin {
                 'permission_callback' => '__return_true',
             )
         );
+
+		register_rest_route(
+            DOSF_APIREST_BASE_ROUTE,
+            '/'.DOSF_URI_ID_SEND_DWNL_CD.'/(?P<dosf_id>\d+)',
+            array(
+                'methods'  => 'GET',
+                'callback' => array(
+                    $this,
+                    'receive_send_dwld_code_req'
+                ),
+                'permission_callback' => '__return_true',
+            )
+        );
     }
 
 	public function send_so_data($r){
@@ -369,7 +384,7 @@ class Wp_Dosf_Admin {
             $where .= ' OR title LIKE "%' . $sv . '%"';
         }
 
-		$isql = "SELECT 
+		$isql = "SELECT SQL_CALC_FOUND_ROWS
 					wdso.id,
 					title,
 					file_name,
@@ -489,6 +504,79 @@ class Wp_Dosf_Admin {
 		];
 	}
 
+	public function receive_send_dwld_code_req($r){
+		$dosf_id = $r->get_url_params();
+		if(isset($dosf_id['dosf_id']) && !empty($dosf_id['dosf_id'])){
+			$dosf_id = $dosf_id['dosf_id'];
+			global $wpdb;
+			
+			$where  = ' WHERE wdso.id = '. $dosf_id . ' ';
+
+			$isql = "SELECT 
+						file_name,
+						wp_file_obj_id,
+						email,
+						download_code
+
+					FROM wp_dosf_shared_objs wdso 
+					
+					$where ";
+			$qry = 'SELECT FOUND_ROWS() AS total_rcds';
+			
+			$sos = $wpdb->get_results($isql, OBJECT);
+			
+			$rc = array();
+			
+			foreach($sos as $c){
+				
+				$rc[] = array(
+					
+					'file_name'   => $c->file_name,
+					'wp_obj_id'   => $c->wp_file_obj_id,
+					'email'		  => $c->email,
+					'download_code'	  => $c->download_code
+					
+				);
+			}
+
+			if(count($rc) == 1){
+				$attachment_id = intval($rc[0]['wp_obj_id']);
+				$file_path = get_attached_file($attachment_id);
+
+				$args = array(
+					'email' => $rc[0]['email'],
+					'download_code' => $rc[0]['download_code'],
+					'file' => $file_path
+				);
+				
+				$mail_sent_res = $this->send_download_code_email($args);
+			} else {
+				// error
+				return [
+					'error' => true,
+					'error_code' => 1,
+					'error_msg' => 'Demasiados registros o registro no encontrado', 
+					'dosfDldCdSend_email_sent' => false
+				];
+			}
+		} else {
+			return [
+				'error' => true,
+				'error_code' => 2,
+				'error_msg' => 'Identificador inválido', 
+				'dosfDldCdSend_email_sent' => false
+			];
+		}
+
+		
+		
+
+		return [
+			'error' => false,
+			'dosfDldCdSend_email_sent' => $mail_sent_res
+		];
+	}
+
 	public function send_download_code_email($args){
 		if(!isset($args['email']) || !isset($args['download_code']) )
 			return false;
@@ -496,15 +584,32 @@ class Wp_Dosf_Admin {
 		if( empty($args['email']) || empty($args['download_code']) )
 			return false;
 
+		$header_template_path = apply_filters(
+									'osf_eml_tpl_new_obj_header',
+									WP_DOSF_PLUGIN_PATH . '/templates/emails/email_header.tpl'
+								);
+		
 		$content_template_path = apply_filters(
 									'dosf_eml_tpl_new_obj_content_path',
 									WP_DOSF_PLUGIN_PATH . '/templates/emails/email_new_dosf_content.tpl'
 								);
 
+		$footer_template_path = apply_filters(
+									'dosf_eml_tpl_new_obj_footer',
+									WP_DOSF_PLUGIN_PATH . '/templates/emails/email_footer.tpl'
+								);
+
 		$mail_sent_res = false;
 		if(file_exists($content_template_path)){
 			$email = $args['email'];
-			$content = file_get_contents($content_template_path);
+			$content = '';
+			if(file_exists($header_template_path)){
+				$content  .= file_get_contents($header_template_path);
+			}
+			$content .= file_get_contents($content_template_path);
+			if(file_exists($footer_template_path)){
+				$content .= file_get_contents($footer_template_path);
+			}
 			$content = str_replace(
 							'{download_code}',
 							$args['download_code'],
