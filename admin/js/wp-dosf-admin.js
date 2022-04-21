@@ -105,12 +105,49 @@
 					data: 'actions',
 					render: actions_data_render
 				}
-			]
+			],
+			drawCallback: onDttblDraw
 		} );	
 		
 		var file_frame;
 		var wp_media_post_id = wp.media.model.settings.post.id;
 		var set_to_post_id;
+
+		function onDttblDraw(){
+			const itemActionReqSendDwldCodeSelector = '.action.send-dosf-download-code';
+			$(itemActionReqSendDwldCodeSelector).off('click');
+			$(itemActionReqSendDwldCodeSelector).on('click',dttblItemActionReqSendDownloadCodeEmail);
+		}
+
+		function dttblItemActionReqSendDownloadCodeEmail(){
+			const dosf_id = $(this).parent().parent().parent().attr('id');
+			const ajxSettings = {
+				method: 'GET',
+				url: dosf_config.urlSndDC + '/' + dosf_id,
+				accepts: 'application/json; charset=UTF-8',
+				contentType: 'application/json; charset=UTF-8',
+				complete: onDosfReqSendDwldCdComplete,
+				success: onDosfReqSendDwldCdSuccess,
+				error: onDosfReqSendDwldCdError
+			}
+			
+		}
+
+		function onDosfReqSendDwldCdComplete( jqXHR, textStatus ){
+			// Desactivar icono de progreso.
+		}
+
+		function onDosfReqSendDwldCdSuccess( data,  textStatus,  jqXHR ){
+			console.log('Solicitud enviada al servidor exitosamente');
+			console.log('Respuesta del servidor:');
+			console.log(data);
+		}
+
+		function onDosfReqSendDwldCdError( jqXHR, textStatus, errorThrown ){
+			console.log('Error al enviar la Solicitud de envío de email de código de descarga');
+			console.log('Respuesta del servidor:');
+			console.log(jqXHR);
+		}
 
 		function resetDosfAddFields(){
 			$( '#dosf_so_ruts_linked' ).val('');
