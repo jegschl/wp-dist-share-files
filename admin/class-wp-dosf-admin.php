@@ -216,8 +216,8 @@ class Wp_Dosf_Admin {
 
 		<div class="dosf-admin-header">
 			
-			<div id="add-dosf" class="action-wrapper"><i class="fas fa-plus-circle"></i>Agregar nuevo archivo para compartir</div>
-			<div id="rem-dosf" class="action-wrapper"><i class="fas fa-minus-circle"></i>Remover seleccionados</div>
+			<div id="add-dosf" class="action-wrapper"><span class="dashicons dashicons-plus-alt"></span>Agregar nuevo archivo para compartir</div>
+			<div id="rem-dosf" class="action-wrapper"><span class="dashicons dashicons-dismiss"></span>Remover seleccionados</div>
 					
 		</div>
 
@@ -291,8 +291,31 @@ class Wp_Dosf_Admin {
 			<h2>Otras opciones</h2>
 			<div class="input">
 				<input id="especific-match" type="checkbox" name="especific-match">
-				<label for="especific-match">Coincidencias específicas en las búsquedas</label>
+				<label for="especific-match">Coincidencias específicas en las búsquedas del frontend.</label>
 			</div>
+
+			<div class="input">
+				<input id="use-serial-numbers" type="checkbox" name="use-serial-numbers">
+				<label for="use-serial-numbers">Utilizar números de serie únicos.</label>
+			</div>
+
+			<div class="input">
+				<input id="use-issue-date" type="checkbox" name="use-issue-date">
+				<label for="use-issue-date">Utilizar fecha de emisión.</label>
+			</div>
+
+			<div class="input">
+				<label for="expire-period-nmb">Vencimiento a los</label>
+				<input id="expire-period-nmb" type="number" name="expire-period-nmb">
+				<select id="expire-period-unit" name="expire-period-unit">>
+					<option value="">Seleccione intervalo</option>
+					<option value="day">día(s)</option>
+					<option value="week">semana(s)</option>
+					<option value="month">mes(es)</option>
+					<option value="year">año(s)</option>
+				</select>
+			</div>
+
 			<div class="dosf-plus-options-actions">
 				<button id="dosf-plus-options-save">Guardar otras opciones</button>
 			</div>
