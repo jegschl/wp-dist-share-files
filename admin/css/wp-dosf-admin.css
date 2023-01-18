@@ -4,13 +4,27 @@
  */
 
 
-.dosf-admin-header .fa-plus-circle{
+.dosf-admin-header .fa-plus-circle,
+.dosf-admin-header .dashicons-plus-alt{
     color: green;
     font-size: 20px ;
 }
 
-.dosf-admin-header .fa-minus-circle{
+.dosf-admin-header .action-wrapper:hover .fa-plus-circle,
+.dosf-admin-header .action-wrapper:hover .dashicons-plus-alt{
+    color: rgb(156, 255, 156);
+    font-size: 20px ;
+}
+
+.dosf-admin-header .fa-minus-circle,
+.dosf-admin-header .dashicons-dismiss{
     color: red;
+    font-size: 20px ;
+}
+
+.dosf-admin-header .action-wrapper:hover .fa-minus-circle,
+.dosf-admin-header .action-wrapper:hover .dashicons-dismiss{
+    color: rgb(253, 202, 202);
     font-size: 20px ;
 }
 
@@ -22,6 +36,15 @@
     margin-right: 15px;
     display: flex;
     align-items: center;
+    cursor: default;
+    border: 2px solid #444;
+    padding: 5px 8px;
+    border-radius: 10px;
+}
+
+.action-wrapper:hover{
+    background-color: #246355;
+    color: white;
 }
 
 .dosf-admin-header{
