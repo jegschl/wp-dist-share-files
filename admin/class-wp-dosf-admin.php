@@ -216,11 +216,24 @@ class Wp_Dosf_Admin {
 		echo __( 'Datos para compartir o distribuir archivos', 'wp-dosf' );
 	}
 
+	public static function get_dosf_identifier_label($plus_options = null){
+		if( is_null( $plus_options ) ){
+			$plus_options 		= get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
+		}
+		$dil = apply_filters('dosf_get_doc_obj_identifier_label_on´serials_disable','Título');
+		if( isset( $plus_options['use-serial-number'] ) && $plus_options['use-serial-number'] ){
+			$dil = apply_filters('dosf_get_doc_obj_identifier_label_on´serials_enable','Serie');
+		}
+
+		return $dil;
+	}
+
 	public function file_data_set_stack_field_render(){
 		wp_enqueue_media();
 		$plus_opts_settings = get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
 		$processing_img_src = apply_filters('dosf_processing_img_src', plugin_dir_url(WP_DOSF_PLUGIN_PATH . "/.") . 'assets/imgs/spinningwheel.gif');
 		$plus_options 		= get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
+		$dosf_label_idntfr  = self::get_dosf_identifier_label( $plus_options );
 		
 		?>
 
@@ -275,7 +288,7 @@ class Wp_Dosf_Admin {
 				<thead class="thead">
 					<tr class="tr">
 						<th>Seleccionar</th>						
-						<th>Título</th>
+						<th><?= $dosf_label_idntfr ?></th>
 						<th>Archivo</th>
 						<th>RUTs asociados</th>
 						<th>Correo electrónico</th>
@@ -286,7 +299,7 @@ class Wp_Dosf_Admin {
 				<tfoot>
 					<tr class="tr">
 						<th>Seleccionar</th>
-						<th>Título</th>
+						<th><?= $dosf_label_idntfr ?></th>
 						<th>Archivo</th>
 						<th>RUTs asociados</th>
 						<th>Correo electrónico</th>
