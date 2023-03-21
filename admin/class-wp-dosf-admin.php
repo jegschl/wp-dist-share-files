@@ -16,8 +16,13 @@
  define('DOSF_URI_ID_ADD_SO','add');
  define('DOSF_URI_ID_UPD_SO','update');
  define('DOSF_URI_ID_REM_SO','rem');
+ define('DOSF_URI_ID_UPD_PLUS_OPTIONS','set_plus_options_settings');
  define('DOSF_URI_ID_SEND_DWNL_CD','send-download-code');
 
+ define('DOSF_NONCE_ACTION_PLUS_OPTS_UPDATE','update-plus-options');
+ 
+ define('DOSF_PLUS_OPTS_UPDATE_ERR_INVALID_NONCE'	,1);
+ define('DOSF_PLUS_OPTS_UPDATE_ERR_DB'				,2);
 /**
  * The admin-specific functionality of the plugin.
  *
@@ -212,6 +217,7 @@ class Wp_Dosf_Admin {
 
 	public function file_data_set_stack_field_render(){
 		wp_enqueue_media();
+		$plus_opts_settings = get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
 		?>
 
 		<div class="dosf-admin-header">
@@ -315,10 +321,11 @@ class Wp_Dosf_Admin {
 					<option value="year">año(s)</option>
 				</select>
 			</div>
-
+			<input type="hidden" name="plus-options-update-nonce" id="plus-options-update-nonce" value="<?= wp_create_nonce(DOSF_NONCE_ACTION_PLUS_OPTS_UPDATE) ?>">
 			<div class="dosf-plus-options-actions">
 				<button id="dosf-plus-options-save">Guardar otras opciones</button>
 			</div>
+			<div id="after-try-update-res-placeholder" class="hidden">Respuesta</div>
 		</div>
 		
 		<?php
@@ -390,6 +397,19 @@ class Wp_Dosf_Admin {
                 'permission_callback' => '__return_true',
             )
         );
+
+		register_rest_route(
+			DOSF_APIREST_BASE_ROUTE,
+            '/'.DOSF_URI_ID_UPD_PLUS_OPTIONS,
+            array(
+                'methods'  => 'POST',
+                'callback' => array(
+                    $this,
+                    'receive_plus_options'
+                ),
+                'permission_callback' => '__return_true',
+            )
+		);
     }
 
 	public function send_so_data($r){
@@ -478,6 +498,43 @@ class Wp_Dosf_Admin {
 
 		return $string;
 
+	}
+
+	public function receive_plus_options($r){
+		$data = $r->get_json_params();
+
+		$r = array(
+			'error' 		=> false,
+			'err_code'		=> null
+		);
+
+		
+		if( !isset( $data['nonce'] ) ){
+			$r['error'] 	= true;
+			$r['err_code']	= DOSF_PLUS_OPTS_UPDATE_ERR_INVALID_NONCE;
+			return $r;
+		}
+
+		
+		if ( ! wp_verify_nonce(  $r['nonce'], DOSF_NONCE_ACTION_PLUS_OPTS_UPDATE ) ) {
+			$r['error'] 	= true;
+			$r['err_code']	= DOSF_PLUS_OPTS_UPDATE_ERR_INVALID_NONCE;
+			return $r;
+		}
+
+
+
+		//DOSF_WP_OPT_NM_PLUS_OPTIONS
+		if( !update_option(DOSF_WP_OPT_NM_PLUS_OPTIONS,$data) ){
+			$r['error'] 	= true;
+			$r['err_code']	= DOSF_PLUS_OPTS_UPDATE_ERR_DB;
+			return $r;
+		}
+
+		$r['updated_data'] = $data;
+
+		return $r;
+		
 	}
 
 	public function receive_new_dosf_data_set($r){

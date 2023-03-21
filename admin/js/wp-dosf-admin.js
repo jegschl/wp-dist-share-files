@@ -300,7 +300,7 @@
 
 			$( '#dosf-plus-options-save' ).on('click',function(evnt){
 				const cfg = preparePlusOptions();
-
+				
 			});
 			
 		});

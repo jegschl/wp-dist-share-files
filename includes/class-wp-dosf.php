@@ -13,6 +13,8 @@
  * @subpackage Wp_Dosf/includes
  */
 
+ define('DOSF_WP_OPT_NM_PLUS_OPTIONS','dosf_plus_options_settings');
+
 /**
  * The core plugin class.
  *
