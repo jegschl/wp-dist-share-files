@@ -288,9 +288,9 @@
 			function preparePlusOptions(){
 				var config = {
 					'nonce'							: $('#plus-options-update-nonce'),
-					'frontend-specific-match-search': $('#especific-match').val(),
-					'use-serial-number' 			: $('#use-serial-numbers').val(),
-					'use-issue-date'				: $('#use-issue-date').val(),
+					'frontend-specific-match-search': $('#especific-match').is(':checked'),
+					'use-serial-number' 			: $('#use-serial-numbers').is(':checked'),
+					'use-issue-date'				: $('#use-issue-date').is(':checked'),
 					'expire-period-nmb'				: $('#expire-period-nmb').val(),
 					'expire-period-unit'			: $('#expire-period-unit').val()
 				};
@@ -298,8 +298,44 @@
 				return JSON.stringify(config);
 			}
 
+			function setPlusOptionsFieldsInProcessingMode(){
+				$( '#dosf-plus-options-save' ).prop("disabled","disabled");
+				$( '.dosf-plus-options-actions .processing' ).removeClass('hidden');
+			}
+
+			function setPlusOptionsFieldsInNormalMode(){
+				$( '#dosf-plus-options-save' ).prop("disabled",false);
+				$( '.dosf-plus-options-actions .processing' ).addClass('hidden');
+			}
+
 			$( '#dosf-plus-options-save' ).on('click',function(evnt){
+				setPlusOptionsFieldsInProcessingMode();
+
 				const cfg = preparePlusOptions();
+
+				// preparando la configuración de la llamada a endpoint para la configuración adicional.
+				var ajxSettings = {
+					url: dosf_config.urlUpdPlusOpts,
+					method:'POST',
+					accepts: 'application/json; charset=UTF-8',
+					contentType: 'application/json; charset=UTF-8',
+					data: cfg,
+					complete: function(jqXHR, textStatus){
+						setPlusOptionsFieldsInNormalMode();
+					},
+					success: function(data,  textStatus,  jqXHR){},
+					error: function(jqXHR, textStatus, errorThrown){
+						console.log('Error intentando enviar datos de opciones adicionales para almacenar en el servidor.');
+						console.log("Estos son los datos del error:");
+						console.log(errorThrown);
+						console.log(textStatus);
+					}
+				}
+
+				// Activando animación de proceso.
+
+				// ejecutando AJAX.
+				$.ajax(ajxSettings);
 				
 			});
 			

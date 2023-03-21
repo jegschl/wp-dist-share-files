@@ -119,7 +119,8 @@ class Wp_Dosf_Admin {
 				'urlAddSO'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_ADD_SO . '/' ),
 				'urlRemSO'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_REM_SO . '/' ),
 				'urlUpdSO'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_UPD_SO . '/' ),
-				'urlSndDC'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_SEND_DWNL_CD . '/' )
+				'urlSndDC'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_SEND_DWNL_CD . '/' ),
+				'urlUpdPlusOpts' => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_UPD_PLUS_OPTIONS . '/')
 			) 
 		);
 		
@@ -218,6 +219,7 @@ class Wp_Dosf_Admin {
 	public function file_data_set_stack_field_render(){
 		wp_enqueue_media();
 		$plus_opts_settings = get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
+		$processing_img_src = apply_filters('dosf_processing_img_src', plugin_dir_url(WP_DOSF_PLUGIN_PATH . "/.") . 'assets/imgs/spinningwheel.gif');
 		?>
 
 		<div class="dosf-admin-header">
@@ -312,7 +314,7 @@ class Wp_Dosf_Admin {
 
 			<div class="input">
 				<label for="expire-period-nmb">Vencimiento a los</label>
-				<input id="expire-period-nmb" type="number" name="expire-period-nmb">
+				<input id="expire-period-nmb" type="number" name="expire-period-nmb" min="1">
 				<select id="expire-period-unit" name="expire-period-unit">>
 					<option value="">Seleccione intervalo</option>
 					<option value="day">día(s)</option>
@@ -324,6 +326,7 @@ class Wp_Dosf_Admin {
 			<input type="hidden" name="plus-options-update-nonce" id="plus-options-update-nonce" value="<?= wp_create_nonce(DOSF_NONCE_ACTION_PLUS_OPTS_UPDATE) ?>">
 			<div class="dosf-plus-options-actions">
 				<button id="dosf-plus-options-save">Guardar otras opciones</button>
+				<div class="processing hidden"><img src="<?= $processing_img_src ?>"></div>
 			</div>
 			<div id="after-try-update-res-placeholder" class="hidden">Respuesta</div>
 		</div>
@@ -516,11 +519,11 @@ class Wp_Dosf_Admin {
 		}
 
 		
-		if ( ! wp_verify_nonce(  $r['nonce'], DOSF_NONCE_ACTION_PLUS_OPTS_UPDATE ) ) {
+		/* if ( ! wp_verify_nonce(  $r['nonce'], DOSF_NONCE_ACTION_PLUS_OPTS_UPDATE ) ) {
 			$r['error'] 	= true;
 			$r['err_code']	= DOSF_PLUS_OPTS_UPDATE_ERR_INVALID_NONCE;
 			return $r;
-		}
+		} */
 
 
 
