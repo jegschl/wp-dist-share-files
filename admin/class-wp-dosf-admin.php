@@ -220,6 +220,8 @@ class Wp_Dosf_Admin {
 		wp_enqueue_media();
 		$plus_opts_settings = get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
 		$processing_img_src = apply_filters('dosf_processing_img_src', plugin_dir_url(WP_DOSF_PLUGIN_PATH . "/.") . 'assets/imgs/spinningwheel.gif');
+		$plus_options 		= get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
+		
 		?>
 
 		<div class="dosf-admin-header">
@@ -297,30 +299,35 @@ class Wp_Dosf_Admin {
 
 		<div class="dosf-plus-options">
 			<h2>Otras opciones</h2>
+			<?php $checked = $plus_options['frontend-specific-match-search'] ? 'checked' : ''; ?>
 			<div class="input">
-				<input id="especific-match" type="checkbox" name="especific-match">
+				<input id="especific-match" type="checkbox" name="especific-match" <?= $checked ?>>
 				<label for="especific-match">Coincidencias específicas en las búsquedas del frontend.</label>
 			</div>
 
+			<?php $checked = $plus_options['use-serial-number'] ? 'checked' : ''; ?>
 			<div class="input">
-				<input id="use-serial-numbers" type="checkbox" name="use-serial-numbers">
+				<input id="use-serial-numbers" type="checkbox" name="use-serial-numbers" <?= $checked ?>>
 				<label for="use-serial-numbers">Utilizar números de serie únicos.</label>
 			</div>
 
+			<?php $checked = $plus_options['use-issue-date'] ? 'checked' : ''; ?>
 			<div class="input">
-				<input id="use-issue-date" type="checkbox" name="use-issue-date">
+				<input id="use-issue-date" type="checkbox" name="use-issue-date" <?= $checked ?>>
 				<label for="use-issue-date">Utilizar fecha de emisión.</label>
 			</div>
 
 			<div class="input">
 				<label for="expire-period-nmb">Vencimiento a los</label>
-				<input id="expire-period-nmb" type="number" name="expire-period-nmb" min="1">
-				<select id="expire-period-unit" name="expire-period-unit">>
+				<?php $value = empty($plus_options['expire-period-nmb']) ? '' : 'value="'.intval($plus_options['expire-period-nmb']).'"'; ?>
+				<input id="expire-period-nmb" type="number" name="expire-period-nmb" min="1" <?= $value ?>>
+				<?php $value = empty($plus_options['expire-period-unit']) ? '' : $plus_options['expire-period-unit']; ?>
+				<select id="expire-period-unit" name="expire-period-unit">
 					<option value="">Seleccione intervalo</option>
-					<option value="day">día(s)</option>
-					<option value="week">semana(s)</option>
-					<option value="month">mes(es)</option>
-					<option value="year">año(s)</option>
+					<option value="day" <?= $value=='day' ? 'selected' : ''?>>día(s)</option>
+					<option value="week" <?= $value=='week' ? 'selected' : ''?>>semana(s)</option>
+					<option value="month" <?= $value=='month' ? 'selected' : ''?>>mes(es)</option>
+					<option value="year" <?= $value=='year' ? 'selected' : ''?>>año(s)</option>
 				</select>
 			</div>
 			<input type="hidden" name="plus-options-update-nonce" id="plus-options-update-nonce" value="<?= wp_create_nonce(DOSF_NONCE_ACTION_PLUS_OPTS_UPDATE) ?>">
