@@ -139,8 +139,8 @@ class Wp_Dosf_Admin {
 
 	public function dosf_menu() {
 		add_menu_page( 
-			'Distribución de archivos', 
-			'Distribución de archivos', 
+			apply_filters('dosf-admin/admin-page-title','Distribución de archivos'), 
+			apply_filters('dosf-admin/admin-menu-title','Distribución de archivos'), 
 			'manage_options', 
 			'dosf-admin',  //'dosf/dosf-admin.php', 
 			array($this,'dosf_admin_page'), 
