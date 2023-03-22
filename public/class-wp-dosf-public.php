@@ -169,8 +169,9 @@ class Wp_Dosf_Public {
 		$no_results_label = 'Sin resultados';
 		$urlGetParamNm = 'dosf-search-rut';
 		$useSerialNmbCriterial = false;
-		if( $useSerialNmbCriterial = ( isset($this->plus_options['use-serial-numbers']) && $this->plus_options['use-serial-numbers'] ) ){
+		if( $useSerialNmbCriterial = ( isset($this->plus_options['use-serial-number']) && $this->plus_options['use-serial-number'] ) ){
 			$urlGetParamNm = 'dosf-search-serial';
+			$browse_input_label = 'Ingrese número de serie';
 		}
 		$valueToSearch = filter_input(INPUT_GET, $urlGetParamNm );
 		if( $valueToSearch !== false && !is_null($valueToSearch)){
@@ -179,7 +180,7 @@ class Wp_Dosf_Public {
 			$tbl_nm_so_ruts_links = $wpdb->prefix . 'dosf_so_ruts_links'; 
 
 			$wropr = 'LIKE';
-			if( $this->plus_options['especific-match'] ){
+			if( $this->plus_options['frontend-specific-match-search'] ){
 				$wropr = '=';
 			} else {
 				$valueToSearch = '%' . $valueToSearch . '%';
@@ -208,20 +209,21 @@ class Wp_Dosf_Public {
 				<form method="get">
 					<div class="input-text">
 						<label><?= $browse_input_label?></label>
-						<input type="text" name="dosf-search-rut" value="<?=$valueToSearch?>">
+						<input type="text" name="<?= $urlGetParamNm  ?>" value="<?=$valueToSearch?>">
 					</div>
 					<input type="submit" value="Volver a buscar">
 				</form>
 			</div>
 			<?php
-			if(is_array($res) || count($res)>0){
+			if(is_array($res) && count($res)>0){
 				?>
 				<div class="dosf-search-res-wrapper">
 				<?php
-				if( $this->plus_options['especific-match'] && $useSerialNmbCriterial ){
+				if( $this->plus_options['frontend-specific-match-search'] && $useSerialNmbCriterial ){
 					$status = strtolower( Wp_Dosf_Admin::get_dosf_status($res[0]->emision) );
 					?>
 					<div class="dosf-search-res-row">
+						<div class="msg-indicator">El certificado de mantención para la grúa con número de serie <?= $valueToSearch ?> se encuentra actualmente <span class="status <?= $status ?>"><?= $status ?>.</span></div>
 						<div class="indicator <?=$status?>"></div>
 						<div class="details">
 							<div class="link">
@@ -262,7 +264,7 @@ class Wp_Dosf_Public {
 				<form method="get">
 					<div class="input-text">
 						<label><?= $browse_input_label?></label>
-						<input type="text" name="dosf-search-rut" value="<?=$valueToSearch?>">
+						<input type="text" name="<?= $urlGetParamNm  ?>" value="<?=$valueToSearch?>">
 					</div>
 					<input type="submit" value="Volver a buscar">
 				</form>
@@ -274,7 +276,7 @@ class Wp_Dosf_Public {
 				<form method="get">
 					<div class="input-text">
 						<label><?= $browse_input_label?></label>
-						<input type="text" name="dosf-search-rut">
+						<input type="text" name="<?= $urlGetParamNm  ?>">
 					</div>
 					<input type="submit">
 				</form>
