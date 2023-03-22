@@ -43,6 +43,8 @@ class Wp_Dosf_Public {
 	 */
 	private $version;
 
+	private $plus_options;
+
 	/**
 	 * Initialize the class and set its properties.
 	 *
@@ -54,7 +56,7 @@ class Wp_Dosf_Public {
 
 		$this->plugin_name = $plugin_name;
 		$this->version = $version;
-
+		$this->plus_options = get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
 	}
 
 	/**
@@ -163,27 +165,50 @@ class Wp_Dosf_Public {
 	}
 
 	public function sc_browser(){
-		$rut = filter_input(INPUT_GET, 'dosf-search-rut');
-		if( $rut !== false && !is_null($rut)){
+		$browse_input_label = 'Introduce tu RUT (sinpuntos ni guión';
+		$no_results_label = 'Sin resultados';
+		$urlGetParamNm = 'dosf-search-rut';
+		$useSerialNmbCriterial = false;
+		if( $useSerialNmbCriterial = ( isset($this->plus_options['use-serial-numbers']) && $this->plus_options['use-serial-numbers'] ) ){
+			$urlGetParamNm = 'dosf-search-serial';
+		}
+		$valueToSearch = filter_input(INPUT_GET, $urlGetParamNm );
+		if( $valueToSearch !== false && !is_null($valueToSearch)){
 			global $wpdb;
 			$tbl_nm_shared_objs = $wpdb->prefix . 'dosf_shared_objs';
 			$tbl_nm_so_ruts_links = $wpdb->prefix . 'dosf_so_ruts_links'; 
 
-			$select = "SELECT wdso.id,title 
+			$wropr = 'LIKE';
+			if( $this->plus_options['especific-match'] ){
+				$wropr = '=';
+			} else {
+				$valueToSearch = '%' . $valueToSearch . '%';
+			}
+
+			if( $useSerialNmbCriterial ){
+				
+				$select = "SELECT wdso.id,title,emision,file_name 
 					   FROM $tbl_nm_shared_objs wdso
 					   JOIN $tbl_nm_so_ruts_links wdsrl
 					   	ON wdsrl.so_id = wdso.id 
-					   WHERE wdsrl.rut LIKE \"%{rut}%\"";
+					   WHERE wdso.title $wropr \"{valueToSearch}\"";
+			} else {
+				$select = "SELECT wdso.id,title 
+					   FROM $tbl_nm_shared_objs wdso
+					   JOIN $tbl_nm_so_ruts_links wdsrl
+					   	ON wdsrl.so_id = wdso.id 
+					   WHERE wdsrl.rut $wropr \"{valueToSearch}\"";
+			}
 
-			$sql = str_replace("{rut}",$rut,$select);
+			$sql = str_replace("{valueToSearch}",$valueToSearch,$select);
 			$res = $wpdb->get_results($sql);
 			?>
 			
 			<div id="dosf-browser-wrapper">
 				<form method="get">
 					<div class="input-text">
-						<label>Introduce tu RUT (sin puntos ni guión)</label>
-						<input type="text" name="dosf-search-rut" value="<?=$rut?>">
+						<label><?= $browse_input_label?></label>
+						<input type="text" name="dosf-search-rut" value="<?=$valueToSearch?>">
 					</div>
 					<input type="submit" value="Volver a buscar">
 				</form>
@@ -193,17 +218,34 @@ class Wp_Dosf_Public {
 				?>
 				<div class="dosf-search-res-wrapper">
 				<?php
-				foreach($res as $i => $so){
-					$wfo_id = $so->id;
-					$hr = "/objid/" . $wfo_id;
+				if( $this->plus_options['especific-match'] && $useSerialNmbCriterial ){
+					$status = strtolower( Wp_Dosf_Admin::get_dosf_status($res[0]->emision) );
 					?>
 					<div class="dosf-search-res-row">
-						<div class="link">
-							<a href="<?= $hr ?>"><i class="fa-solid fa-download"></i></a>
-							<span class="title"><?= $so->title ?></span>
-						</div>	
+						<div class="indicator <?=$status?>"></div>
+						<div class="details">
+							<div class="link">
+								<a href="#"><i class="fa-solid fa-download"></i></a>
+								<span class="title">Descargar certificado con código de autorización</span>
+							</div>
+						</div>
 					</div>
 					<?php
+
+				} else {
+
+					foreach($res as $i => $so){
+						$wfo_id = $so->id;
+						$hr = "/objid/" . $wfo_id;
+						?>
+						<div class="dosf-search-res-row">
+							<div class="link">
+								<a href="<?= $hr ?>"><i class="fa-solid fa-download"></i></a>
+								<span class="title"><?= $so->title ?></span>
+							</div>	
+						</div>
+						<?php
+					}
 				}
 				?>
 				</div>
@@ -211,7 +253,7 @@ class Wp_Dosf_Public {
 			} else {
 				?>
 				<div class="dosf-search-no-res-wrapper">
-					Sin resultados
+					<?= $no_results_label ?>
 				</div>
 				<?php
 			}
@@ -219,8 +261,8 @@ class Wp_Dosf_Public {
 			<div id="dosf-browser-wrapper">
 				<form method="get">
 					<div class="input-text">
-						<label>Introduce tu RUT (sin puntos ni guión)</label>
-						<input type="text" name="dosf-search-rut" value="<?=$rut?>">
+						<label><?= $browse_input_label?></label>
+						<input type="text" name="dosf-search-rut" value="<?=$valueToSearch?>">
 					</div>
 					<input type="submit" value="Volver a buscar">
 				</form>
@@ -231,7 +273,7 @@ class Wp_Dosf_Public {
 			<div id="dosf-browser-wrapper">
 				<form method="get">
 					<div class="input-text">
-						<label>Introduce tu RUT (sin puntos ni guión)</label>
+						<label><?= $browse_input_label?></label>
 						<input type="text" name="dosf-search-rut">
 					</div>
 					<input type="submit">
