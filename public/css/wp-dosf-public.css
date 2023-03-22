@@ -43,3 +43,18 @@
     border-style: solid;
     border-color: blue;
 }
+
+.dosf-search-res-row .indicator {
+    width: 100%;
+    height: 300px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+.dosf-search-res-row .indicator.vigente{
+    background-image: url('http://gpm.local/wp-content/plugins/jgb-dosf/assets/imgs/hand-good.png');
+}
+
+.dosf-search-res-row .indicator.vencido{
+    background-image: url('http://gpm.local/wp-content/plugins/jgb-dosf/assets/imgs/hand-not-good.png');
+}
