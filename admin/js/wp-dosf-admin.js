@@ -70,6 +70,60 @@
 
 	(function( $ ) {
 	'use strict';
+		let dtColumns = [];
+		dtColumns.push(
+			{
+				data: 'selection',
+				render: selection_data_render
+			}
+		);
+
+		dtColumns.push(
+			{
+				data: 'title'
+			}
+		);
+
+		if(dosf_config.useIssueDate){
+			dtColumns.push(
+				{
+					data: 'emision'
+				}
+			);
+		}
+
+		dtColumns.push(
+			{
+				data: 'file_name'
+			}
+		);
+
+		dtColumns.push(
+			{
+				data: 'linked_ruts'
+			}
+		);
+
+		dtColumns.push(
+			{
+				data: 'email'
+			}
+		);
+
+		if(dosf_config.useIssueDate){
+			dtColumns.push(
+				{
+					data: 'status'
+				}
+			);
+		}
+
+		dtColumns.push(
+			{
+				data: 'actions',
+				render: actions_data_render
+			}
+		);
 		$(document).ready(function ($) {
 			//debugger;
 			dttbl = $('#tabla').DataTable( {
@@ -79,33 +133,7 @@
 				language: {
 					url: 'https://cdn.datatables.net/plug-ins/1.11.3/i18n/es-cl.json'
 				},
-				columns: [
-					/* 'id'			  => $c->id,
-					'title'           => $c->title,
-					'file_name'   => $c->file_name,
-					'wp_obj_id'      => $c->wp_file_obj_id,
-					'linked_ruts'       => $c->linked_ruts, */
-					{
-						data: 'selection',
-						render: selection_data_render
-					},
-					{
-						data: 'title'
-					},
-					{
-						data: 'file_name'
-					},
-					{
-						data: 'linked_ruts'
-					},
-					{
-						data: 'email'
-					},
-					{
-						data: 'actions',
-						render: actions_data_render
-					}
-				],
+				columns: dtColumns,
 				drawCallback: onDttblDraw
 			} );	
 			
@@ -339,6 +367,78 @@
 				
 			});
 			
+			$('.dosf-admin-add-so .fields-wrapper #dosf_so_emision').datetimepicker(
+				{	
+					format: 'Y-m-d H:i',
+					lang: 'es',
+					i18n: {
+						'es': { // Spanish
+							months: [
+								"Enero",
+								"Febrero",
+								"Marzo", 
+								"Abril", 
+								"Mayo", 
+								"Junio", 
+								"Julio", 
+								"Agosto", 
+								"Septiembre", 
+								"Octubre", 
+								"Noviembre", 
+								"Diciembre"
+							],
+			
+							dayOfWeekShort: [
+								"Dom", 
+								"Lun", 
+								"Mar", 
+								"Mié", 
+								"Jue", 
+								"Vie", 
+								"Sáb"
+							],
+			
+							dayOfWeek: [
+								"Domingo", 
+								"Lunes", 
+								"Martes", 
+								"Miércoles", 
+								"Jueves", 
+								"Viernes", 
+								"Sábado"
+							]
+						}
+					}
+				}
+			);
+
+			const choicesEmlsCfg = {
+				allowHTML: true,
+				delimiter: ',',
+				editItems: true,
+				maxItemCount: 5,
+				removeItemButton: true,
+				duplicateItemsAllowed: false,
+				addItemFilter: function(value) {
+					if (!value) {
+					  return false;
+					}
+		
+					const regex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+					const expression = new RegExp(regex.source, 'i');
+					return expression.test(value);
+				},
+				addItemText: (value) => {
+					return `Presiona ENTER para agregar <b>"${value}"</b>`;
+				},
+				customAddItemText: 'Solo se permite agregar emails'
+			};
+
+			const choiceEmlsColabs = new Choices($('#dosf_so_email')[0],choicesEmlsCfg);
+
+			const choiceEmlsOprtrs = new Choices($('#dosf_so_email2')[0],choicesEmlsCfg);
+
+
 		});
 
 	})( jQuery );
