@@ -118,7 +118,13 @@ class Wp_Dosf_Admin {
 			'all'
 		);
 
-		
+		wp_enqueue_style(
+			'dosf_font_awesome',
+			'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.9.0/css/all.min.css',
+			[],
+			null,
+			'all'
+		);
 
 	}
 
@@ -516,6 +522,52 @@ class Wp_Dosf_Admin {
 		);
     }
 
+	public static function get_dosf_status($sql_date){
+		$plus_options = get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
+		if( isset( $plus_options['use-issue-date'] ) && $plus_options['use-issue-date'] ){
+			$emsdt = strtotime($sql_date);
+			$curdt = strtotime(date('Y-m-d H:i:s'));
+			switch( $plus_options['expire-period-unit'] ){
+				case 'year':
+					$y1 = intval(date('Y',$emsdt));
+					$y2 = intval(date('Y',$curdt));
+					$diff = $y2 - $y1;
+					break;
+
+				case 'week':
+					
+					break;
+
+				case 'month':
+					$y1 = intval(date('Y',$emsdt));
+					$y2 = intval(date('Y',$curdt));
+
+					$m1 = intval(date('m',$emsdt));
+					$m2 = intval(date('m',$curdt));
+
+					$d1 = intval(date('d',$emsdt));
+					$d2 = intval(date('d',$curdt));
+
+					$md = ($d2 - $d1) < 0 ? -1 : 0;
+
+					$diff = (($y2 - $y1) * 12) + ($m2 - $m1) + $md;
+					break;
+
+				case 'day':
+					$diff = 0;
+					break;
+
+				default:
+					$diff = 0;
+			}
+		}
+
+		if( intval($plus_options['expire-period-nmb']) > $diff ) 
+			return 'Vigente';
+		else 
+			return 'Vencido';
+	}
+
 	public function send_so_data($r){
 		global $wpdb;
 		
@@ -537,7 +589,8 @@ class Wp_Dosf_Admin {
 					file_name,
 					wp_file_obj_id,
 					GROUP_CONCAT(wdsrl.rut) AS linked_ruts,
-					email
+					CONCAT(email,',',email2) AS email,
+					emision
 				FROM wp_dosf_shared_objs wdso 
 				JOIN wp_dosf_so_ruts_links wdsrl 
 					ON wdso.id = wdsrl.so_id 
@@ -561,6 +614,8 @@ class Wp_Dosf_Admin {
                 'wp_obj_id'   => $c->wp_file_obj_id,
                 'linked_ruts' => $c->linked_ruts,
 				'email'		  => $c->email,
+				'emision'	  => $c->emision,
+				'status'	  => self::get_dosf_status($c->emision),
 				'selection'	  => '',
 				'actions'	  => ''
             );
