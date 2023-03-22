@@ -858,7 +858,7 @@ class Wp_Dosf_Admin {
 						);
 			$subject = apply_filters(
 							'dosf_eml_new_obj_eml_subject',
-							'medicoatuomicilio.cl :: Descarga tu nuevo resultado de examen'
+							'Grua PM :: Código de descarga de certificado de mantención'
 						);
 
 			$header = array('Content-Type: text/html; charset=UTF-8');
