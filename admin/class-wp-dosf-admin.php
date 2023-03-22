@@ -133,7 +133,7 @@ class Wp_Dosf_Admin {
 	 *
 	 * @since    1.0.0
 	 */
-	public function enqueue_scripts() {
+	public function enqueue_scripts( $hook ) {
 
 		/**
 		 * This function is provided for demonstration purposes only.
@@ -146,6 +146,9 @@ class Wp_Dosf_Admin {
 		 * between the defined hooks and the functions defined in this
 		 * class.
 		 */
+
+		if( $hook != "toplevel_page_dosf-admin" )
+			return;
 
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/wp-dosf-admin.js', array( 'jquery' ), $this->version, false );
 
