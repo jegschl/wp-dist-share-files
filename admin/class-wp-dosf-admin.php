@@ -53,6 +53,10 @@ class Wp_Dosf_Admin {
 	 */
 	private $version;
 
+	private $plus_options;
+
+	private $dosf_identifier_label;
+
 	/**
 	 * Initialize the class and set its properties.
 	 *
@@ -62,8 +66,10 @@ class Wp_Dosf_Admin {
 	 */
 	public function __construct( $plugin_name, $version ) {
 
-		$this->plugin_name = $plugin_name;
-		$this->version = $version;
+		$this->plugin_name 				 = $plugin_name;
+		$this->version 					 = $version;
+		$this->plus_options 			 = get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
+		$this->dosf_identifier_label 	 = self::get_dosf_identifier_label( $plus_options );
 
 	}
 
@@ -87,6 +93,32 @@ class Wp_Dosf_Admin {
 		 */
 
 		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/wp-dosf-admin.css', array(), $this->version, 'all' );
+		
+		wp_enqueue_style( 
+			'dosf_jquery_dtp_css', 
+			plugin_dir_url( __FILE__ ) . 'js/libs/datetimepicker-master/build/jquery.datetimepicker.min.css', 
+			array(),
+			null,
+			'all'
+		);
+
+		/* wp_enqueue_style( 
+			'dosf_choices_base_css', 
+			plugin_dir_url( __FILE__ ) . 'js/libs/choices-master/public/assets/styles/base.min.css', 
+			array(),
+			null,
+			'all'
+		); */
+
+		wp_enqueue_style( 
+			'dosf_choices_css', 
+			plugin_dir_url( __FILE__ ) . 'js/libs/choices-master/public/assets/styles/choices.min.css', 
+			array(),
+			null,
+			'all'
+		);
+
+		
 
 	}
 
@@ -120,7 +152,8 @@ class Wp_Dosf_Admin {
 				'urlRemSO'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_REM_SO . '/' ),
 				'urlUpdSO'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_UPD_SO . '/' ),
 				'urlSndDC'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_SEND_DWNL_CD . '/' ),
-				'urlUpdPlusOpts' => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_UPD_PLUS_OPTIONS . '/')
+				'urlUpdPlusOpts' => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_UPD_PLUS_OPTIONS . '/'),
+				'useIssueDate'	 => isset( $this->plus_options['use-issue-date'] ) && $this->plus_options['use-issue-date']
 			) 
 		);
 		
@@ -133,6 +166,23 @@ class Wp_Dosf_Admin {
 			false
 		);
 
+		$script_fl = plugin_dir_url( __FILE__ ) . 'js/libs/datetimepicker-master/build/jquery.datetimepicker.full.js';
+		wp_enqueue_script(
+			'dosf_jquery_datatimepicker', 
+			$script_fl,
+			array('jquery'),
+			null,
+			false
+		);
+
+		$script_fl = plugin_dir_url( __FILE__ ) . 'js/libs/choices-master/public/assets/scripts/choices.min.js';
+		wp_enqueue_script(
+			'dosf_js_choice', 
+			$script_fl,
+			array(),
+			null,
+			false
+		);
 	}
 
 	/**** Creando una pgina en el admin para configurar las imgenes de los ads y los links de cada una ****/
@@ -232,8 +282,8 @@ class Wp_Dosf_Admin {
 		wp_enqueue_media();
 		$plus_opts_settings = get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
 		$processing_img_src = apply_filters('dosf_processing_img_src', plugin_dir_url(WP_DOSF_PLUGIN_PATH . "/.") . 'assets/imgs/spinningwheel.gif');
-		$plus_options 		= get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
-		$dosf_label_idntfr  = self::get_dosf_identifier_label( $plus_options );
+		$plus_options 		= $this->plus_options;
+		$dosf_label_idntfr  = $this->dosf_label_identifier;
 		
 		?>
 
@@ -253,9 +303,17 @@ class Wp_Dosf_Admin {
 					<input type='hidden' name='dosf_fl_attachment_id' id='dosf_attachment_id' value='' />
 				</div>
 				<div class="fld-title">
-					<label>Título</label>
+					<label><?= $this->dosf_identifier_label ?></label>
 					<input name="dosf_so_title" id="dosf_so_title" type="text" />
 				</div>
+				
+				<?php if( isset( $plus_options['use-issue-date'] ) && $plus_options['use-issue-date'] ) : ?>
+				<div class="fld-emision">
+					<label>Emisión</label>
+					<input name="dosf_so_emision" id="dosf_so_emision" type="datetime" />
+				</div>
+				<?php endif; ?>
+
 				<div class="fld-ruts"> 
 					<label>RUTs asociados</label>
 					<input 
@@ -266,14 +324,25 @@ class Wp_Dosf_Admin {
 					>
 				</div>
 				<div class="fld-email"> 
-					<label>Correo electrónico</label>
+					<label>Emails colarboradores</label>
 					<input 
 						type="text" 
 						id="dosf_so_email"
 						name="dosf_so_email"
-						placeholder="Ingrese email para enviar código de descarga"
+						placeholder="Ingrese emails de colaboradores para enviar código de descarga"
 					>
 				</div>
+
+				<div class="fld-email2"> 
+					<label>Emails operadores</label>
+					<input 
+						type="text" 
+						id="dosf_so_email2"
+						name="dosf_so_email2"
+						placeholder="Ingrese emails de operadores para enviar código de descarga"
+					>
+				</div>
+
 			</div>
 			<div class="actions-wrapper">
 				<div class="save"><button>Guardar</button></div>
@@ -289,9 +358,15 @@ class Wp_Dosf_Admin {
 					<tr class="tr">
 						<th>Seleccionar</th>						
 						<th><?= $dosf_label_idntfr ?></th>
+						<?php if( isset( $plus_options['use-issue-date'] ) && $plus_options['use-issue-date'] ) : ?>
+						<th>Emisión</th>
+						<?php endif; ?>
 						<th>Archivo</th>
 						<th>RUTs asociados</th>
-						<th>Correo electrónico</th>
+						<th>Emails</th>
+						<?php if( isset( $plus_options['use-issue-date'] ) && $plus_options['use-issue-date'] ) : ?>
+						<th>Estado</th>
+						<?php endif; ?>
 						<th>Acciones</th>
 					</tr>
 				</thead>
@@ -300,9 +375,15 @@ class Wp_Dosf_Admin {
 					<tr class="tr">
 						<th>Seleccionar</th>
 						<th><?= $dosf_label_idntfr ?></th>
+						<?php if( isset( $plus_options['use-issue-date'] ) && $plus_options['use-issue-date'] ) : ?>
+						<th>Emisión</th>
+						<?php endif; ?>
 						<th>Archivo</th>
 						<th>RUTs asociados</th>
-						<th>Correo electrónico</th>
+						<th>Emails</th>
+						<?php if( isset( $plus_options['use-issue-date'] ) && $plus_options['use-issue-date'] ) : ?>
+						<th>Estado</th>
+						<?php endif; ?>
 						<th>Acciones</th>
 					</tr>
 				</tfoot>
