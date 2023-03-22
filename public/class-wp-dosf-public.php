@@ -108,6 +108,7 @@ class Wp_Dosf_Public {
 									'dosf/front/search-rut/download-code/popupmakerId',
 									11927
 								);
+		$dosfData['searchFldNm'] = 'dosf-search-rut';
 		$dosfData['urlGetDosfURL'] = rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_GET_OBJ_URL . '/' );
 		wp_localize_script(
 			$this->plugin_name,

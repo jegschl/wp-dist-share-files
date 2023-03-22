@@ -64,8 +64,8 @@
 	let popupDownloadCode = null;
 
 	$(document).ready(function(){
-		const dosSearchRut = getUrlParameter('dosf-search-rut');
-		if(dosSearchRut !== false){
+		const dosSearchValue = getUrlParameter(dosfDt.searchFldNm);
+		if(dosSearchValue !== false){
 			$('.dosf-search-res-row .link a').click(function(e){
 				e.preventDefault();
 				const falseURL = $(this).attr('href');
@@ -74,8 +74,7 @@
 				$('#input-download-code').text('');
 				$('#input-download-code').val('');
 				
-				const pmDldCodeId = dosfDt.pmDldCodeId;
-				popupDownloadCode= PUM.getPopup(parseInt(pmDldCodeId));
+				popupDownloadCode= PUM.getPopup(parseInt(dosfDt.pmDldCodeId));
 				PUM.open(popupDownloadCode);
 			});
 
