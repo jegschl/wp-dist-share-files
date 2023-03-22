@@ -70,6 +70,8 @@
 
 	(function( $ ) {
 	'use strict';
+		let choiceEmlsColabs;
+		let choiceEmlsOprtrs;
 		let dtColumns = [];
 		dtColumns.push(
 			{
@@ -124,6 +126,7 @@
 				render: actions_data_render
 			}
 		);
+
 		$(document).ready(function ($) {
 			//debugger;
 			dttbl = $('#tabla').DataTable( {
@@ -287,8 +290,13 @@
 					'file_name': $( '#dosf-file-selectd' ).text(),
 					'linked_ruts': ruts,
 					'title': $('#dosf_so_title').val(),
-					'email': $('#dosf_so_email').val()
+					'email': choiceEmlsColabs.getValue(true),
+					'email2': choiceEmlsOprtrs.getValue(true)
 				};
+
+				if(dosf_config.useIssueDate){
+					dosfNewData.emision = $('#dosf_so_emision').val();
+				}
 
 				// pendiente agregar validaciones.
 
@@ -434,9 +442,9 @@
 				customAddItemText: 'Solo se permite agregar emails'
 			};
 
-			const choiceEmlsColabs = new Choices($('#dosf_so_email')[0],choicesEmlsCfg);
+			choiceEmlsColabs = new Choices($('#dosf_so_email')[0],choicesEmlsCfg);
 
-			const choiceEmlsOprtrs = new Choices($('#dosf_so_email2')[0],choicesEmlsCfg);
+			choiceEmlsOprtrs = new Choices($('#dosf_so_email2')[0],choicesEmlsCfg);
 
 
 		});
