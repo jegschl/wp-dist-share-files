@@ -524,7 +524,7 @@ class Wp_Dosf_Admin {
             $limit = ' LIMIT ' . $_GET['start'] . ',' . $_GET['length'];
         
 		$where = '';
-        if(isset($_GET['search']) && !empty($_GET['search'])){
+        if(isset($_GET['search']['value']) && !empty($_GET['search']['value'])){
             $sv = $_GET['search']['value'];
             $where  = ' WHERE file_name LIKE "%'. $sv . '%"';
             $where .= ' OR wdsrl.rut LIKE "%' . $sv . '%"';
@@ -654,8 +654,10 @@ class Wp_Dosf_Admin {
 				'title' 		 => $data['title'],
 				'file_name' 	 => $data['file_name'],
 				'wp_file_obj_id' => $data['wp_obj_file_id'],
-				'email'			 => $data['email'],
-				'download_code'  => $dowld_code
+				'email'			 => implode(',',$data['email']),
+				'email2'		 => implode(',',$data['email2']),
+				'download_code'  => $dowld_code,
+				'emision'		 => $data['emision']
 			)
 		);
 		$so_id = $wpdb->insert_id;
