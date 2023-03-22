@@ -1,6 +1,6 @@
 <div>
 		    <p style="font-size: 10px; margin-top: 40px;">
-		    Todos los derechos reservados © 2022. <a href="https://tumedicoadomicilio.cl">www.tumedicoadomicilio.cl</a>
+		    Todos los derechos reservados © 2022. <a href="https://gpm.empchile.net/">gpm.empchile.net</a>
             </p>
 		</div>
 	</div>
