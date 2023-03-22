@@ -47,9 +47,13 @@ class Wp_Dosf_Activator {
 		$isql_initialize_tables = "CREATE TABLE IF NOT EXISTS $tbl_nm_shared_objs (
 			id INT UNSIGNED NOT NULL,
 			title varchar(256) NOT NULL,
+			emision datetime DEFAULT NULL,
 			file_name varchar(256) NOT NULL,
 			wp_file_obj_id INT UNSIGNED NULL,
-			created TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+			created TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+			email varchar(255)  NOT NULL,
+			email2 varchar(255)  NOT NULL,
+  			download_code varchar(16) NOT NULL
 		) $charset_collate";
 		$wpdb->query( $isql_initialize_tables );
 
