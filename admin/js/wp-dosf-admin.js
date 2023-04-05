@@ -138,6 +138,7 @@
 		let aoeFormMode;
 		let currentEditionDosfId;
 		let currentEditionDosfTR;
+		let dosfAddNewSentTryErrorCondMsg = '';
 
 		function onDttblCreatedRow( row, data, dataIndex, cells ){
 			const atid = data['DT_RowData']['attachment-id'];
@@ -219,6 +220,10 @@
 				$( '#dosf_so_title' ).val('')
 				choiceEmlsColabs.clearStore();
 				choiceEmlsOprtrs.clearStore();
+				
+				if( !$('.dosf-admin-add-so .notice.notice-error').hasClass('hidden') ){
+					$('.dosf-admin-add-so .notice.notice-error').addClass('hidden')
+				}
 			}
 
 			function dumpDataToDosfAddFields(){
@@ -251,6 +256,10 @@
 				vl 	 = $(cell).text();
 				$( '#dosf-file-selectd' ).text(vl);
 				
+				if( !$('.dosf-admin-add-so .notice.notice-error').hasClass('hidden') ){
+					$('.dosf-admin-add-so .notice.notice-error').addClass('hidden')
+				}
+				
 			}
 
 			function setWidgetsForDosfAddNew(){
@@ -275,9 +284,16 @@
 			}
 
 			function setWidgetsForDosfAddedOrCanceled(){
-				$('.dosf-admin-add-so').hide();
-				$('.dosf-admin-header').show();
-				$('#dosf-data-tbl').show();
+				if( dosfAddNewSentTryErrorCondMsg == '' ){
+					$('.dosf-admin-add-so').hide();
+					$('.dosf-admin-header').show();
+					$('#dosf-data-tbl').show();
+				} else {
+					$('.dosf-admin-add-so .notice.notice-error').text(dosfAddNewSentTryErrorCondMsg);
+					if( $('.dosf-admin-add-so .notice.notice-error').hasClass('hidden') ){
+						$('.dosf-admin-add-so .notice.notice-error').removeClass('hidden')
+					}
+				}
 			}
 
 			$( '.dosf-admin-header #add-dosf' ).on('click',function(event){
@@ -286,6 +302,7 @@
 
 			$( '.actions-wrapper .cancel' ).on('click',function(event){
 				event.preventDefault();
+				dosfAddNewSentTryErrorCondMsg = '';
 				setWidgetsForDosfAddedOrCanceled();
 			});
 
@@ -336,6 +353,7 @@
 			});
 
 			function onDosfNewError( jqXHR, textStatus, errorThrown ){
+				dosfAddNewSentTryErrorCondMsg = 'Error al intentar enviar un nuevo dosf data set al server.';
 				console.log('Error al intentar enviar un nuevo dosf data set al server.');
 				console.log(jqXHR);
 			}
@@ -343,7 +361,14 @@
 			function onDosfNewSuccess(  data,  textStatus,  jqXHR ){
 				console.log('Datos enviados al server correctamente.');
 				console.log(data);
-				dttbl.ajax.reload();
+				if( data['dosfAddNew_post_status'] == 'ok' ^ data['dosfUpdate_post_status'] == 'ok'){
+					dosfAddNewSentTryErrorCondMsg = '';
+					dttbl.ajax.reload();
+				}
+
+				if( data['dosfAddNew_post_status'] == 'error' && data['err_code'] == '403' ){
+					dosfAddNewSentTryErrorCondMsg = 'Ya existe un certificado con el mismo número de serie.'
+				}
 				
 			}
 
@@ -351,8 +376,16 @@
 				setWidgetsForDosfAddedOrCanceled();
 			}
 
+			function setWidgetsForDosfSendingToServer(){
+				if( !$('.dosf-admin-add-so .notice.notice-error').hasClass('hidden') ){
+					$('.dosf-admin-add-so .notice.notice-error').addClass('hidden')
+				}
+			}
+
 			$( '.dosf-admin-add-so .actions-wrapper .save' ).on('click',function(event){
 				event.preventDefault();
+
+				setWidgetsForDosfSendingToServer();
 
 				// enumerando ruts...
 				var ruts = $('#dosf_so_ruts_linked').val().split(',');
@@ -365,12 +398,13 @@
 
 				// crear datos para enviar.
 				var dosfNewData = {
-					'wp_obj_file_id': $('#dosf_attachment_id').val(),
-					'file_name': $( '#dosf-file-selectd' ).text(),
-					'linked_ruts': ruts,
-					'title': $('#dosf_so_title').val(),
-					'email': choiceEmlsColabs.getValue(true),
-					'email2': choiceEmlsOprtrs.getValue(true)
+					'wp_obj_file_id': 	$('#dosf_attachment_id').val(),
+					'file_name': 		$( '#dosf-file-selectd' ).text(),
+					'linked_ruts': 		ruts,
+					'title': 			$('#dosf_so_title').val(),
+					'email': 			choiceEmlsColabs.getValue(true),
+					'email2': 			choiceEmlsOprtrs.getValue(true),
+					'updateId': 		currentEditionDosfId 
 				};
 
 				if(dosf_config.useIssueDate){

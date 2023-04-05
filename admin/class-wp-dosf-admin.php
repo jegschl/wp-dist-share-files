@@ -358,6 +358,7 @@ class Wp_Dosf_Admin {
 				<div class="save"><button>Guardar</button></div>
 				<div class="cancel"><button>Cancelar</button></div>
 			</div>
+			<div class="notice notice-error hidden"></div>
 		</div>
 
 		<div id="<?=HTML_DOSF_ID?>">
@@ -712,47 +713,118 @@ class Wp_Dosf_Admin {
 		global $wpdb;
 		$tbl_nm_shared_objs = $wpdb->prefix . 'dosf_shared_objs';
 		$tbl_nm_so_ruts_links = $wpdb->prefix . 'dosf_so_ruts_links'; 
-		$dowld_code = $this->generate_download_code();
-		$wpdb->insert(
-			$tbl_nm_shared_objs,
-			array(
-				'title' 		 => $data['title'],
-				'file_name' 	 => $data['file_name'],
-				'wp_file_obj_id' => $data['wp_obj_file_id'],
-				'email'			 => implode(',',$data['email']),
-				'email2'		 => implode(',',$data['email2']),
-				'download_code'  => $dowld_code,
-				'emision'		 => $data['emision']
-			)
-		);
-		$so_id = $wpdb->insert_id;
-		if( $so_id !== false ){
+
+		$mail_sent_res = null;
+
+		if( isset( $data['updateId'] ) && !is_null( $data['updateId'] ) ){
+
+			$dowld_code = $this->generate_download_code();
+			$upd_res = $wpdb->update(
+				$tbl_nm_shared_objs,
+				array(
+					'title' 		 => $data['title'],
+					'file_name' 	 => $data['file_name'],
+					'wp_file_obj_id' => $data['wp_obj_file_id'],
+					'email'			 => implode(',',$data['email']),
+					'email2'		 => implode(',',$data['email2']),
+					'download_code'  => $dowld_code,
+					'emision'		 => $data['emision']
+				),
+				[ 'id' => $data['updateId'] ]
+			);
+
+			$wpdb->delete(
+				$tbl_nm_so_ruts_links,
+				['so_id' => intval( $data['updateId'] ) ]
+			);
+
 			foreach($data["linked_ruts"] as $rut){
 				$wpdb->insert(
 					$tbl_nm_so_ruts_links,
 					array(
-						'so_id' => intval($so_id),
+						'so_id' => intval( $data['updateId'] ),
 						'rut' 	=> $rut
 					)
 				);
 			}
-		} 
-		$wp_upload_dir_info = wp_upload_dir(); 
-		$attachment_id = intval($data['wp_obj_file_id']);
-		$file_path = get_attached_file($attachment_id);
-		$dce_args = array(
-						'email' => $data['email'],
-						'download_code' => $dowld_code,
-						'file' => $file_path
+
+			return [
+				'dosf_operation'		 => 'UPDATE',
+				'dosfUpdate_post_status' => 'ok',
+				'dosfAddNew_email_sent'	 => $mail_sent_res
+			];
+
+		} else {
+
+			$options = get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
+			if( isset( $options['use-serial-number'] ) && $options['use-serial-number'] ){
+				// Chequeo de existencia por número de serie:
+				if( $this->checkStoredMatchBySerialNumber( $data['title'] ) ){
+					return [
+						'dosf_operation'		 => 'INSERT',
+						'dosfAddNew_post_status' => 'error',
+						'err_code'				 => '403',
+						'err_msg'				 => 'Try duplicated serial'
+					];
+				}
+			}
+		
+			$dowld_code = $this->generate_download_code();
+			$wpdb->insert(
+				$tbl_nm_shared_objs,
+				array(
+					'title' 		 => $data['title'],
+					'file_name' 	 => $data['file_name'],
+					'wp_file_obj_id' => $data['wp_obj_file_id'],
+					'email'			 => implode(',',$data['email']),
+					'email2'		 => implode(',',$data['email2']),
+					'download_code'  => $dowld_code,
+					'emision'		 => $data['emision']
+				)
+			);
+			$so_id = $wpdb->insert_id;
+			if( $so_id !== false ){
+				foreach($data["linked_ruts"] as $rut){
+					$wpdb->insert(
+						$tbl_nm_so_ruts_links,
+						array(
+							'so_id' => intval($so_id),
+							'rut' 	=> $rut
+						)
 					);
+				}
+			} 
+			$wp_upload_dir_info = wp_upload_dir(); 
+			$attachment_id = intval($data['wp_obj_file_id']);
+			$file_path = get_attached_file($attachment_id);
+			$dce_args = array(
+							'email' => $data['email'],
+							'download_code' => $dowld_code,
+							'file' => $file_path
+						);
 
 
-		$mail_sent_res = $this->send_download_code_email($dce_args);
+			$mail_sent_res = $this->send_download_code_email($dce_args);
 
-		return [
-			'dosfAddNew_post_status' => 'ok',
-			'dosfAddNew_email_sent' => $mail_sent_res
-		];
+			return [
+				'dosf_operation'		 => 'INSERT',
+				'dosfAddNew_post_status' => 'ok',
+				'dosfAddNew_email_sent'	 => $mail_sent_res
+			];
+
+		}
+
+		
+	}
+
+	public function checkStoredMatchBySerialNumber( $serial ){
+		global $wpdb;
+		$tbl_nm_shared_objs = $wpdb->prefix . 'dosf_shared_objs';
+		$match_count = $wpdb->get_var("
+			SELECT COUNT(*)
+			FROM `$tbl_nm_shared_objs` 
+			WHERE `id` = \"$serial\"" );
+		return $match_count > 0 ? true : false;
 	}
 
 	public function receive_send_dwld_code_req($r){
@@ -881,7 +953,8 @@ class Wp_Dosf_Admin {
 			if(isset($args['file']) && !empty($args['file'])){
 				$attachments[] = $args['file'];
 			}
-			$mail_sent_res = wp_mail($email,$subject,$content,$header,$attachments);
+			//$mail_sent_res = wp_mail($email,$subject,$content,$header,$attachments);
+			$mail_sent_res = wp_mail($email,$subject,$content,$header);
 		}
 
 		return $mail_sent_res;
