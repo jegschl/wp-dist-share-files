@@ -112,6 +112,12 @@
 			}
 		);
 
+		dtColumns.push(
+			{
+				data: 'email2'
+			}
+		);
+
 		if(dosf_config.useIssueDate){
 			dtColumns.push(
 				{
@@ -127,6 +133,17 @@
 			}
 		);
 
+		const JGB_DOSF_AOE_FORM_MODE_ADD  = 0;
+		const JGB_DOSF_AOE_FORM_MODE_EDIT = 1;
+		let aoeFormMode;
+		let currentEditionDosfId;
+		let currentEditionDosfTR;
+
+		function onDttblCreatedRow( row, data, dataIndex, cells ){
+			const atid = data['DT_RowData']['attachment-id'];
+			$(row).data('attachment-id',atid);
+		}
+
 		$(document).ready(function ($) {
 			//debugger;
 			dttbl = $('#tabla').DataTable( {
@@ -137,7 +154,8 @@
 					url: 'https://cdn.datatables.net/plug-ins/1.11.3/i18n/es-cl.json'
 				},
 				columns: dtColumns,
-				drawCallback: onDttblDraw
+				drawCallback: onDttblDraw,
+				createdRow: onDttblCreatedRow
 			} );	
 			
 			var file_frame;
@@ -148,6 +166,18 @@
 				const itemActionReqSendDwldCodeSelector = '.action.send-dosf-download-code';
 				$(itemActionReqSendDwldCodeSelector).off('click');
 				$(itemActionReqSendDwldCodeSelector).on('click',dttblItemActionReqSendDownloadCodeEmail);
+
+				const itemActionEditionCodeSelector = '.action.edit-dosf';
+				$(itemActionEditionCodeSelector).off('click');
+				$(itemActionEditionCodeSelector).on('click',setWidgetsForDosfEdition);
+
+				const itemActionReqRemoveCodeSelector = '.action.remove-dosf';
+				$(itemActionReqRemoveCodeSelector).off('click');
+				$(itemActionReqRemoveCodeSelector).on('click',dttblItemActionReqRemoveDosf);
+			}
+
+			function dttblItemActionReqRemoveDosf(){
+				const dosf_id = $(this).closest('tr').attr('id');
 			}
 
 			function dttblItemActionReqSendDownloadCodeEmail(){
@@ -184,14 +214,63 @@
 			function resetDosfAddFields(){
 				$( '#dosf_so_ruts_linked' ).val('');
 				$( '#dosf_attachment_id').val(''),
+				$( '#dosf_so_emision' ).val('');
 				$( '#dosf-file-selectd' ).text(''),
 				$( '#dosf_so_title' ).val('')
+				choiceEmlsColabs.clearStore();
+				choiceEmlsOprtrs.clearStore();
+			}
+
+			function dumpDataToDosfAddFields(){
+				let cell = $(currentEditionDosfTR).children()[1];
+				let vl 	 = $(cell).text();
+				$( '#dosf_so_title' ).val(vl);
+
+				cell = $(currentEditionDosfTR).children()[2];
+				vl 	 = $(cell).text();
+				$( '#dosf_so_emision' ).val(vl);
+
+				cell = $(currentEditionDosfTR).children()[4];
+				vl 	 = $(cell).text();
+				$( '#dosf_so_ruts_linked' ).val(vl);
+
+				cell = $(currentEditionDosfTR).children()[5];
+				vl 	 = $(cell).text().split(',');
+				choiceEmlsColabs.clearStore();
+				choiceEmlsColabs.setValue(vl);
+
+				cell = $(currentEditionDosfTR).children()[6];
+				vl 	 = $(cell).text().split(',');
+				choiceEmlsOprtrs.clearStore();
+				choiceEmlsOprtrs.setValue(vl);
+
+
+				$( '#dosf_attachment_id').val( $(currentEditionDosfTR).data('attachment-id') );
+
+				cell = $(currentEditionDosfTR).children()[3];
+				vl 	 = $(cell).text();
+				$( '#dosf-file-selectd' ).text(vl);
+				
 			}
 
 			function setWidgetsForDosfAddNew(){
+				aoeFormMode = JGB_DOSF_AOE_FORM_MODE_ADD;
+				currentEditionDosfId = null;
+				$('.dosf-admin-add-so > .title').text('Agregando certificado nuevo.');
 				$('.dosf-admin-header').hide();
 				$('#dosf-data-tbl').hide();
 				resetDosfAddFields();
+				$('.dosf-admin-add-so').show();
+			}
+
+			function setWidgetsForDosfEdition(){
+				aoeFormMode = JGB_DOSF_AOE_FORM_MODE_EDIT;
+				currentEditionDosfTR = $(this).closest('tr');
+				currentEditionDosfId = $(currentEditionDosfTR).attr('id');
+				$('.dosf-admin-add-so > .title').text('Modificando certificado con ID interno ' + currentEditionDosfId + '.');
+				$('.dosf-admin-header').hide();
+				$('#dosf-data-tbl').hide();
+				dumpDataToDosfAddFields();
 				$('.dosf-admin-add-so').show();
 			}
 

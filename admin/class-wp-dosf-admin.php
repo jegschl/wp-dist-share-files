@@ -304,6 +304,7 @@ class Wp_Dosf_Admin {
 		</div>
 
 		<div class="dosf-admin-add-so" style="display: none;">
+			<div class="title"></div>
 			<div class="fields-wrapper">
 				<div class="fld-so">
 					<label>Seleccionar archivo</label>
@@ -372,7 +373,8 @@ class Wp_Dosf_Admin {
 						<?php endif; ?>
 						<th>Archivo</th>
 						<th>RUTs asociados</th>
-						<th>Emails</th>
+						<th>Emails Colaboradores</th>
+						<th>Emails Operadores</th>
 						<?php if( isset( $plus_options['use-issue-date'] ) && $plus_options['use-issue-date'] ) : ?>
 						<th>Estado</th>
 						<?php endif; ?>
@@ -389,7 +391,8 @@ class Wp_Dosf_Admin {
 						<?php endif; ?>
 						<th>Archivo</th>
 						<th>RUTs asociados</th>
-						<th>Emails</th>
+						<th>Emails Colaboradores</th>
+						<th>Emails Operadores</th>
 						<?php if( isset( $plus_options['use-issue-date'] ) && $plus_options['use-issue-date'] ) : ?>
 						<th>Estado</th>
 						<?php endif; ?>
@@ -592,7 +595,8 @@ class Wp_Dosf_Admin {
 					file_name,
 					wp_file_obj_id,
 					GROUP_CONCAT(wdsrl.rut) AS linked_ruts,
-					CONCAT(email,',',email2) AS email,
+					email,
+					email2,
 					emision
 				FROM wp_dosf_shared_objs wdso 
 				JOIN wp_dosf_so_ruts_links wdsrl 
@@ -606,17 +610,20 @@ class Wp_Dosf_Admin {
 		$frs = $wpdb->get_row($qry, OBJECT);
         
 		$rc = array();
-        
+
+        $row_data = [];
+
         foreach($sos as $c){
-            
+            $row_data['attachment-id'] = $c->wp_file_obj_id;
             $rc[] = array(
 				'DT_RowId'	  => $c->id,
+				'DT_RowData'  => $row_data,
 				'id'		  => $c->id,
                 'title'       => $c->title,
                 'file_name'   => $c->file_name,
-                'wp_obj_id'   => $c->wp_file_obj_id,
                 'linked_ruts' => $c->linked_ruts,
 				'email'		  => $c->email,
+				'email2'	  => $c->email2,
 				'emision'	  => $c->emision,
 				'status'	  => self::get_dosf_status($c->emision),
 				'selection'	  => '',
