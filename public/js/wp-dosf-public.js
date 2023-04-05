@@ -29,6 +29,8 @@
 	 * practising this, we should strive to set a better example in our own work.
 	 */
 
+	let closeForm = true;
+
 	 function getUrlParameter(sParam) {
 		var sPageURL = window.location.search.substring(1),
 			sURLVariables = sPageURL.split('&'),
@@ -48,17 +50,29 @@
 	function onDosfGetUrlError( jqXHR, textStatus, errorThrown ){
 		console.log('Error al intentar recuperar la URL de un dosf desde el server.');
 		console.log(jqXHR);
+
+		if( $('#download-code-error').hasClass('hidden')  ){
+			$('#download-code-error').removeClass('hidden') 
+			closeForm = false;
+		}
 	}
 
 	function onDosfGetUrlSuccess(  data,  textStatus,  jqXHR ){
-		console.log('URL del dosf recuperada correctamente.');
-		console.log(data);
-		const downloadLink = data['download-link'];
-		window.location = downloadLink;
+		if( (data.error != undefined) && !data.error){
+			console.log('URL del dosf recuperada correctamente.');
+			console.log(data);
+			const downloadLink = data['download-link'];
+			window.location = downloadLink;
+		} else {
+			if( $('#download-code-error').hasClass('hidden')  ){
+				$('#download-code-error').removeClass('hidden') 
+				closeForm = false;
+			}
+		}
 	}
 
 	function onDosfGetUrlComplete( jqXHR, textStatus ){
-		PUM.close(popupDownloadCode);
+		//PUM.close(popupDownloadCode);
 	}
 
 	let popupDownloadCode = null;

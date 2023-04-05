@@ -58,3 +58,16 @@
 .dosf-search-res-row .indicator.vencido{
     background-image: url('http://gpm.local/wp-content/plugins/jgb-dosf/assets/imgs/hand-not-good.png');
 }
+
+.hidden{
+    visibility: hidden;
+    display: none;
+}
+
+#download-code-error{
+    color: red;
+}
+
+.dosf-search-res-row .link {
+	text-align: center;
+}

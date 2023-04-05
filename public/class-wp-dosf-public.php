@@ -104,11 +104,12 @@ class Wp_Dosf_Public {
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/wp-dosf-public.js', array( 'jquery' ), $this->version, false );
 		
 		$dosfData = array();
+		$useSerialNmbCriterial = ( isset($this->plus_options['use-serial-number']) && $this->plus_options['use-serial-number'] );
 		$dosfData['pmDldCodeId'] = apply_filters(
 									'dosf/front/search-rut/download-code/popupmakerId',
 									11927
 								);
-		$dosfData['searchFldNm'] = 'dosf-search-rut';
+		$dosfData['searchFldNm'] = $useSerialNmbCriterial ? 'dosf-search-serial' : 'dosf-search-rut';
 		$dosfData['urlGetDosfURL'] = rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_GET_OBJ_URL . '/' );
 		wp_localize_script(
 			$this->plugin_name,
@@ -166,7 +167,7 @@ class Wp_Dosf_Public {
 	}
 
 	public function sc_browser(){
-		$browse_input_label = 'Introduce tu RUT (sinpuntos ni guión';
+		$browse_input_label = 'Introduce tu RUT (sin puntos ni guión';
 		$no_results_label = 'Sin resultados';
 		$urlGetParamNm = 'dosf-search-rut';
 		$useSerialNmbCriterial = false;
@@ -217,6 +218,8 @@ class Wp_Dosf_Public {
 			</div>
 			<?php
 			if(is_array($res) && count($res)>0){
+				$wfo_id = $res[0]->id;
+				$hr = "/objid/" . $wfo_id;
 				?>
 				<div class="dosf-search-res-wrapper">
 				<?php
@@ -228,7 +231,7 @@ class Wp_Dosf_Public {
 						<div class="indicator <?=$status?>"></div>
 						<div class="details">
 							<div class="link">
-								<a href="#"><i class="fa-solid fa-download"></i></a>
+								<a href="<?= $hr ?>"><i class="fa-solid fa-download"></i></a>
 								<span class="title">Descargar certificado con código de autorización</span>
 							</div>
 						</div>
