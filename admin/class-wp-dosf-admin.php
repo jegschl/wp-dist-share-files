@@ -292,7 +292,7 @@ class Wp_Dosf_Admin {
 		$plus_opts_settings = get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
 		$processing_img_src = apply_filters('dosf_processing_img_src', plugin_dir_url(WP_DOSF_PLUGIN_PATH . "/.") . 'assets/imgs/spinningwheel.gif');
 		$plus_options 		= $this->plus_options;
-		$dosf_label_idntfr  = $this->dosf_label_identifier;
+		$dosf_label_idntfr  = $this->dosf_identifier_label;
 		
 		?>
 
