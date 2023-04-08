@@ -359,8 +359,7 @@
 			}
 
 			function onDosfNewSuccess(  data,  textStatus,  jqXHR ){
-				console.log('Datos enviados al server correctamente.');
-				console.log(data);
+
 				if( data['dosfAddNew_post_status'] == 'ok' ^ data['dosfUpdate_post_status'] == 'ok'){
 					dosfAddNewSentTryErrorCondMsg = '';
 					dttbl.ajax.reload();
