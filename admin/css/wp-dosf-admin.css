@@ -158,3 +158,14 @@ border-radius: 8px !important;
 	width: 20px;
 	border-radius: 10px;
 }
+
+#rem-dosf.disabled {
+    color: gray !important;
+}
+#rem-dosf.disabled .dashicons.dashicons-dismiss {
+    color: gray !important;
+}
+
+#rem-dosf.disabled:hover {
+	background-color: unset !important;
+}
