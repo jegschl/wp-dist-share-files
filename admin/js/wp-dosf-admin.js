@@ -38,7 +38,7 @@
                 selection = 'checked';
             }
 
-            return '<input type="checkbox" ' + selection + ' />' ;
+            return '<input type="checkbox" ' + selection + ' class="dosf-checker"/>' ;
         }
          
         return data;
@@ -139,6 +139,8 @@
 		let currentEditionDosfId;
 		let currentEditionDosfTR;
 		let dosfAddNewSentTryErrorCondMsg = '';
+		let delConfirmtnDlg;
+		let istr; // Ids to remove.
 
 		function onDttblCreatedRow( row, data, dataIndex, cells ){
 			const atid = data['DT_RowData']['attachment-id'];
@@ -158,6 +160,20 @@
 				drawCallback: onDttblDraw,
 				createdRow: onDttblCreatedRow
 			} );	
+
+			delConfirmtnDlg = $('#confirm-del-dlg').dialog({
+				modal: true,
+				autoOpen: false,
+				closeText: "Cancelar",
+				buttons:[
+					{
+						text: 'Si, eliminar',
+						click: function(){
+							//$( this ).dialog( "close" );
+						}
+					}
+				]
+			});
 			
 			var file_frame;
 			var wp_media_post_id = wp.media.model.settings.post.id;
@@ -175,10 +191,52 @@
 				const itemActionReqRemoveCodeSelector = '.action.remove-dosf';
 				$(itemActionReqRemoveCodeSelector).off('click');
 				$(itemActionReqRemoveCodeSelector).on('click',dttblItemActionReqRemoveDosf);
+
+				const itemDosfCheckerSelector = '.dosf-checker';
+				$(itemDosfCheckerSelector).off('click');
+				$(itemDosfCheckerSelector).on('click',dttblItemDosfChecker);
+			}
+
+			function dttblItemDosfChecker(){
+				let i;
+				istr = [];
+				let dcdAr = $('.dosf-checker');
+				if( dcdAr.length > 0 ){
+					for( i = 0; i < dcdAr.length; i++ ){
+						if( $( dcdAr[i] ).is(":checked") )
+							istr.push(  $( dcdAr[i] ).closest('tr').attr('id') );
+					}
+					if( istr.length > 0 ){
+						if( $('#rem-dosf').hasClass('disabled') ){
+							$('#rem-dosf').removeClass('disabled');
+						}
+						
+					} else {
+						if( !$('#rem-dosf').hasClass('disabled') ){
+							$('#rem-dosf').addClass('disabled');
+						}
+					}
+				}else{
+					if( !$('#rem-dosf').hasClass('disabled') ){
+						$('#rem-dosf').addClass('disabled');
+					}
+				}
+			}
+
+			function sendDosfRemovRequest(){
+				const ac = {
+					method: 'DELETE',
+					url: dosf_config.urlRemSO,
+					data: JSON.stringify(istr),
+					accepts: 'application/json; charset=UTF-8',
+					contentType: 'application/json; charset=UTF-8',
+					complete: function(jqXHR, textStatus){}
+				}
 			}
 
 			function dttblItemActionReqRemoveDosf(){
-				const dosf_id = $(this).closest('tr').attr('id');
+				istr = [ $(this).closest('tr').attr('id') ];
+				delConfirmtnDlg.dialog('open');
 			}
 
 			function dttblItemActionReqSendDownloadCodeEmail(){
@@ -380,6 +438,15 @@
 					$('.dosf-admin-add-so .notice.notice-error').addClass('hidden')
 				}
 			}
+
+			$('#rem-dosf').click(function(evn){
+				evn.preventDefault();
+
+				if( !$(this).hasClass('disabled') ){
+					delConfirmtnDlg.dialog('open');
+				}
+
+			});
 
 			$( '.dosf-admin-add-so .actions-wrapper .save' ).on('click',function(event){
 				event.preventDefault();
