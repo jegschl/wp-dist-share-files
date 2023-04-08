@@ -126,6 +126,14 @@ class Wp_Dosf_Admin {
 			'all'
 		);
 
+		wp_enqueue_style(
+			'dosf_jquery_ui_css',
+			'https://code.jquery.com/ui/1.12.1/themes/smoothness/jquery-ui.css',
+			[],
+			null,
+			'all'
+		);
+
 	}
 
 	/**
@@ -169,6 +177,15 @@ class Wp_Dosf_Admin {
 		$script_fl = 'https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js';
 		wp_enqueue_script(
 			'dosf_jquery_datatable', 
+			$script_fl,
+			array('jquery'),
+			null,
+			false
+		);
+
+		$script_fl = 'https://code.jquery.com/ui/1.12.1/jquery-ui.js';
+		wp_enqueue_script(
+			'dosf_jquery_ui_js', 
 			$script_fl,
 			array('jquery'),
 			null,
@@ -296,10 +313,12 @@ class Wp_Dosf_Admin {
 		
 		?>
 
+		<div id="confirm-del-dlg" title="Confirmación de eliminiación de certificado(s)">Se eliminarán los certificados seleccionados de la sección pública. Por favor confirme.</div>
+
 		<div class="dosf-admin-header">
 			
 			<div id="add-dosf" class="action-wrapper"><span class="dashicons dashicons-plus-alt"></span>Agregar nuevo archivo para compartir</div>
-			<div id="rem-dosf" class="action-wrapper"><span class="dashicons dashicons-dismiss"></span>Remover seleccionados</div>
+			<div id="rem-dosf" class="action-wrapper disabled"><span class="dashicons dashicons-dismiss"></span>Remover seleccionados</div>
 					
 		</div>
 
