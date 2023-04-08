@@ -491,12 +491,12 @@ class Wp_Dosf_Admin {
 
 		register_rest_route(
             DOSF_APIREST_BASE_ROUTE,
-            '/'.DOSF_URI_ID_REM_SO.'/(?P<dosf_id>\d+)',
+            '/'.DOSF_URI_ID_REM_SO,
             array(
                 'methods'  => 'DELETE',
                 'callback' => array(
                     $this,
-                    'receive_remove_dosf'
+                    'receive_dosf_remove_request'
                 ),
                 'permission_callback' => '__return_true',
             )
@@ -528,6 +528,31 @@ class Wp_Dosf_Admin {
             )
 		);
     }
+
+	public function receive_dosf_remove_request( WP_REST_Request $r ){
+		global $wpdb;
+		$ids_to_remove = $r->get_json_params()['istr'];
+		$res = [];
+		$res['details'] = [];
+		$ta = [];
+		if( count( $ids_to_remove ) ){
+			foreach( $ids_to_remove as $id ){
+				// Eliminando ruts.
+				$ta['del-rut-res'] = $wpdb->delete('wp_dosf_so_ruts_links',['so_id' => $id]);
+				if( $ta['del-rut-res'] === false ){
+					$ta['del-rut-res-err'] = $wpdb->last_error;
+				}
+				$ta['del-dosf-res'] = $wpdb->delete('wp_dosf_shared_objs',['id' => $id]);
+				if( $ta['del-dosf-res'] === false ){
+					$ta['del-dosf-res-err'] = $wpdb->last_error;
+				}
+				$res['details'][$id] = $ta;
+			}
+		}
+
+		return new WP_REST_Response( $res );
+		
+	}
 
 	public static function get_dosf_status($sql_date){
 		$plus_options = get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
