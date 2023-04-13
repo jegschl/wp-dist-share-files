@@ -252,6 +252,7 @@
 			}
 
 			function dttblItemActionReqSendDownloadCodeEmail(){
+				$.blockUI(bluckUICOnfig);
 				const dosf_id = $(this).parent().parent().parent().attr('id');
 				const ajxSettings = {
 					method: 'GET',
@@ -268,6 +269,7 @@
 
 			function onDosfReqSendDwldCdComplete( jqXHR, textStatus ){
 				// Desactivar icono de progreso.
+				$.unblockUI();
 			}
 
 			function onDosfReqSendDwldCdSuccess( data,  textStatus,  jqXHR ){
