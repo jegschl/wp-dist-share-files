@@ -55,11 +55,14 @@
 .fields-wrapper{
     display:flex;
     justify-content: space-between;
+    flex-wrap: wrap;
+    padding: 5px 0px;
 }
 
 .actions-wrapper{
     display: flex;
     justify-content: flex-start;
+    padding: 5px 0px;
 }
 
 .dosf-admin-header{
@@ -72,63 +75,63 @@
 
 /* Estilos para datatable */
 #main-container{
-width: 100%;
-display: flex;
-justify-content: center;	
+    width: 100%;
+    display: flex;
+    justify-content: center;	
 }
 
 table{
-background-color: white;
-text-align: left;
-border-collapse: collapse;
-width: 100%;
+    background-color: white;
+    text-align: left;
+    border-collapse: collapse;
+    width: 100%;
 }
 
 .th, .td{
-padding: 20px;
+    padding: 20px;
 }
 
 .thead{
-background-color: #246355;
-border-bottom: solid 5px #0F362D;
-color: white;
+    background-color: #246355;
+    border-bottom: solid 5px #0F362D;
+    color: white;
 }
 
 .tr:nth-child(even){
-background-color: #ddd;
+    background-color: #ddd;
 }
 
 .tr:hover .td{
-background-color: #369681;
-color: white;
+    background-color: #369681;
+    color: white;
 }
             
 .dataTables_paginate, .paging_simple_numbers{
-display: flex;
-justify-content: end;
-gap: 2rem;
+    display: flex;
+    justify-content: end;
+    gap: 2rem;
 }
             
 .dataTables_wrapper{
-display: flex;
-justify-content: space-between;
-flex-wrap: wrap;
-margin: 0 0 1rem 0px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    margin: 0 0 1rem 0px;
 }	
             
             
 #tabla_next, #tabla_previous{
-position: relative !important;
-display: block !important;
-color: #0d6efd !important;
-text-decoration: none !important;
-background-color: #fff !important;
-border: 1px solid #dee2e6 !important;
-transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out !important;
+    position: relative !important;
+    display: block !important;
+    color: #0d6efd !important;
+    text-decoration: none !important;
+    background-color: #fff !important;
+    border: 1px solid #dee2e6 !important;
+    transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out !important;
 
-text-align: center !important;
-padding: 8px !important;
-border-radius: 8px !important;
+    text-align: center !important;
+    padding: 8px !important;
+    border-radius: 8px !important;
 }
 
 #dosf-data-tbl{
@@ -168,4 +171,35 @@ border-radius: 8px !important;
 
 #rem-dosf.disabled:hover {
 	background-color: unset !important;
+}
+
+.dosf-admin-add-so {
+    padding: 20px 20px;
+    border: 1px gray solid;
+    border-radius: 5px;
+    margin: 20px 20px;
+    width: 50%;
+}
+
+.fld-so {
+    width: 100%;
+}
+.fld-email, fld-email2 {
+    width: 50%;
+}
+.fld-title label, .fld-emision label, .fld-ruts label {
+    display: block;
+}
+.fld-title, .fld-emision, .fld-ruts {
+    width: 30%;
+}
+
+.fld-so .file-selected{
+    display: inline-block;
+}
+
+.dosf-admin-add-so > .title{
+    font-weight: 600;
+    font-size: 14px;
+    padding: 5px 0px;
 }
