@@ -209,6 +209,15 @@ class Wp_Dosf_Admin {
 			null,
 			false
 		);
+
+		$script_fl = plugin_dir_url( __FILE__ ) . 'js/libs/blockui-2.70.0/jquery-blockUI.js';
+		wp_enqueue_script(
+			'dosf_jq_blockUI', 
+			$script_fl,
+			array('jquery'),
+			null,
+			false
+		);
 	}
 
 	/**** Creando una pgina en el admin para configurar las imgenes de los ads y los links de cada una ****/

@@ -135,6 +135,7 @@
 
 		const JGB_DOSF_AOE_FORM_MODE_ADD  = 0;
 		const JGB_DOSF_AOE_FORM_MODE_EDIT = 1;
+		const bluckUICOnfig = { css: { backgroundColor: '#f00', color: '#fff', 'border-radius': '10px', padding: '10px 0px' }, message: 'Procesando la solicitud...' };
 		let aoeFormMode;
 		let currentEditionDosfId;
 		let currentEditionDosfTR;
@@ -164,12 +165,17 @@
 			delConfirmtnDlg = $('#confirm-del-dlg').dialog({
 				modal: true,
 				autoOpen: false,
+				draggable: false,
+				resizable: false,
 				closeText: "Cancelar",
 				buttons:[
 					{
 						text: 'Si, eliminar',
 						click: function(){
-							//$( this ).dialog( "close" );
+							$.blockUI(bluckUICOnfig); 
+							sendDosfRemovRequest();
+							$( this ).dialog( "close" );
+							
 						}
 					}
 				]
@@ -227,11 +233,17 @@
 				const ac = {
 					method: 'DELETE',
 					url: dosf_config.urlRemSO,
-					data: JSON.stringify(istr),
+					data: JSON.stringify({istr: istr}),
 					accepts: 'application/json; charset=UTF-8',
 					contentType: 'application/json; charset=UTF-8',
-					complete: function(jqXHR, textStatus){}
+					complete: function(jqXHR, textStatus){
+						
+						$.unblockUI();
+						dttbl.ajax.reload();
+					}
 				}
+
+				$.ajax(ac);
 			}
 
 			function dttblItemActionReqRemoveDosf(){
@@ -431,6 +443,7 @@
 
 			function onDosfNewComplete( jqXHR, textStatus ){
 				setWidgetsForDosfAddedOrCanceled();
+				$.unblockUI();
 			}
 
 			function setWidgetsForDosfSendingToServer(){
@@ -450,6 +463,8 @@
 
 			$( '.dosf-admin-add-so .actions-wrapper .save' ).on('click',function(event){
 				event.preventDefault();
+
+				$.blockUI(bluckUICOnfig); 
 
 				setWidgetsForDosfSendingToServer();
 
