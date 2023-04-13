@@ -203,3 +203,7 @@ table{
     font-size: 14px;
     padding: 5px 0px;
 }
+
+#tabla .actions .action:hover {
+	font-size: 17px;
+}
