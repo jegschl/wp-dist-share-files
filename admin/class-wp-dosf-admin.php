@@ -78,7 +78,9 @@ class Wp_Dosf_Admin {
 	 *
 	 * @since    1.0.0
 	 */
-	public function enqueue_styles() {
+	public function enqueue_styles( $hook ) {
+		if( $hook != "toplevel_page_dosf-admin" )
+			return;
 
 		/**
 		 * This function is provided for demonstration purposes only.
