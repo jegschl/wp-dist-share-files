@@ -75,6 +75,22 @@
 		//PUM.close(popupDownloadCode);
 	}
 
+	function startSendDownloadCodeRequest(dosf_id){
+		const ajaxcfg = {
+			url		:		dosfDt.urlSndDCReq + dosf_id,
+			method	: 'GET',
+			accepts: 'application/json; charset=UTF-8',
+			contentType: 'application/json; charset=UTF-8',
+			error: function( jqXHR, textStatus, errorThrown ){
+				console.log('Error intentando solicitar el envío del código DC.')
+				console.log('Respuesta del servidor:');
+				console.log(jqXHR);
+			}
+		}
+
+		$.ajax(ajaxcfg);
+	}
+
 	let popupDownloadCode = null;
 
 	$(document).ready(function(){
@@ -84,6 +100,7 @@
 				e.preventDefault();
 				const falseURL = $(this).attr('href');
 				const objid = falseURL.substring(7);
+				startSendDownloadCodeRequest(objid);
 				$('#obj-id').val(objid);
 				$('#input-download-code').text('');
 				$('#input-download-code').val('');

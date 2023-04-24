@@ -111,6 +111,7 @@ class Wp_Dosf_Public {
 								);
 		$dosfData['searchFldNm'] = $useSerialNmbCriterial ? 'dosf-search-serial' : 'dosf-search-rut';
 		$dosfData['urlGetDosfURL'] = rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_GET_OBJ_URL . '/' );
+		$dosfData['urlSndDCReq']   = rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_SEND_DWNL_CD . '/' );
 		wp_localize_script(
 			$this->plugin_name,
 			'dosfDt',
