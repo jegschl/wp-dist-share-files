@@ -201,6 +201,8 @@
 				const itemDosfCheckerSelector = '.dosf-checker';
 				$(itemDosfCheckerSelector).off('click');
 				$(itemDosfCheckerSelector).on('click',dttblItemDosfChecker);
+
+				dttblItemDosfChecker();
 			}
 
 			function dttblItemDosfChecker(){
