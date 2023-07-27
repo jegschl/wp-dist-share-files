@@ -57,7 +57,7 @@
 			output += '<i class="fas fa-paper-plane"></i>';
 			output += '</div>';
 
-			if( row['vdbe'] <= dosf_config.expirityBefDayC ){
+			if( row['vdbe'] <= dosf_config.lastDayRangeForExprWrng ){
 				output += '<div class="action send-dosf-expirity-alert-request">';
 				output += '<i class="fas fa-paper-plane"></i>';
 				output += '</div>';
@@ -204,6 +204,10 @@
 				$(itemActionReqSendDwldCodeSelector).off('click');
 				$(itemActionReqSendDwldCodeSelector).on('click',dttblItemActionReqSendDownloadCodeEmail);
 
+				const itemActionReqSendExpWrngSelector = '.action.send-dosf-expirity-alert-request';
+				$(itemActionReqSendExpWrngSelector).off('click');
+				$(itemActionReqSendExpWrngSelector).on('click',dttblItemActionReqSendExprWrngEmail);
+
 				const itemActionEditionCodeSelector = '.action.edit-dosf';
 				$(itemActionEditionCodeSelector).off('click');
 				$(itemActionEditionCodeSelector).on('click',setWidgetsForDosfEdition);
@@ -283,6 +287,22 @@
 				$.ajax(ajxSettings);
 			}
 
+			function dttblItemActionReqSendExprWrngEmail(){
+				$.blockUI(bluckUICOnfig);
+				const dosf_id = $(this).parent().parent().parent().attr('id');
+				const ajxSettings = {
+					method: 'GET',
+					url: dosf_config.urlSndExpWrng + dosf_id,
+					accepts: 'application/json; charset=UTF-8',
+					contentType: 'application/json; charset=UTF-8',
+					complete: onDosfReqSendExprWrngComplete,
+					success: onDosfReqSendExprWrngSuccess,
+					error: onDosfReqSendExprWrngError
+				}
+				
+				$.ajax(ajxSettings);
+			}
+
 			function onDosfReqSendDwldCdComplete( jqXHR, textStatus ){
 				// Desactivar icono de progreso.
 				$.unblockUI();
@@ -296,6 +316,23 @@
 
 			function onDosfReqSendDwldCdError( jqXHR, textStatus, errorThrown ){
 				console.log('Error al enviar la Solicitud de envío de email de código de descarga');
+				console.log('Respuesta del servidor:');
+				console.log(jqXHR);
+			}
+
+			function onDosfReqSendExprWrngComplete( jqXHR, textStatus ){
+				// Desactivar icono de progreso.
+				$.unblockUI();
+			}
+
+			function onDosfReqSendExprWrngSuccess( data,  textStatus,  jqXHR ){
+				console.log('Solicitud de envío de alerta de vencimiento enviada al servidor exitosamente');
+				console.log('Respuesta del servidor:');
+				console.log(data);
+			}
+
+			function onDosfReqSendExprWrngError( jqXHR, textStatus, errorThrown ){
+				console.log('Error al enviar la Solicitud de envío de email de envío de alerta de vencimiento');
 				console.log('Respuesta del servidor:');
 				console.log(jqXHR);
 			}
