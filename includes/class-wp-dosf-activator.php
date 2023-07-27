@@ -43,6 +43,8 @@ class Wp_Dosf_Activator {
 		global $wpdb;
 		$tbl_nm_shared_objs = $wpdb->prefix . 'dosf_shared_objs';
 		$tbl_nm_so_ruts_links = $wpdb->prefix . 'dosf_so_ruts_links';
+		$tbl_nm_so_ewmq = $wpdb->prefix . 'dosf_expiration_warnig_email_queue';
+
 		$charset_collate = $wpdb->get_charset_collate();
 		$isql_initialize_tables = "CREATE TABLE IF NOT EXISTS $tbl_nm_shared_objs (
 			id INT UNSIGNED NOT NULL,
@@ -86,6 +88,22 @@ class Wp_Dosf_Activator {
 		$wpdb->query( $isql_initialize_tables );
 
 		$isql_initialize_tables = "ALTER TABLE $tbl_nm_so_ruts_links MODIFY COLUMN id int unsigned auto_increment NOT NULL";
+		$wpdb->query( $isql_initialize_tables );
+
+		$isql_initialize_tables = "CREATE TABLE $tbl_nm_so_ewmq (
+			`id` INT UNSIGNED NOT NULL,
+			`so_id` int NOT NULL
+		  ) $charset_collate";
+
+		$wpdb->query( $isql_initialize_tables );
+
+		$isql_initialize_tables = "CREATE UNIQUE INDEX ".$tbl_nm_so_ewmq."_id_IDX USING BTREE ON $tbl_nm_so_ewmq (id)";
+		$wpdb->query( $isql_initialize_tables );
+
+		$isql_initialize_tables = "ALTER TABLE $tbl_nm_so_ewmq MODIFY COLUMN id int unsigned auto_increment NOT NULL";
+		$wpdb->query( $isql_initialize_tables );
+
+		$isql_initialize_tables = "CREATE INDEX ".$tbl_nm_so_ewmq."_soId_IDX USING BTREE ON $tbl_nm_so_ewmq (so_id)";
 		$wpdb->query( $isql_initialize_tables );
 	}
 
