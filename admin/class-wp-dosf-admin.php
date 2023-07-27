@@ -70,7 +70,7 @@ class Wp_Dosf_Admin {
 		$this->plugin_name 				 = $plugin_name;
 		$this->version 					 = $version;
 		$this->plus_options 			 = get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
-		$this->dosf_identifier_label 	 = self::get_dosf_identifier_label( $plus_options );
+		$this->dosf_identifier_label 	 = self::get_dosf_identifier_label( $this->plus_options );
 
 	}
 
@@ -1307,7 +1307,11 @@ class Wp_Dosf_Admin {
 			}
 		}
 
-		// inicializar schedule para procesar la cola.
+		if( !wp_next_scheduled( DOSF_HOOK_SCHEDULED_EVENT_EWMQ_PROCESS ) )
+        {
+            wp_schedule_event( time(), DOSF_SCHEDULE_INTERVAL_EWMQ_PROC_KEY_NM, DOSF_HOOK_SCHEDULED_EVENT_EWMQ_PROCESS );
+        }
+
 	} 
 
 	public static function process_certs_expiration_queue(){
@@ -1334,13 +1338,16 @@ class Wp_Dosf_Admin {
 					'id'   		=> $r->id,
 					'serial'   	=> $r->title,
 					'email'		=> $r->email,
-					'email2'	=> $r->email2,
+					//'email2'	=> $r->email2,
 					'emision'	=> $r->emision
 				];
 				Wp_Dosf_Admin::send_expiration_warning_email( $args );
+				$wpdb->delete($tbl_nm_ewmq,['id' => $r->ewmq_id]);
 			}
 		} else {
 			// se retira el hook del scheduler
+			$timestamp = wp_next_scheduled( DOSF_HOOK_SCHEDULED_EVENT_EWMQ_PROCESS );
+			wp_unschedule_event( $timestamp, DOSF_HOOK_SCHEDULED_EVENT_EWMQ_PROCESS );
 		}
 
 	}

@@ -119,6 +119,11 @@ class Wp_Dosf {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-wp-dosf-admin.php';
 
 		/**
+		 * The class responsible for defining all actions that in the scheduler.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-dosf-scheduler.php';
+
+		/**
 		 * The class responsible for defining all actions that occur in the public-facing
 		 * side of the site.
 		 */
@@ -155,11 +160,12 @@ class Wp_Dosf {
 	private function define_admin_hooks() {
 
 		$plugin_admin = new Wp_Dosf_Admin( $this->get_plugin_name(), $this->get_version() );
+		$dosf_scheduler = new Wp_Dosf_Scheduler();
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
 
-		$this->loader->add_action(  'admin_menu', $plugin_admin, 'dosf_menu' );
+		$this->loader->add_action( 'admin_menu', $plugin_admin, 'dosf_menu' );
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'dosf_settings_init' );
 		$this->loader->add_action( 'rest_api_init', $plugin_admin,'set_endpoints');
 
