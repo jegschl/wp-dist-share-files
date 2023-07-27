@@ -167,15 +167,16 @@ class Wp_Dosf_Admin {
 			$this->plugin_name, 
 			'dosf_config',
 			array(
-				'urlGetSOs'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_GET . '/' ),
-				'urlAddSO'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_ADD_SO . '/' ),
-				'urlRemSO'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_REM_SO . '/' ),
-				'urlUpdSO'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_UPD_SO . '/' ),
-				'urlSndDC'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_SEND_DWNL_CD . '/' ),
-				'urlSndExpWrng'	 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_SEND_EXPRT_WRNG . '/' ),
-				'urlUpdPlusOpts' => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_UPD_PLUS_OPTIONS . '/'),
-				'useIssueDate'	 => isset( $this->plus_options['use-issue-date'] ) && $this->plus_options['use-issue-date'],
-				'expirityBefDayC'=> self::get_dosf_validity_total_days()
+				'urlGetSOs'		 			=> rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_GET . '/' ),
+				'urlAddSO'		 			=> rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_ADD_SO . '/' ),
+				'urlRemSO'		 			=> rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_REM_SO . '/' ),
+				'urlUpdSO'		 			=> rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_UPD_SO . '/' ),
+				'urlSndDC'		 			=> rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_SEND_DWNL_CD . '/' ),
+				'urlSndExpWrng'	 			=> rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_SEND_EXPRT_WRNG . '/' ),
+				'urlUpdPlusOpts' 			=> rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_UPD_PLUS_OPTIONS . '/'),
+				'useIssueDate'	 			=> isset( $this->plus_options['use-issue-date'] ) && $this->plus_options['use-issue-date'],
+				'expirityBefDayC'			=> self::get_dosf_validity_total_days(),
+				'lastDayRangeForExprWrng'	=> self::get_last_range_days_before_expiration()
 			) 
 		);
 		
@@ -715,6 +716,34 @@ class Wp_Dosf_Admin {
 		return null;
 	}
 
+	public static function get_last_range_days_before_expiration(){
+		$plus_options = get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
+		if( isset( $plus_options['use-issue-date'] ) && $plus_options['use-issue-date'] ){
+			
+			$nmbBefExp = intval($plus_options['ebep-nmb']);
+			switch( $plus_options['ebep-unit'] ){
+				case 'year':
+					$dtdiffDF = $nmbBefExp * 365;
+					break;
+
+				case 'week':
+					$dtdiffDF = $nmbBefExp * 7;
+					break;
+
+				case 'month':
+					$dtdiffDF = $nmbBefExp * 30;
+					break;
+
+				default:
+					$dtdiffDF = $nmbBefExp;
+			}
+			
+			return $dtdiffDF;
+		}
+
+		return null;
+	}
+
 	public function send_so_data($r){
 		global $wpdb;
 		
@@ -1184,6 +1213,10 @@ class Wp_Dosf_Admin {
 
 		if( empty($args['email']) || empty($args['emision']) )
 			return false;
+
+		if( self::get_dosf_validity_days_before_expiration( $args['emision'] ) > self::get_last_range_days_before_expiration() ){
+			return false;
+		}
 
 		$header_template_path = apply_filters(
 									'osf_eml_tpl_expiration_warning_header',
