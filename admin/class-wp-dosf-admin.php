@@ -1108,7 +1108,7 @@ class Wp_Dosf_Admin {
 
 			if(count($rc) == 1){
 				
-				$mail_sent_res = $this->send_expiration_warning_email($rc[0]);
+				$mail_sent_res = self::send_expiration_warning_email($rc[0]);
 
 			} else {
 				// error
@@ -1198,7 +1198,7 @@ class Wp_Dosf_Admin {
 		return $mail_sent_res;
 	}
 
-	public function send_expiration_warning_email( $args ){
+	public static function send_expiration_warning_email( $args ){
 		$plus_options = get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
 		if( !isset( $plus_options['use-issue-date'] ) ){
 			return false;
@@ -1214,7 +1214,7 @@ class Wp_Dosf_Admin {
 		if( empty($args['email']) || empty($args['emision']) )
 			return false;
 
-		if( self::get_dosf_validity_days_before_expiration( $args['emision'] ) > self::get_last_range_days_before_expiration() ){
+		if( Wp_Dosf_Admin::get_dosf_validity_days_before_expiration( $args['emision'] ) > Wp_Dosf_Admin::get_last_range_days_before_expiration() ){
 			return false;
 		}
 
@@ -1290,6 +1290,59 @@ class Wp_Dosf_Admin {
 		}
 
 		return $mail_sent_res;
+	}
+
+	public static function verify_certs_expiration(){
+		global $wpdb;
+		$tbl_nm_shared_objs = $wpdb->prefix . 'dosf_shared_objs';
+		$tbl_nm_ewmq =  $wpdb->prefix . 'dosf_expiration_warnig_email_queue';
+
+		$isql = "SELECT id, emision FROM $tbl_nm_shared_objs";
+		$results = $wpdb->get_results( $isql );
+
+		foreach( $results as $r ){
+			if( Wp_Dosf_Admin::get_dosf_validity_days_before_expiration( $r->emision ) <= wp_Dosf_Admin::get_last_range_days_before_expiration() ){
+				$wpdb->delete($tbl_nm_ewmq, [ 'so_id' => $r->id ] );
+				$wpdb->insert($tbl_nm_ewmq, [ 'so_id' => $r->id ] );
+			}
+		}
+
+		// inicializar schedule para procesar la cola.
+	} 
+
+	public static function process_certs_expiration_queue(){
+		global $wpdb;
+		$tbl_nm_ewmq =  $wpdb->prefix . 'dosf_expiration_warnig_email_queue';
+		$tbl_nm_shared_objs = $wpdb->prefix . 'dosf_shared_objs';
+		$row_process_count = apply_filters('dosf_expiration_warning_queue_pc',5);
+
+		$isql = "SELECT 
+					so.id,
+					so.title,
+					so.email,
+					so.emision,
+					ewmq.id as ewmq_id
+				 FROM $tbl_nm_ewmq ewmq 
+				 INNER JOIN $tbl_nm_shared_objs so
+				 	ON ewmq.so_id = so.id
+				 LIMIT $row_process_count";
+
+		$res = $wpdb->get_results($isql);
+		if( count($res) > 0 ){
+			foreach( $res as $r ){
+				$args = [
+					'id'   		=> $r->id,
+					'serial'   	=> $r->title,
+					'email'		=> $r->email,
+					'email2'	=> $r->email2,
+					'emision'	=> $r->emision
+				];
+				Wp_Dosf_Admin::send_expiration_warning_email( $args );
+			}
+		} else {
+			// se retira el hook del scheduler
+		}
+
 	}
 
 }
