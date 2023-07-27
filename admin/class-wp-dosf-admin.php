@@ -18,6 +18,7 @@
  define('DOSF_URI_ID_REM_SO','rem');
  define('DOSF_URI_ID_UPD_PLUS_OPTIONS','set_plus_options_settings');
  define('DOSF_URI_ID_SEND_DWNL_CD','send-download-code');
+ define('DOSF_URI_ID_SEND_EXPRT_WRNG','send-expiration-warning');
 
  define('DOSF_NONCE_ACTION_PLUS_OPTS_UPDATE','update-plus-options');
  
@@ -171,8 +172,10 @@ class Wp_Dosf_Admin {
 				'urlRemSO'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_REM_SO . '/' ),
 				'urlUpdSO'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_UPD_SO . '/' ),
 				'urlSndDC'		 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_SEND_DWNL_CD . '/' ),
+				'urlSndExpWrng'	 => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_SEND_EXPRT_WRNG . '/' ),
 				'urlUpdPlusOpts' => rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_UPD_PLUS_OPTIONS . '/'),
-				'useIssueDate'	 => isset( $this->plus_options['use-issue-date'] ) && $this->plus_options['use-issue-date']
+				'useIssueDate'	 => isset( $this->plus_options['use-issue-date'] ) && $this->plus_options['use-issue-date'],
+				'expirityBefDayC'=> self::get_dosf_validity_total_days()
 			) 
 		);
 		
@@ -565,6 +568,19 @@ class Wp_Dosf_Admin {
                 'callback' => array(
                     $this,
                     'receive_send_dwld_code_req'
+                ),
+                'permission_callback' => '__return_true',
+            )
+        );
+
+		register_rest_route(
+            DOSF_APIREST_BASE_ROUTE,
+            '/'.DOSF_URI_ID_SEND_EXPRT_WRNG.'/(?P<dosf_id>\d+)',
+            array(
+                'methods'  => 'GET',
+                'callback' => array(
+                    $this,
+                    'receive_send_exp_warning_req'
                 ),
                 'permission_callback' => '__return_true',
             )
@@ -1025,6 +1041,74 @@ class Wp_Dosf_Admin {
 		];
 	}
 
+	public function receive_send_exp_warning_req(WP_REST_Request $r){
+		$dosf_id = $r->get_url_params();
+		if(isset($dosf_id['dosf_id']) && !empty($dosf_id['dosf_id'])){
+			$dosf_id = $dosf_id['dosf_id'];
+			global $wpdb;
+			
+			$where  = ' WHERE wdso.id = '. $dosf_id . ' ';
+
+			$isql = "SELECT 
+						id,
+						title,
+						email,
+						email2,
+						emision
+
+					FROM wp_dosf_shared_objs wdso 
+					
+					$where ";
+			
+			$sos = $wpdb->get_results($isql, OBJECT);
+			
+			$rc = array();
+			
+			foreach($sos as $c){
+				
+				$rc[] = array(
+					
+					'id'   		=> $c->id,
+					'serial'   	=> $c->title,
+					'email'		=> $c->email,
+					'email2'	=> $c->email2,
+					'emision'	=> $c->emision
+					
+				);
+			}
+
+			if(count($rc) == 1){
+				
+				$mail_sent_res = $this->send_expiration_warning_email($rc[0]);
+
+			} else {
+				// error
+				return [
+					'error' => true,
+					'error_code' => 1,
+					'error_msg' => 'Demasiados registros o registro no encontrado', 
+					'dosfExprtWrngSend_email_sent' => false
+				];
+			}
+		} else {
+			return [
+				'error' => true,
+				'error_code' => 2,
+				'error_msg' => 'Identificador inválido', 
+				'dosfExprtWrngSend_email_sent' => false
+			];
+		}
+
+		
+		
+
+		return [
+			'error' => false,
+			'dosfExprtWrngSend_email_sent' => $mail_sent_res
+		];
+	}
+	
+
 	public function send_download_code_email($args){
 		if(!isset($args['email']) || !isset($args['download_code']) )
 			return false;
@@ -1079,6 +1163,96 @@ class Wp_Dosf_Admin {
 				$attachments[] = $args['file'];
 			}
 			//$mail_sent_res = wp_mail($email,$subject,$content,$header,$attachments);
+			$mail_sent_res = wp_mail($email,$subject,$content,$header);
+		}
+
+		return $mail_sent_res;
+	}
+
+	public function send_expiration_warning_email( $args ){
+		$plus_options = get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
+		if( !isset( $plus_options['use-issue-date'] ) ){
+			return false;
+		}
+		
+		if( empty( $plus_options['use-issue-date'] ) ){
+			return false;
+		}
+			
+		if(!isset($args['email']) || !isset($args['emision']) )
+			return false;
+
+		if( empty($args['email']) || empty($args['emision']) )
+			return false;
+
+		$header_template_path = apply_filters(
+									'osf_eml_tpl_expiration_warning_header',
+									WP_DOSF_PLUGIN_PATH . '/templates/emails/email_header.tpl'
+								);
+		
+		$content_template_path = apply_filters(
+									'dosf_eml_tpl_expiration_warning_content_path',
+									WP_DOSF_PLUGIN_PATH . '/templates/emails/email_expiration_warning.tpl'
+								);
+
+		$footer_template_path = apply_filters(
+									'dosf_eml_tpl_expiration_warning_footer',
+									WP_DOSF_PLUGIN_PATH . '/templates/emails/email_footer.tpl'
+								);
+
+		$mail_sent_res = false;
+		if(file_exists($content_template_path)){
+			$email = $args['email'];
+			$content = '';
+			if(file_exists($header_template_path)){
+				$content  .= file_get_contents($header_template_path);
+			}
+			$content .= file_get_contents($content_template_path);
+			if(file_exists($footer_template_path)){
+				$content .= file_get_contents($footer_template_path);
+			}
+
+			/* $rc[] = array(
+					
+					'id'   		=> $c->id,
+					'serial'   	=> $c->title,
+					'email'		=> $c->email,
+					'email2'	=> $c->email2,
+					'emision'	=> $c->emision
+					
+				); */
+			$content = str_replace(
+							'{id}',
+							$args['id'],
+							$content
+						);
+			$content = str_replace(
+							'{serie}',
+							$args['serial'],
+							$content
+						);
+			$content = str_replace(
+							'{emision}',
+							$args['emision'],
+							$content
+						);
+			$content = str_replace(
+						'{dias_vigencia}',
+						self::get_dosf_validity_days_before_expiration($args['emision']),
+						$content
+					);
+
+			$subject = apply_filters(
+							'dosf_eml_expiration_warning_subject',
+							'Grua PM :: Certificado de mantención '.$args['serial'].' próximo a vencer'
+						);
+
+			$header = array('Content-Type: text/html; charset=UTF-8');
+			$header = apply_filters(
+						'dosf_eml_expiration_warning_eml_header',
+						$header
+					);
+			
 			$mail_sent_res = wp_mail($email,$subject,$content,$header);
 		}
 
