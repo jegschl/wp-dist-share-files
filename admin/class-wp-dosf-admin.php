@@ -401,6 +401,7 @@ class Wp_Dosf_Admin {
 						<th><?= $dosf_label_idntfr ?></th>
 						<?php if( isset( $plus_options['use-issue-date'] ) && $plus_options['use-issue-date'] ) : ?>
 						<th>Emisión</th>
+						<th>Días de validez restantes</th>
 						<?php endif; ?>
 						<th>Archivo</th>
 						<th>RUTs asociados</th>
@@ -419,6 +420,7 @@ class Wp_Dosf_Admin {
 						<th><?= $dosf_label_idntfr ?></th>
 						<?php if( isset( $plus_options['use-issue-date'] ) && $plus_options['use-issue-date'] ) : ?>
 						<th>Emisión</th>
+						<th>Días de validez restantes</th>
 						<?php endif; ?>
 						<th>Archivo</th>
 						<th>RUTs asociados</th>
@@ -630,6 +632,19 @@ class Wp_Dosf_Admin {
 			return 'Vencido';
 	}
 
+	public static function get_dosf_validity_days_before_expiration( $sql_date ){
+		$plus_options = get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
+		if( isset( $plus_options['use-issue-date'] ) && $plus_options['use-issue-date'] ){
+			$emsdt = strtotime($sql_date);
+			$curdt = strtotime(date('Y-m-d H:i:s'));
+			$dtdiffDF = $emsdt - $curdt;
+			$dtdiffNF = round( $dtdiffDF / (60 * 60 * 24) );
+			return $dtdiffNF;
+		}
+
+		return null;
+	}
+
 	public function send_so_data($r){
 		global $wpdb;
 		
@@ -682,6 +697,7 @@ class Wp_Dosf_Admin {
 				'email2'	  => $c->email2,
 				'emision'	  => $c->emision,
 				'status'	  => self::get_dosf_status($c->emision),
+				'vdbe'		  => self::get_dosf_validity_days_before_expiration($c->emision),
 				'selection'	  => '',
 				'actions'	  => ''
             );
