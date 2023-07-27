@@ -534,7 +534,8 @@
 					'expire-period-nmb'				: $('#expire-period-nmb').val(),
 					'expire-period-unit'			: $('#expire-period-unit').val(),
 					'ebep-nmb'						: $('#ebep-nmb').val(),
-					'ebep-unit'						: $('#ebep-unit').val()
+					'ebep-unit'						: $('#ebep-unit').val(),
+					'monitor-expire-interval'		: $('#monitor-expire-interval').val()
 				};
 
 				return JSON.stringify(config);

@@ -485,6 +485,13 @@ class Wp_Dosf_Admin {
 				<label for="ebep-period"> antes de vencer.</label>
 			</div>
 
+			<div class="input">
+				<label for="monitor-expire-interval">Monitorear vencimientos cada </label>
+				<?php $value = empty($plus_options['monitor-expire-interval']) ? '' : 'value="'.intval($plus_options['monitor-expire-interval']).'"'; ?>
+				<input id="monitor-expire-interval" type="number" name="monitor-expire-interval" min="1" <?= $value ?>>
+				<label for="monitor-expire-interval"> día(s).</label>
+			</div>
+
 			<input type="hidden" name="plus-options-update-nonce" id="plus-options-update-nonce" value="<?= wp_create_nonce(DOSF_NONCE_ACTION_PLUS_OPTS_UPDATE) ?>">
 			<div class="dosf-plus-options-actions">
 				<button id="dosf-plus-options-save">Guardar otras opciones</button>
