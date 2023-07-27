@@ -532,7 +532,9 @@
 					'use-serial-number' 			: $('#use-serial-numbers').is(':checked'),
 					'use-issue-date'				: $('#use-issue-date').is(':checked'),
 					'expire-period-nmb'				: $('#expire-period-nmb').val(),
-					'expire-period-unit'			: $('#expire-period-unit').val()
+					'expire-period-unit'			: $('#expire-period-unit').val(),
+					'ebep-nmb'						: $('#ebep-nmb').val(),
+					'ebep-unit'						: $('#ebep-unit').val()
 				};
 
 				return JSON.stringify(config);
