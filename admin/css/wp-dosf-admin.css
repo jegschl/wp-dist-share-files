@@ -153,6 +153,10 @@ table{
     cursor: pointer;
 }
 
+.action.send-dosf-expirity-alert-request{
+    color: orange;
+}
+
 .action.remove-dosf{
     color: red;
 }

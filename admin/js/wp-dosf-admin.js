@@ -44,7 +44,7 @@
         return data;
     }
 
-	function actions_data_render(data, type){
+	function actions_data_render(data, type, row){
 		if (type === 'display') {
 			var output = '';
 			output += '<div class="actions">';
@@ -57,9 +57,17 @@
 			output += '<i class="fas fa-paper-plane"></i>';
 			output += '</div>';
 
+			if( row['vdbe'] <= dosf_config.expirityBefDayC ){
+				output += '<div class="action send-dosf-expirity-alert-request">';
+				output += '<i class="fas fa-paper-plane"></i>';
+				output += '</div>';
+			}
+
 			output += '<div class="action remove-dosf">';
 			output += '<i class="fas fa-minus-circle"></i>';
 			output += '</div>';
+
+			
 
 			output += '</div>';
             return output ;
