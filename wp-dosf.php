@@ -8,17 +8,17 @@
  * registers the activation and deactivation functions, and defines a function
  * that starts the plugin.
  *
- * @link              https://empdigital.cl
- * @since             1.0.0
+ * @link              https://phonix.dev
+ * @since             1.0.1
  * @package           Wp_Dosf
  *
  * @wordpress-plugin
  * Plugin Name:       Dist or Share Files with Wordpress
- * Plugin URI:        https://empdigital.cl
- * Description:       This is a short description of what the plugin does. It's displayed in the WordPress admin area.
- * Version:           1.0.0
- * Author:            Jorge Garrido
- * Author URI:        https://empdigital.cl
+ * Plugin URI:        https://phonix.dev
+ * Description:       Comparte documentos y maneja fecha de vencimientos en esos documentos.
+ * Version:           1.0.1
+ * Author:            Jorge Garrido <jorge@empdigital.cl>
+ * Author URI:        https://phonix.dev
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain:       wp-dosf
