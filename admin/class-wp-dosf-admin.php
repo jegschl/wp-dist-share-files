@@ -586,6 +586,37 @@ class Wp_Dosf_Admin {
 		
 	}
 
+	public static function get_dosf_validity_total_days(){
+		$plus_options = get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
+		if( isset( $plus_options['use-issue-date'] ) && $plus_options['use-issue-date'] ){
+			$punits =  intval($plus_options['expire-period-nmb']);
+			switch( $plus_options['expire-period-unit'] ){
+				case 'year':
+					$diff = $punits * 365;
+					break;
+
+				case 'week':
+					$diff = $punits * 7;
+					break;
+
+				case 'month':
+
+					$diff = $punits * 30;
+					break;
+
+				case 'day':
+					$diff = $punits;
+					break;
+
+				default:
+					$diff = $punits;
+			}
+
+			return $diff;
+		}
+		return null;
+	}
+
 	public static function get_dosf_status($sql_date){
 		$plus_options = get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
 		if( isset( $plus_options['use-issue-date'] ) && $plus_options['use-issue-date'] ){
@@ -638,7 +669,7 @@ class Wp_Dosf_Admin {
 			$emsdt = strtotime($sql_date);
 			$curdt = strtotime(date('Y-m-d H:i:s'));
 			$dtdiffDF = $emsdt - $curdt;
-			$dtdiffNF = round( $dtdiffDF / (60 * 60 * 24) );
+			$dtdiffNF = round( $dtdiffDF / (60 * 60 * 24) ) + Wp_Dosf_Admin::get_dosf_validity_total_days();
 			return $dtdiffNF;
 		}
 
@@ -697,7 +728,7 @@ class Wp_Dosf_Admin {
 				'email2'	  => $c->email2,
 				'emision'	  => $c->emision,
 				'status'	  => self::get_dosf_status($c->emision),
-				'vdbe'		  => self::get_dosf_validity_days_before_expiration($c->emision),
+				'vdbe'		  => self::get_dosf_validity_days_before_expiration($c->emision) ,
 				'selection'	  => '',
 				'actions'	  => ''
             );

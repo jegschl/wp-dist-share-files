@@ -92,6 +92,12 @@
 					data: 'emision'
 				}
 			);
+
+			dtColumns.push(
+				{
+					data: 'vdbe'
+				}
+			);
 		}
 
 		dtColumns.push(
