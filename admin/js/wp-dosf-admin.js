@@ -360,16 +360,16 @@
 				vl 	 = $(cell).text();
 				$( '#dosf_so_emision' ).val(vl);
 
-				cell = $(currentEditionDosfTR).children()[4];
+				cell = $(currentEditionDosfTR).children()[5];
 				vl 	 = $(cell).text();
 				$( '#dosf_so_ruts_linked' ).val(vl);
 
-				cell = $(currentEditionDosfTR).children()[5];
+				cell = $(currentEditionDosfTR).children()[6];
 				vl 	 = $(cell).text().split(',');
 				choiceEmlsColabs.clearStore();
 				choiceEmlsColabs.setValue(vl);
 
-				cell = $(currentEditionDosfTR).children()[6];
+				cell = $(currentEditionDosfTR).children()[7];
 				vl 	 = $(cell).text().split(',');
 				choiceEmlsOprtrs.clearStore();
 				choiceEmlsOprtrs.setValue(vl);
@@ -377,7 +377,7 @@
 
 				$( '#dosf_attachment_id').val( $(currentEditionDosfTR).data('attachment-id') );
 
-				cell = $(currentEditionDosfTR).children()[3];
+				cell = $(currentEditionDosfTR).children()[4];
 				vl 	 = $(cell).text();
 				$( '#dosf-file-selectd' ).text(vl);
 				
