@@ -1009,6 +1009,7 @@ class Wp_Dosf_Admin {
 						file_name,
 						wp_file_obj_id,
 						email,
+						email2,
 						download_code
 
 					FROM wp_dosf_shared_objs wdso 
@@ -1027,6 +1028,7 @@ class Wp_Dosf_Admin {
 					'file_name'   => $c->file_name,
 					'wp_obj_id'   => $c->wp_file_obj_id,
 					'email'		  => $c->email,
+					'email2'	  => $c->email2,
 					'download_code'	  => $c->download_code
 					
 				);
@@ -1038,6 +1040,7 @@ class Wp_Dosf_Admin {
 
 				$args = array(
 					'email' => $rc[0]['email'],
+					'email2' => $rc[0]['email2'],
 					'download_code' => $rc[0]['download_code'],
 					'file' => $file_path
 				);
@@ -1163,6 +1166,8 @@ class Wp_Dosf_Admin {
 		$mail_sent_res = false;
 		if(file_exists($content_template_path)){
 			$email = $args['email'];
+			$email .= empty( $args['email2'] ) ? '' : ','.$args['email2'];
+
 			$content = '';
 			if(file_exists($header_template_path)){
 				$content  .= file_get_contents($header_template_path);
@@ -1235,7 +1240,8 @@ class Wp_Dosf_Admin {
 
 		$mail_sent_res = false;
 		if(file_exists($content_template_path)){
-			$email = $args['email'];
+			$email  = $args['email'];
+			$email = apply_filters( 'dosf_eml_expiration_warning_str_dest_recipts', $email );
 			$content = '';
 			if(file_exists($header_template_path)){
 				$content  .= file_get_contents($header_template_path);
