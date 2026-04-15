@@ -80,6 +80,7 @@
 	'use strict';
 		let choiceEmlsColabs;
 		let choiceEmlsOprtrs;
+		let choiceEmlsMecans;
 		let dtColumns = [];
 		dtColumns.push(
 			{
@@ -129,6 +130,12 @@
 		dtColumns.push(
 			{
 				data: 'email2'
+			}
+		);
+
+		dtColumns.push(
+			{
+				data: 'email3'
 			}
 		);
 
@@ -345,6 +352,7 @@
 				$( '#dosf_so_title' ).val('')
 				choiceEmlsColabs.clearStore();
 				choiceEmlsOprtrs.clearStore();
+				choiceEmlsMecans.clearStore();
 				
 				if( !$('.dosf-admin-add-so .notice.notice-error').hasClass('hidden') ){
 					$('.dosf-admin-add-so .notice.notice-error').addClass('hidden')
@@ -373,6 +381,11 @@
 				vl 	 = $(cell).text().split(',');
 				choiceEmlsOprtrs.clearStore();
 				choiceEmlsOprtrs.setValue(vl);
+
+				cell = $(currentEditionDosfTR).children()[8];
+				vl 	 = $(cell).text().split(',');
+				choiceEmlsMecans.clearStore();
+				choiceEmlsMecans.setValue(vl);
 
 
 				$( '#dosf_attachment_id').val( $(currentEditionDosfTR).data('attachment-id') );
@@ -540,6 +553,7 @@
 					'title': 			$('#dosf_so_title').val(),
 					'email': 			choiceEmlsColabs.getValue(true),
 					'email2': 			choiceEmlsOprtrs.getValue(true),
+					'email3':			choiceEmlsMecans.getValue(true),
 					'updateId': 		currentEditionDosfId 
 				};
 
@@ -697,6 +711,8 @@
 			choiceEmlsColabs = new Choices($('#dosf_so_email')[0],choicesEmlsCfg);
 
 			choiceEmlsOprtrs = new Choices($('#dosf_so_email2')[0],choicesEmlsCfg);
+
+			choiceEmlsMecans = new Choices($('#dosf_so_email3')[0],choicesEmlsCfg);
 
 
 		});

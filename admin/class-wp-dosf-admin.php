@@ -387,6 +387,16 @@ class Wp_Dosf_Admin {
 					>
 				</div>
 
+				<div class="fld-email3"> 
+					<label>Emails Mecánico</label>
+					<input 
+						type="text" 
+						id="dosf_so_email3"
+						name="dosf_so_email3"
+						placeholder="Ingrese emails de mecánicos para enviar aviso de vencimiento de mantención"
+					>
+				</div>
+
 			</div>
 			<div class="actions-wrapper">
 				<div class="save"><button>Guardar</button></div>
@@ -411,6 +421,7 @@ class Wp_Dosf_Admin {
 						<th>RUTs asociados</th>
 						<th>Emails Colaboradores</th>
 						<th>Emails Operadores</th>
+						<th>Email Mecánicos</th>
 						<?php if( isset( $plus_options['use-issue-date'] ) && $plus_options['use-issue-date'] ) : ?>
 						<th>Estado</th>
 						<?php endif; ?>
@@ -430,6 +441,7 @@ class Wp_Dosf_Admin {
 						<th>RUTs asociados</th>
 						<th>Emails Colaboradores</th>
 						<th>Emails Operadores</th>
+						<th>Email Mecánicos</th>
 						<?php if( isset( $plus_options['use-issue-date'] ) && $plus_options['use-issue-date'] ) : ?>
 						<th>Estado</th>
 						<?php endif; ?>
@@ -610,11 +622,11 @@ class Wp_Dosf_Admin {
 		if( count( $ids_to_remove ) ){
 			foreach( $ids_to_remove as $id ){
 				// Eliminando ruts.
-				$ta['del-rut-res'] = $wpdb->delete('wp_dosf_so_ruts_links',['so_id' => $id]);
+				$ta['del-rut-res'] = $wpdb->delete($wpdb->prefix . 'dosf_so_ruts_links',['so_id' => $id]);
 				if( $ta['del-rut-res'] === false ){
 					$ta['del-rut-res-err'] = $wpdb->last_error;
 				}
-				$ta['del-dosf-res'] = $wpdb->delete('wp_dosf_shared_objs',['id' => $id]);
+				$ta['del-dosf-res'] = $wpdb->delete($wpdb->prefix . 'dosf_shared_objs',['id' => $id]);
 				if( $ta['del-dosf-res'] === false ){
 					$ta['del-dosf-res-err'] = $wpdb->last_error;
 				}
@@ -767,9 +779,10 @@ class Wp_Dosf_Admin {
 					GROUP_CONCAT(wdsrl.rut) AS linked_ruts,
 					email,
 					email2,
+					email3,
 					emision
-				FROM wp_dosf_shared_objs wdso 
-				JOIN wp_dosf_so_ruts_links wdsrl 
+				FROM {$wpdb->prefix}dosf_shared_objs wdso 
+				JOIN {$wpdb->prefix}dosf_so_ruts_links wdsrl 
 					ON wdso.id = wdsrl.so_id 
 				$where 
 				GROUP BY wdso.id
@@ -794,6 +807,7 @@ class Wp_Dosf_Admin {
                 'linked_ruts' => $c->linked_ruts,
 				'email'		  => $c->email,
 				'email2'	  => $c->email2,
+				'email3'	  => $c->email3,
 				'emision'	  => $c->emision,
 				'status'	  => self::get_dosf_status($c->emision),
 				'vdbe'		  => self::get_dosf_validity_days_before_expiration($c->emision) ,
@@ -897,6 +911,7 @@ class Wp_Dosf_Admin {
 					'wp_file_obj_id' => $data['wp_obj_file_id'],
 					'email'			 => implode(',',$data['email']),
 					'email2'		 => implode(',',$data['email2']),
+					'email3'		 => implode(',',$data['email3']),
 					'download_code'  => $dowld_code,
 					'emision'		 => $data['emision']
 				),
@@ -948,6 +963,7 @@ class Wp_Dosf_Admin {
 					'wp_file_obj_id' => $data['wp_obj_file_id'],
 					'email'			 => implode(',',$data['email']),
 					'email2'		 => implode(',',$data['email2']),
+					'email3'		 => implode(',',$data['email3']),
 					'download_code'  => $dowld_code,
 					'emision'		 => $data['emision']
 				)
@@ -1012,7 +1028,7 @@ class Wp_Dosf_Admin {
 						email2,
 						download_code
 
-					FROM wp_dosf_shared_objs wdso 
+					FROM {$wpdb->prefix}dosf_shared_objs wdso 
 					
 					$where ";
 			$qry = 'SELECT FOUND_ROWS() AS total_rcds';
@@ -1086,9 +1102,10 @@ class Wp_Dosf_Admin {
 						title,
 						email,
 						email2,
+						email3,
 						emision
 
-					FROM wp_dosf_shared_objs wdso 
+					FROM {$wpdb->prefix}dosf_shared_objs wdso 
 					
 					$where ";
 			
@@ -1104,6 +1121,7 @@ class Wp_Dosf_Admin {
 					'serial'   	=> $c->title,
 					'email'		=> $c->email,
 					'email2'	=> $c->email2,
+					'email3'	=> $c->email3,
 					'emision'	=> $c->emision
 					
 				);
@@ -1142,10 +1160,11 @@ class Wp_Dosf_Admin {
 	
 
 	public function send_download_code_email($args){
-		if(!isset($args['email']) || !isset($args['download_code']) )
+
+		if(  !isset($args['download_code']) || empty($args['download_code']) )
 			return false;
 
-		if( empty($args['email']) || empty($args['download_code']) )
+		if( empty( $args['email'] ) && empty( $args['email2'] )	)
 			return false;
 
 		$header_template_path = apply_filters(
@@ -1165,8 +1184,16 @@ class Wp_Dosf_Admin {
 
 		$mail_sent_res = false;
 		if(file_exists($content_template_path)){
-			$email = $args['email'];
-			$email .= empty( $args['email2'] ) ? '' : ','.$args['email2'];
+			$email = '';
+
+			if( !empty( $args['email'] ) )
+				$email .= $args['email'];
+
+			if( !empty( $args['email'] ) && !empty( $args['email2'] ) )
+				$email .= ',';
+			
+			if( !empty( $args['email2'] ) )
+				$email .= $args['email2'];
 
 			$content = '';
 			if(file_exists($header_template_path)){
@@ -1213,10 +1240,10 @@ class Wp_Dosf_Admin {
 			return false;
 		}
 			
-		if(!isset($args['email']) || !isset($args['emision']) )
+		if(!isset($args['email3']) || !isset($args['emision']) )
 			return false;
 
-		if( empty($args['email']) || empty($args['emision']) )
+		if( empty($args['email3']) || empty($args['emision']) )
 			return false;
 
 		if( Wp_Dosf_Admin::get_dosf_validity_days_before_expiration( $args['emision'] ) > Wp_Dosf_Admin::get_last_range_days_before_expiration() ){
@@ -1240,7 +1267,7 @@ class Wp_Dosf_Admin {
 
 		$mail_sent_res = false;
 		if(file_exists($content_template_path)){
-			$email  = $args['email'];
+			$email  = $args['email3'];
 			$email = apply_filters( 'dosf_eml_expiration_warning_str_dest_recipts', $email );
 			$content = '';
 			if(file_exists($header_template_path)){
@@ -1257,6 +1284,7 @@ class Wp_Dosf_Admin {
 					'serial'   	=> $c->title,
 					'email'		=> $c->email,
 					'email2'	=> $c->email2,
+					'email3'	=> $c->email3,
 					'emision'	=> $c->emision
 					
 				); */
@@ -1330,6 +1358,7 @@ class Wp_Dosf_Admin {
 					so.id,
 					so.title,
 					so.email,
+					so.email3,
 					so.emision,
 					ewmq.id as ewmq_id
 				 FROM $tbl_nm_ewmq ewmq 
@@ -1344,7 +1373,7 @@ class Wp_Dosf_Admin {
 					'id'   		=> $r->id,
 					'serial'   	=> $r->title,
 					'email'		=> $r->email,
-					//'email2'	=> $r->email2,
+					'email3'	=> $r->email3, //mecánico
 					'emision'	=> $r->emision
 				];
 				Wp_Dosf_Admin::send_expiration_warning_email( $args );
