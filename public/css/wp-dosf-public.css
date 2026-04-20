@@ -77,13 +77,9 @@
     background-repeat: no-repeat;
     background-position: center;
 }
-.dosf-search-res-row .indicator.vigente{
-    background-image: url('http://gpm.local/wp-content/plugins/jgb-dosf/assets/imgs/hand-good.png');
-}
+/* .indicator.vigente → background-image set via wp_add_inline_style() in PHP */
 
-.dosf-search-res-row .indicator.vencido{
-    background-image: url('http://gpm.local/wp-content/plugins/jgb-dosf/assets/imgs/hand-not-good.png');
-}
+/* .indicator.vencido → background-image set via wp_add_inline_style() in PHP */
 
 .hidden{
     visibility: hidden;

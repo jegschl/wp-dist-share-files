@@ -80,6 +80,18 @@ class Wp_Dosf_Public {
 
 		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/wp-dosf-public.css', array(), $this->version, 'all' );
 
+		$img_vigente = apply_filters(
+			'dosf/front/status-indicator/vigente/img-url',
+			plugin_dir_url( __FILE__ ) . '../assets/imgs/hand-good.png'
+		);
+		$img_vencido = apply_filters(
+			'dosf/front/status-indicator/vencido/img-url',
+			plugin_dir_url( __FILE__ ) . '../assets/imgs/hand-not-good.png'
+		);
+		$inline_css = ".dosf-search-res-row .indicator.vigente { background-image: url('{$img_vigente}'); }
+.dosf-search-res-row .indicator.vencido  { background-image: url('{$img_vencido}'); }";
+		wp_add_inline_style( $this->plugin_name, $inline_css );
+
 	}
 
 	/**
