@@ -232,7 +232,7 @@ class Wp_Dosf_Public {
 						<div class="indicator <?=$status?>"></div>
 						<div class="details">
 							<div class="link">
-								<a href="<?= $hr ?>"><i class="fa-solid fa-download"></i></a>
+								<a href="<?= $hr ?>"><span class="dosf-icon-download"></span></a>
 								<span class="title">Descargar certificado con código de autorización</span>
 							</div>
 						</div>
@@ -247,7 +247,7 @@ class Wp_Dosf_Public {
 						?>
 						<div class="dosf-search-res-row">
 							<div class="link">
-								<a href="<?= $hr ?>"><i class="fa-solid fa-download"></i></a>
+								<a href="<?= $hr ?>"><span class="dosf-icon-download"></span></a>
 								<span class="title"><?= $so->title ?></span>
 							</div>	
 						</div>
