@@ -594,7 +594,8 @@
 					'expire-period-unit'			: $('#expire-period-unit').val(),
 					'ebep-nmb'						: $('#ebep-nmb').val(),
 					'ebep-unit'						: $('#ebep-unit').val(),
-					'monitor-expire-interval'		: $('#monitor-expire-interval').val()
+					'monitor-expire-interval'		: $('#monitor-expire-interval').val(),
+					'pm-download-code-popup-id'		: parseInt($('#pm-download-code-popup-id').val()) || 0
 				};
 
 				return JSON.stringify(config);

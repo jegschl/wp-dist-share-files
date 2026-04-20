@@ -107,7 +107,7 @@ class Wp_Dosf_Public {
 		$useSerialNmbCriterial = ( isset($this->plus_options['use-serial-number']) && $this->plus_options['use-serial-number'] );
 		$dosfData['pmDldCodeId'] = apply_filters(
 									'dosf/front/search-rut/download-code/popupmakerId',
-									11927
+									( !empty($this->plus_options['pm-download-code-popup-id']) ? intval($this->plus_options['pm-download-code-popup-id']) : 11927 )
 								);
 		$dosfData['searchFldNm'] = $useSerialNmbCriterial ? 'dosf-search-serial' : 'dosf-search-rut';
 		$dosfData['urlGetDosfURL'] = rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_GET_OBJ_URL . '/' );

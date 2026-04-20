@@ -508,6 +508,12 @@ class Wp_Dosf_Admin {
 				<label for="monitor-expire-interval"> día(s).</label>
 			</div>
 
+
+<div class="input">
+	<label for="pm-download-code-popup-id">ID del popup (Popup Maker) para ingreso de código de descarga</label>
+	<?php $pm_popup_id_val = empty($plus_options['pm-download-code-popup-id']) ? '' : 'value="' . intval($plus_options['pm-download-code-popup-id']) . '"'; ?>
+	<input id="pm-download-code-popup-id" type="number" name="pm-download-code-popup-id" min="1" <?= $pm_popup_id_val ?>>
+</div>
 			<input type="hidden" name="plus-options-update-nonce" id="plus-options-update-nonce" value="<?= wp_create_nonce(DOSF_NONCE_ACTION_PLUS_OPTS_UPDATE) ?>">
 			<div class="dosf-plus-options-actions">
 				<button id="dosf-plus-options-save">Guardar otras opciones</button>
