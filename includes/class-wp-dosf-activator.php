@@ -46,65 +46,38 @@ class Wp_Dosf_Activator {
 		$tbl_nm_so_ewmq = $wpdb->prefix . 'dosf_expiration_warnig_email_queue';
 
 		$charset_collate = $wpdb->get_charset_collate();
-		$isql_initialize_tables = "CREATE TABLE IF NOT EXISTS $tbl_nm_shared_objs (
-			id INT UNSIGNED NOT NULL,
+		$sql = "CREATE TABLE $tbl_nm_shared_objs (
+			id int unsigned NOT NULL AUTO_INCREMENT,
 			title varchar(256) NOT NULL,
 			emision datetime DEFAULT NULL,
 			file_name varchar(256) NOT NULL,
-			wp_file_obj_id INT UNSIGNED NULL,
-			created TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-			email varchar(255)  NOT NULL,
-			email2 varchar(255)  NOT NULL,
-  			download_code varchar(16) NOT NULL
-		) $charset_collate";
-		$wpdb->query( $isql_initialize_tables );
-
-		$isql_initialize_tables = "CREATE UNIQUE INDEX ".$tbl_nm_shared_objs."_id_IDX USING BTREE ON $tbl_nm_shared_objs (id)";
-		$wpdb->query( $isql_initialize_tables );
-
-		$isql_initialize_tables = "CREATE INDEX ".$tbl_nm_shared_objs."_title_IDX USING BTREE ON $tbl_nm_shared_objs (title,id)";
-		$wpdb->query( $isql_initialize_tables );
-
-		$isql_initialize_tables = "CREATE INDEX ".$tbl_nm_shared_objs."_file_name_IDX USING BTREE ON $tbl_nm_shared_objs (file_name,id)";
-		$wpdb->query( $isql_initialize_tables );
-
-		$isql_initialize_tables = "ALTER TABLE $tbl_nm_shared_objs MODIFY COLUMN id int unsigned auto_increment NOT NULL";
-		$wpdb->query( $isql_initialize_tables );
-
-
-
-		$isql_initialize_tables = "CREATE TABLE IF NOT EXISTS $tbl_nm_so_ruts_links (
-			id INT UNSIGNED NOT NULL,
-			so_id INT UNSIGNED NOT NULL,
+			wp_file_obj_id int unsigned NULL,
+			created timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+			email varchar(255) NOT NULL,
+			email2 varchar(255) NOT NULL,
+			email3 varchar(255) NOT NULL DEFAULT '',
+			download_code varchar(16) NOT NULL,
+			PRIMARY KEY  (id),
+			KEY title_idx (title(191),id),
+			KEY file_name_idx (file_name(191),id)
+		) $charset_collate;
+		CREATE TABLE $tbl_nm_so_ruts_links (
+			id int unsigned NOT NULL AUTO_INCREMENT,
+			so_id int unsigned NOT NULL,
 			rut varchar(13) NOT NULL,
-			created TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
-		) $charset_collate";
-		$wpdb->query( $isql_initialize_tables );
+			created timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+			PRIMARY KEY  (id),
+			KEY soId_idx (so_id,id,rut)
+		) $charset_collate;
+		CREATE TABLE $tbl_nm_so_ewmq (
+			id int unsigned NOT NULL AUTO_INCREMENT,
+			so_id int NOT NULL,
+			PRIMARY KEY  (id),
+			KEY soId_idx (so_id)
+		) $charset_collate;";
 
-		$isql_initialize_tables = "CREATE UNIQUE INDEX ".$tbl_nm_so_ruts_links."_id_IDX USING BTREE ON $tbl_nm_so_ruts_links (id)";
-		$wpdb->query( $isql_initialize_tables );
-
-		$isql_initialize_tables = "CREATE INDEX ".$tbl_nm_so_ruts_links."_soId_IDX USING BTREE ON $tbl_nm_so_ruts_links (so_id,id,rut)";
-		$wpdb->query( $isql_initialize_tables );
-
-		$isql_initialize_tables = "ALTER TABLE $tbl_nm_so_ruts_links MODIFY COLUMN id int unsigned auto_increment NOT NULL";
-		$wpdb->query( $isql_initialize_tables );
-
-		$isql_initialize_tables = "CREATE TABLE $tbl_nm_so_ewmq (
-			`id` INT UNSIGNED NOT NULL,
-			`so_id` int NOT NULL
-		  ) $charset_collate";
-
-		$wpdb->query( $isql_initialize_tables );
-
-		$isql_initialize_tables = "CREATE UNIQUE INDEX ".$tbl_nm_so_ewmq."_id_IDX USING BTREE ON $tbl_nm_so_ewmq (id)";
-		$wpdb->query( $isql_initialize_tables );
-
-		$isql_initialize_tables = "ALTER TABLE $tbl_nm_so_ewmq MODIFY COLUMN id int unsigned auto_increment NOT NULL";
-		$wpdb->query( $isql_initialize_tables );
-
-		$isql_initialize_tables = "CREATE INDEX ".$tbl_nm_so_ewmq."_soId_IDX USING BTREE ON $tbl_nm_so_ewmq (so_id)";
-		$wpdb->query( $isql_initialize_tables );
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		dbDelta( $sql );
 	}
 
 }
