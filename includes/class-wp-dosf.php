@@ -129,6 +129,11 @@ class Wp_Dosf {
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-wp-dosf-public.php';
 
+		/**
+		 * Página de ayuda/documentación del plugin.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-wp-dosf-help-page.php';
+
 		$this->loader = new Wp_Dosf_Loader();
 
 	}
@@ -166,6 +171,8 @@ class Wp_Dosf {
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
 
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'dosf_menu' );
+		$dosf_help = new Wp_Dosf_Help_Page();
+		$this->loader->add_action( 'admin_menu', $dosf_help, 'add_help_submenu' );
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'dosf_settings_init' );
 		$this->loader->add_action( 'rest_api_init', $plugin_admin,'set_endpoints');
 
