@@ -81,78 +81,58 @@
 		let choiceEmlsColabs;
 		let choiceEmlsOprtrs;
 		let choiceEmlsMecans;
-		let dtColumns = [];
-		dtColumns.push(
-			{
-				data: 'selection',
-				render: selection_data_render
-			}
-		);
-
-		dtColumns.push(
-			{
-				data: 'title'
-			}
-		);
-
-		if(dosf_config.useIssueDate){
-			dtColumns.push(
-				{
-					data: 'emision'
-				}
-			);
-
-			dtColumns.push(
-				{
-					data: 'vdbe'
-				}
-			);
+		function escHtml(value) {
+			return String(value == null ? '' : value)
+				.replace(/&/g, '&amp;')
+				.replace(/</g, '&lt;')
+				.replace(/>/g, '&gt;')
+				.replace(/"/g, '&quot;');
 		}
 
-		dtColumns.push(
-			{
-				data: 'file_name'
+		function certificates_render(data, type, row) {
+			if (type !== 'display') {
+				return '';
 			}
-		);
-
-		dtColumns.push(
-			{
-				data: 'linked_ruts'
+			let html = '<table class="dosf-cert-tree"><thead><tr><th></th><th>Título</th>';
+			if (dosf_config.useIssueDate) {
+				html += '<th>Emisión</th><th>Días</th><th>Estado</th>';
 			}
-		);
-
-		dtColumns.push(
-			{
-				data: 'email'
-			}
-		);
-
-		dtColumns.push(
-			{
-				data: 'email2'
-			}
-		);
-
-		dtColumns.push(
-			{
-				data: 'email3'
-			}
-		);
-
-		if(dosf_config.useIssueDate){
-			dtColumns.push(
-				{
-					data: 'status'
+			html += '<th>Archivo</th><th>Colaboradores</th><th>Operadores</th><th>Mecánicos</th><th>Acciones</th></tr></thead><tbody>';
+			(row.certificates || []).forEach(function(cert) {
+				html += '<tr id="' + escHtml(cert.id) + '" class="dosf-cert-row"'
+					+ ' data-serie="' + escHtml(row.serie) + '"'
+					+ ' data-ruts="' + escHtml(row.linked_ruts) + '"'
+					+ ' data-cert-title="' + escHtml(cert.cert_title) + '"'
+					+ ' data-emision="' + escHtml(cert.emision) + '"'
+					+ ' data-file="' + escHtml(cert.file_name) + '"'
+					+ ' data-attachment-id="' + escHtml(cert.attachment_id) + '"'
+					+ ' data-email="' + escHtml(cert.email) + '"'
+					+ ' data-email2="' + escHtml(cert.email2) + '"'
+					+ ' data-email3="' + escHtml(cert.email3) + '">';
+				html += '<td><input type="checkbox" class="dosf-checker" /></td>';
+				html += '<td>' + escHtml(cert.cert_title) + '</td>';
+				if (dosf_config.useIssueDate) {
+					html += '<td>' + escHtml(cert.emision) + '</td>';
+					html += '<td>' + escHtml(cert.vdbe) + '</td>';
+					html += '<td>' + escHtml(cert.status) + '</td>';
 				}
-			);
+				html += '<td>' + escHtml(cert.file_name) + '</td>';
+				html += '<td>' + escHtml(cert.email) + '</td>';
+				html += '<td>' + escHtml(cert.email2) + '</td>';
+				html += '<td>' + escHtml(cert.email3) + '</td>';
+				html += '<td>' + actions_data_render(null, 'display', cert) + '</td>';
+				html += '</tr>';
+			});
+			html += '</tbody></table>';
+			html += '<button type="button" class="button add-cert-to-serie" data-serie="' + escHtml(row.serie) + '" data-ruts="' + escHtml(row.linked_ruts) + '">Agregar certificado a esta serie</button>';
+			return html;
 		}
 
-		dtColumns.push(
-			{
-				data: 'actions',
-				render: actions_data_render
-			}
-		);
+		let dtColumns = [
+			{ data: 'serie' },
+			{ data: 'linked_ruts' },
+			{ data: 'certificates', render: certificates_render }
+		];
 
 		const JGB_DOSF_AOE_FORM_MODE_ADD  = 0;
 		const JGB_DOSF_AOE_FORM_MODE_EDIT = 1;
@@ -165,8 +145,9 @@
 		let istr; // Ids to remove.
 
 		function onDttblCreatedRow( row, data, dataIndex, cells ){
-			const atid = data['DT_RowData']['attachment-id'];
-			$(row).data('attachment-id',atid);
+			if (data && data.DT_RowData && data.DT_RowData['attachment-id']) {
+				$(row).data('attachment-id', data.DT_RowData['attachment-id']);
+			}
 		}
 
 		$(document).ready(function ($) {
@@ -226,6 +207,13 @@
 				const itemDosfCheckerSelector = '.dosf-checker';
 				$(itemDosfCheckerSelector).off('click');
 				$(itemDosfCheckerSelector).on('click',dttblItemDosfChecker);
+
+				$('.add-cert-to-serie').off('click');
+				$('.add-cert-to-serie').on('click', function() {
+					setWidgetsForDosfAddNew();
+					$('#dosf_so_serie').val($(this).attr('data-serie')).prop('readonly', true);
+					$('#dosf_so_ruts_linked').val($(this).attr('data-ruts'));
+				});
 
 				dttblItemDosfChecker();
 			}
@@ -349,7 +337,8 @@
 				$( '#dosf_attachment_id').val(''),
 				$( '#dosf_so_emision' ).val('');
 				$( '#dosf-file-selectd' ).text(''),
-				$( '#dosf_so_title' ).val('')
+				$( '#dosf_so_serie' ).val('').prop('readonly', false);
+				$( '#dosf_so_cert_title' ).val('');
 				choiceEmlsColabs.clearStore();
 				choiceEmlsOprtrs.clearStore();
 				choiceEmlsMecans.clearStore();
@@ -359,40 +348,25 @@
 				}
 			}
 
+			function fillEmails(selector, raw) {
+				const values = String(raw || '').split(',').map(function(item){ return item.trim(); }).filter(Boolean);
+				selector.clearStore();
+				if (values.length) {
+					selector.setValue(values);
+				}
+			}
+
 			function dumpDataToDosfAddFields(){
-				let cell = $(currentEditionDosfTR).children()[1];
-				let vl 	 = $(cell).text();
-				$( '#dosf_so_title' ).val(vl);
-
-				cell = $(currentEditionDosfTR).children()[2];
-				vl 	 = $(cell).text();
-				$( '#dosf_so_emision' ).val(vl);
-
-				cell = $(currentEditionDosfTR).children()[5];
-				vl 	 = $(cell).text();
-				$( '#dosf_so_ruts_linked' ).val(vl);
-
-				cell = $(currentEditionDosfTR).children()[6];
-				vl 	 = $(cell).text().split(',');
-				choiceEmlsColabs.clearStore();
-				choiceEmlsColabs.setValue(vl);
-
-				cell = $(currentEditionDosfTR).children()[7];
-				vl 	 = $(cell).text().split(',');
-				choiceEmlsOprtrs.clearStore();
-				choiceEmlsOprtrs.setValue(vl);
-
-				cell = $(currentEditionDosfTR).children()[8];
-				vl 	 = $(cell).text().split(',');
-				choiceEmlsMecans.clearStore();
-				choiceEmlsMecans.setValue(vl);
-
-
-				$( '#dosf_attachment_id').val( $(currentEditionDosfTR).data('attachment-id') );
-
-				cell = $(currentEditionDosfTR).children()[4];
-				vl 	 = $(cell).text();
-				$( '#dosf-file-selectd' ).text(vl);
+				const row = $(currentEditionDosfTR);
+				$( '#dosf_so_serie' ).val(row.attr('data-serie')).prop('readonly', true);
+				$( '#dosf_so_cert_title' ).val(row.attr('data-cert-title'));
+				$( '#dosf_so_emision' ).val(row.attr('data-emision'));
+				$( '#dosf_so_ruts_linked' ).val(row.attr('data-ruts'));
+				fillEmails(choiceEmlsColabs, row.attr('data-email'));
+				fillEmails(choiceEmlsOprtrs, row.attr('data-email2'));
+				fillEmails(choiceEmlsMecans, row.attr('data-email3'));
+				$( '#dosf_attachment_id').val( row.attr('data-attachment-id') );
+				$( '#dosf-file-selectd' ).text(row.attr('data-file'));
 				
 				if( !$('.dosf-admin-add-so .notice.notice-error').hasClass('hidden') ){
 					$('.dosf-admin-add-so .notice.notice-error').addClass('hidden')
@@ -504,7 +478,7 @@
 				}
 
 				if( data['dosfAddNew_post_status'] == 'error' && data['err_code'] == '403' ){
-					dosfAddNewSentTryErrorCondMsg = 'Ya existe un certificado con el mismo número de serie.'
+					dosfAddNewSentTryErrorCondMsg = 'Ya existe un certificado con ese título en esta serie.'
 				}
 				
 			}
@@ -550,7 +524,8 @@
 					'wp_obj_file_id': 	$('#dosf_attachment_id').val(),
 					'file_name': 		$( '#dosf-file-selectd' ).text(),
 					'linked_ruts': 		ruts,
-					'title': 			$('#dosf_so_title').val(),
+					'serie': 			$('#dosf_so_serie').val(),
+					'cert_title': 		$('#dosf_so_cert_title').val(),
 					'email': 			choiceEmlsColabs.getValue(true),
 					'email2': 			choiceEmlsOprtrs.getValue(true),
 					'email3':			choiceEmlsMecans.getValue(true),
@@ -595,7 +570,9 @@
 					'ebep-nmb'						: $('#ebep-nmb').val(),
 					'ebep-unit'						: $('#ebep-unit').val(),
 					'monitor-expire-interval'		: $('#monitor-expire-interval').val(),
-					'pm-download-code-popup-id'		: parseInt($('#pm-download-code-popup-id').val()) || 0
+					'pm-download-code-popup-id'		: parseInt($('#pm-download-code-popup-id').val()) || 0,
+					'status-tpl-vigente'			: $('#status-tpl-vigente').val(),
+					'status-tpl-vencido'			: $('#status-tpl-vencido').val()
 				};
 
 				return JSON.stringify(config);

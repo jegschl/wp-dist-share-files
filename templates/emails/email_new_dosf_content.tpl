@@ -10,6 +10,6 @@
                 background-color: #EDF1FC;
 			"
 		>
-			<p>Código de descarga para certificado de mantención.</p>
+			<p>Código de descarga para <strong>{cert_title}</strong> de la serie <strong>{serie}</strong>.</p>
 			<p style="font-weight: 600; font-size: 20px;">Código de descarga: <span style="color: blue"><strong>{download_code}</strong></span></p>
 		</div>

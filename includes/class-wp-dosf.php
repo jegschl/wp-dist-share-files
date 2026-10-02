@@ -116,6 +116,7 @@ class Wp_Dosf {
 		/**
 		 * The class responsible for defining all actions that occur in the admin area.
 		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-dosf-series.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-wp-dosf-admin.php';
 
 		/**
@@ -171,8 +172,9 @@ class Wp_Dosf {
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
 
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'dosf_menu' );
+		$this->loader->add_action( 'admin_menu', $plugin_admin, 'dosf_register_submenus', 11 );
 		$dosf_help = new Wp_Dosf_Help_Page();
-		$this->loader->add_action( 'admin_menu', $dosf_help, 'add_help_submenu' );
+		$this->loader->add_action( 'admin_menu', $dosf_help, 'add_help_submenu', 12 );
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'dosf_settings_init' );
 		$this->loader->add_action( 'rest_api_init', $plugin_admin,'set_endpoints');
 

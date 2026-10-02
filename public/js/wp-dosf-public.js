@@ -47,14 +47,19 @@
 		return false;
 	};
 
+	function showDownloadCodeError(message){
+		var $err = $('#download-code-error');
+		if (message) {
+			$err.text(message);
+		}
+		$err.removeClass('hidden');
+		closeForm = false;
+	}
+
 	function onDosfGetUrlError( jqXHR, textStatus, errorThrown ){
 		console.log('Error al intentar recuperar la URL de un dosf desde el server.');
 		console.log(jqXHR);
-
-		if( $('#download-code-error').hasClass('hidden')  ){
-			$('#download-code-error').removeClass('hidden') 
-			closeForm = false;
-		}
+		showDownloadCodeError('No se pudo validar el código. Intenta nuevamente.');
 	}
 
 	function onDosfGetUrlSuccess(  data,  textStatus,  jqXHR ){
@@ -64,10 +69,7 @@
 			const downloadLink = data['download-link'];
 			window.location = downloadLink;
 		} else {
-			if( $('#download-code-error').hasClass('hidden')  ){
-				$('#download-code-error').removeClass('hidden') 
-				closeForm = false;
-			}
+			showDownloadCodeError(data && data.message ? data.message : 'Código incorrecto. Por favor, verifica e intenta nuevamente.');
 		}
 	}
 
@@ -102,8 +104,8 @@
 				const objid = falseURL.substring(7);
 				startSendDownloadCodeRequest(objid);
 				$('#obj-id').val(objid);
-				$('#input-download-code').text('');
 				$('#input-download-code').val('');
+				$('#download-code-error').addClass('hidden');
 				
 				popupDownloadCode= PUM.getPopup(parseInt(dosfDt.pmDldCodeId));
 				PUM.open(popupDownloadCode);

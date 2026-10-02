@@ -113,7 +113,9 @@ class Wp_Dosf_Public {
 		 * class.
 		 */
 
-		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/wp-dosf-public.js', array( 'jquery' ), $this->version, false );
+		$public_js = plugin_dir_path( __FILE__ ) . 'js/wp-dosf-public.js';
+		$public_js_ver = $this->version . '.' . ( file_exists( $public_js ) ? filemtime( $public_js ) : '0' );
+		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/wp-dosf-public.js', array( 'jquery' ), $public_js_ver, false );
 		
 		$dosfData = array();
 		$useSerialNmbCriterial = ( isset($this->plus_options['use-serial-number']) && $this->plus_options['use-serial-number'] );
@@ -148,38 +150,48 @@ class Wp_Dosf_Public {
 
 	public function receive_object_download_code($r){
 		global $wpdb;
-		$data = $r->get_json_params();
-		$tbl_nm_shared_objs = $wpdb->prefix . 'dosf_shared_objs';
-		$dldURL = '';
-		$res = array();
-		$select = "SELECT id,wp_file_obj_id,download_code
-					FROM $tbl_nm_shared_objs wdso
-					WHERE wdso.id = {id}";
-		$select = str_replace('{id}',$data['objid'],$select);
-		$sos = $wpdb->get_results($select, OBJECT);
-		if(count($sos)>0){
-			if($sos[0]->download_code == $data['dldcd']){
-				$wpoi = $sos[0]->wp_file_obj_id;
-				$dldURL = wp_get_attachment_url($wpoi);
-			} else {
-				$res['error'] = true;
-				$res['message'] = 'Código de descarga no válido';
-				return $res;
-			}
+		$data  = $r->get_json_params();
+		$objid = ( is_array( $data ) && isset( $data['objid'] ) ) ? intval( $data['objid'] ) : 0;
+		$code  = ( is_array( $data ) && isset( $data['dldcd'] ) ) ? strtoupper( trim( (string) $data['dldcd'] ) ) : '';
+
+		if ( ! $objid || $code === '' ) {
+			return array(
+				'error'   => true,
+				'message' => 'Código de descarga no válido',
+			);
 		}
 
-		if(empty($dldURL)){
-			$res['error'] = true;
-			$res['message'] = 'Sin url de descarga'; 
-		} else {
-			$res['error'] = false;
-			$res['download-link'] = $dldURL;
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT id, wp_file_obj_id, download_code FROM {$wpdb->prefix}dosf_shared_objs WHERE id = %d",
+				$objid
+			)
+		);
+
+		$stored = $row ? strtoupper( trim( (string) $row->download_code ) ) : '';
+		if ( ! $row || $stored === '' || $stored !== $code ) {
+			return array(
+				'error'   => true,
+				'message' => 'Código de descarga no válido',
+			);
 		}
 
-		return $res;
+		$url = wp_get_attachment_url( intval( $row->wp_file_obj_id ) );
+		if ( empty( $url ) ) {
+			return array(
+				'error'   => true,
+				'message' => 'Certificado no disponible',
+			);
+		}
+
+		return array(
+			'error'         => false,
+			'download-link' => $url,
+		);
 	}
 
 	public function sc_browser(){
+		ob_start();
 		$browse_input_label = 'Introduce tu RUT (sin puntos ni guión';
 		$no_results_label = 'Sin resultados';
 		$urlGetParamNm = 'dosf-search-rut';
@@ -190,34 +202,8 @@ class Wp_Dosf_Public {
 		}
 		$valueToSearch = filter_input(INPUT_GET, $urlGetParamNm );
 		if( $valueToSearch !== false && !is_null($valueToSearch)){
-			global $wpdb;
-			$tbl_nm_shared_objs = $wpdb->prefix . 'dosf_shared_objs';
-			$tbl_nm_so_ruts_links = $wpdb->prefix . 'dosf_so_ruts_links'; 
-
-			$wropr = 'LIKE';
-			if( $this->plus_options['frontend-specific-match-search'] ){
-				$wropr = '=';
-			} else {
-				$valueToSearch = '%' . $valueToSearch . '%';
-			}
-
-			if( $useSerialNmbCriterial ){
-				
-				$select = "SELECT wdso.id,title,emision,file_name 
-					   FROM $tbl_nm_shared_objs wdso
-					   JOIN $tbl_nm_so_ruts_links wdsrl
-					   	ON wdsrl.so_id = wdso.id 
-					   WHERE wdso.title $wropr \"{valueToSearch}\"";
-			} else {
-				$select = "SELECT wdso.id,title 
-					   FROM $tbl_nm_shared_objs wdso
-					   JOIN $tbl_nm_so_ruts_links wdsrl
-					   	ON wdsrl.so_id = wdso.id 
-					   WHERE wdsrl.rut $wropr \"{valueToSearch}\"";
-			}
-
-			$sql = str_replace("{valueToSearch}",$valueToSearch,$select);
-			$res = $wpdb->get_results($sql);
+			$exact = ! empty( $this->plus_options['frontend-specific-match-search'] );
+			$res = Dosf_Series::search_public( $valueToSearch, $useSerialNmbCriterial, $exact );
 			?>
 			
 			<div id="dosf-browser-wrapper">
@@ -237,19 +223,23 @@ class Wp_Dosf_Public {
 				<div class="dosf-search-res-wrapper">
 				<?php
 				if( $this->plus_options['frontend-specific-match-search'] && $useSerialNmbCriterial ){
-					$status = strtolower( Wp_Dosf_Admin::get_dosf_status($res[0]->emision) );
-					?>
-					<div class="dosf-search-res-row">
-						<div class="msg-indicator">El certificado de mantención para la grúa con número de serie <?= $valueToSearch ?> se encuentra actualmente <span class="status <?= $status ?>"><?= $status ?>.</span></div>
-						<div class="indicator <?=$status?>"></div>
-						<div class="details">
-							<div class="link">
-								<a href="<?= $hr ?>"><span class="dosf-icon-download"></span></a>
-								<span class="title">Descargar certificado con código de autorización</span>
+					foreach ( $res as $cert ) {
+						$status = strtolower( Wp_Dosf_Admin::get_dosf_status( $cert->emision ) );
+						$hr = '/objid/' . $cert->id;
+						$status_message = Wp_Dosf_Admin::frontend_status_message( $this->plus_options, $cert->title, $cert->serie, $status );
+						?>
+						<div class="dosf-search-res-row">
+							<div class="msg-indicator"><?= $status_message ?></div>
+							<div class="indicator <?= esc_attr( $status ) ?>"></div>
+							<div class="details">
+								<div class="link">
+									<a href="<?= esc_attr( $hr ) ?>"><span class="dosf-icon-download"></span></a>
+									<span class="title">Descargar <?= esc_html( $cert->title ) ?></span>
+								</div>
 							</div>
 						</div>
-					</div>
-					<?php
+						<?php
+					}
 
 				} else {
 
@@ -277,6 +267,7 @@ class Wp_Dosf_Public {
 				<?php
 			}
 			?>
+			<?php if ( is_array( $res ) && count( $res ) > 0 ) : ?>
 			<div id="dosf-browser-wrapper">
 				<form method="get">
 					<div class="input-text">
@@ -286,6 +277,7 @@ class Wp_Dosf_Public {
 					<input type="submit" value="Volver a buscar">
 				</form>
 			</div>
+			<?php endif; ?>
 			<?php
 		} else {
 			?>
@@ -300,6 +292,8 @@ class Wp_Dosf_Public {
 			</div>
 			<?php
 		}
+
+		return ob_get_clean();
 	}
 
 }

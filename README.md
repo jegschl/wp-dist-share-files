@@ -120,6 +120,26 @@ En la pestaña **Popup Settings** del popup creado:
 
 Agrega este shortcode en la página donde los usuarios buscarán sus certificados. El plugin mostrará un formulario de búsqueda por RUT o número de serie según la configuración en "Otras opciones".
 
+## Mensajes de vigencia en el frontend
+
+Con la búsqueda por número de serie y la opción **Coincidencias específicas** activa, cada resultado indica si el certificado está vigente o vencido.
+
+Esos textos se editan en **Distribución de archivos → Gestión**, dentro de **Otras opciones → Mensajes del frontend**. Hay un cuadro para el certificado vigente y otro para el vencido. Hay que pulsar **Guardar otras opciones**.
+
+| Marcador | Se reemplaza por |
+|---|---|
+| `{cert_title}` | Título del certificado |
+| `{serie}` | Número de serie |
+| `{estado}` | La palabra vigente o vencido, con su color |
+
+Si un cuadro queda vacío, el texto usado es:
+
+```
+{cert_title} de la serie {serie} se encuentra actualmente {estado}.
+```
+
+`{estado}` es el único marcador que conserva el color. El resto del mensaje se publica como texto plano.
+
 ---
 
 ## Filtros disponibles (API para desarrolladores)

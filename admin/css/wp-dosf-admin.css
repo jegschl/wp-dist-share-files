@@ -211,3 +211,13 @@ table{
 #tabla .actions .action:hover {
 	font-size: 17px;
 }
+.dosf-cert-tree { width: 100%; border-collapse: collapse; margin: 8px 0 12px; }
+.dosf-cert-tree th, .dosf-cert-tree td { padding: 6px 8px; border-bottom: 1px solid #dcdcde; text-align: left; vertical-align: top; }
+.dosf-cert-tree th { background: #f6f7f7; }
+.add-cert-to-serie { margin: 0 0 8px; }
+.dosf-status-templates { margin-top: 18px; max-width: 720px; }
+.dosf-status-templates h3 { margin-bottom: 6px; }
+.dosf-status-templates .description { color: #646970; margin: 0 0 12px; }
+.dosf-status-templates .input { margin-bottom: 12px; }
+.dosf-status-templates label { display: block; font-weight: 600; margin-bottom: 4px; }
+.dosf-status-templates textarea { width: 100%; min-height: 72px; }

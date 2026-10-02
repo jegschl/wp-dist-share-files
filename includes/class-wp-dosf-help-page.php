@@ -20,7 +20,7 @@ class Wp_Dosf_Help_Page {
             'dosf-admin',
             'Ayuda — jgb-dosf',
             'Ayuda / Documentación',
-            'manage_options',
+            'jgb_collab_access',
             'dosf-help',
             array( $this, 'render' )
         );
@@ -56,6 +56,7 @@ class Wp_Dosf_Help_Page {
             <!-- ÍNDICE -->
             <ul>
                 <li><a href="#dosf-shortcode">Shortcode público</a></li>
+                <li><a href="#dosf-status-templates">Mensajes de vigencia</a></li>
                 <li><a href="#dosf-popup">Integración con Popup Maker</a></li>
                 <li><a href="#dosf-filters">Filtros de WordPress</a></li>
                 <li><a href="#dosf-tables">Tablas de base de datos</a></li>
@@ -70,8 +71,23 @@ class Wp_Dosf_Help_Page {
             <pre><code>[dosf_browser]</code></pre>
             <p>El comportamiento (búsqueda por RUT o por número de serie) se configura en <strong>Distribución de archivos → Otras opciones</strong>.</p>
 
-            <hr>
 
+            <h2 id="dosf-status-templates">Mensajes de vigencia en el frontend</h2>
+            <p>Cuando la búsqueda pública es por número de serie y está activa la opción <strong>Coincidencias específicas</strong>, cada certificado muestra un aviso de si está vigente o vencido.</p>
+            <p>Esos textos se editan en <strong>Distribución de archivos → Gestión</strong>, al final de <strong>Otras opciones</strong>, en el bloque <strong>Mensajes del frontend</strong>. Hay un cuadro para el certificado vigente y otro para el vencido. El cambio se aplica al pulsar <strong>Guardar otras opciones</strong>.</p>
+            <table>
+                <tr><th>Marcador</th><th>Se reemplaza por</th></tr>
+                <tr><td><code>{cert_title}</code></td><td>Título del certificado</td></tr>
+                <tr><td><code>{serie}</code></td><td>Número de serie</td></tr>
+                <tr><td><code>{estado}</code></td><td>La palabra <em>vigente</em> o <em>vencido</em>, con el color de ese estado</td></tr>
+            </table>
+            <p>Si un cuadro se deja vacío, se usa este texto:</p>
+            <pre><code>{cert_title} de la serie {serie} se encuentra actualmente {estado}.</code></pre>
+            <div class="dosf-info">
+                El marcador <code>{estado}</code> es el único que conserva el color verde o rojo. El resto del mensaje es texto plano: el HTML que se escriba en el cuadro se muestra como texto.
+            </div>
+
+            <hr>
             <!-- POPUP MAKER -->
             <h2 id="dosf-popup">Integración con Popup Maker</h2>
             <div class="dosf-alert">

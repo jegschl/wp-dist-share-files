@@ -10,5 +10,5 @@
                 background-color: #EDF1FC;
 			"
 		>
-			<p>El certificado de mantención con serie <strong>{serie}</strong> se encuentra solo con <span style="color: red"><strong>{dias_vigencia} días de vigencia</strong></span>.</p>
+			<p>El certificado <strong>{cert_title}</strong> de la serie <strong>{serie}</strong> se encuentra solo con <span style="color: red"><strong>{dias_vigencia} días de vigencia</strong></span>.</p>
 		</div>

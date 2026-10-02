@@ -161,7 +161,9 @@ class Wp_Dosf_Admin {
 		if( $hook != "toplevel_page_dosf-admin" )
 			return;
 
-		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/wp-dosf-admin.js', array( 'jquery' ), $this->version, false );
+		$admin_js = plugin_dir_path( __FILE__ ) . 'js/wp-dosf-admin.js';
+		$admin_js_ver = $this->version . '.' . ( file_exists( $admin_js ) ? filemtime( $admin_js ) : '0' );
+		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/wp-dosf-admin.js', array( 'jquery' ), $admin_js_ver, false );
 
 		wp_localize_script( 
 			$this->plugin_name, 
@@ -233,13 +235,25 @@ class Wp_Dosf_Admin {
 		add_menu_page( 
 			apply_filters('dosf-admin/admin-page-title','Distribución de archivos'), 
 			apply_filters('dosf-admin/admin-menu-title','Distribución de archivos'), 
-			'manage_options', 
+			'jgb_collab_access', 
 			'dosf-admin',  //'dosf/dosf-admin.php', 
 			array($this,'dosf_admin_page'), 
 			'dashicons-forms', 
 			11
 		);
 	}
+	public function dosf_register_submenus() {
+		remove_submenu_page( 'dosf-admin', 'dosf-admin' );
+		add_submenu_page(
+			'dosf-admin',
+			apply_filters( 'dosf-admin/gestion-page-title', 'Gestión de archivos' ),
+			apply_filters( 'dosf-admin/gestion-menu-title', 'Gestión' ),
+			'jgb_collab_access',
+			'dosf-admin',
+			array( $this, 'dosf_admin_page' )
+		);
+	}
+
 
 	/* renderiza el contenido de la pgina de configuracin de ads-imgs */
 	public function dosf_admin_page(){
@@ -332,7 +346,7 @@ class Wp_Dosf_Admin {
 
 		<div class="dosf-admin-header">
 			
-			<div id="add-dosf" class="action-wrapper"><span class="dashicons dashicons-plus-alt"></span>Agregar nuevo archivo para compartir</div>
+			<div id="add-dosf" class="action-wrapper"><span class="dashicons dashicons-plus-alt"></span>Agregar certificado</div>
 			<div id="rem-dosf" class="action-wrapper disabled"><span class="dashicons dashicons-dismiss"></span>Remover seleccionados</div>
 					
 		</div>
@@ -346,9 +360,13 @@ class Wp_Dosf_Admin {
 					<div class="file-selected" id="dosf-file-selectd"></div>
 					<input type='hidden' name='dosf_fl_attachment_id' id='dosf_attachment_id' value='' />
 				</div>
+				<div class="fld-serie">
+					<label>Número de serie</label>
+					<input name="dosf_so_serie" id="dosf_so_serie" type="text" />
+				</div>
 				<div class="fld-title">
-					<label><?= $this->dosf_identifier_label ?></label>
-					<input name="dosf_so_title" id="dosf_so_title" type="text" />
+					<label>Título del certificado</label>
+					<input name="dosf_so_cert_title" id="dosf_so_cert_title" type="text" />
 				</div>
 				
 				<?php if( isset( $plus_options['use-issue-date'] ) && $plus_options['use-issue-date'] ) : ?>
@@ -407,45 +425,19 @@ class Wp_Dosf_Admin {
 
 		<div id="<?=HTML_DOSF_ID?>">
 			
-			<table id="tabla" class="display" style="width:100%">
-				
+						<table id="tabla" class="display" style="width:100%">
 				<thead class="thead">
 					<tr class="tr">
-						<th>Seleccionar</th>						
-						<th><?= $dosf_label_idntfr ?></th>
-						<?php if( isset( $plus_options['use-issue-date'] ) && $plus_options['use-issue-date'] ) : ?>
-						<th>Emisión</th>
-						<th>Días de validez restantes</th>
-						<?php endif; ?>
-						<th>Archivo</th>
+						<th>Serie</th>
 						<th>RUTs asociados</th>
-						<th>Emails Colaboradores</th>
-						<th>Emails Operadores</th>
-						<th>Email Mecánicos</th>
-						<?php if( isset( $plus_options['use-issue-date'] ) && $plus_options['use-issue-date'] ) : ?>
-						<th>Estado</th>
-						<?php endif; ?>
-						<th>Acciones</th>
+						<th>Certificados</th>
 					</tr>
 				</thead>
-				<!--body-->
 				<tfoot>
 					<tr class="tr">
-						<th>Seleccionar</th>
-						<th><?= $dosf_label_idntfr ?></th>
-						<?php if( isset( $plus_options['use-issue-date'] ) && $plus_options['use-issue-date'] ) : ?>
-						<th>Emisión</th>
-						<th>Días de validez restantes</th>
-						<?php endif; ?>
-						<th>Archivo</th>
+						<th>Serie</th>
 						<th>RUTs asociados</th>
-						<th>Emails Colaboradores</th>
-						<th>Emails Operadores</th>
-						<th>Email Mecánicos</th>
-						<?php if( isset( $plus_options['use-issue-date'] ) && $plus_options['use-issue-date'] ) : ?>
-						<th>Estado</th>
-						<?php endif; ?>
-						<th>Acciones</th>
+						<th>Certificados</th>
 					</tr>
 				</tfoot>
 			</table>
@@ -463,7 +455,7 @@ class Wp_Dosf_Admin {
 			<?php $checked = $plus_options['use-serial-number'] ? 'checked' : ''; ?>
 			<div class="input">
 				<input id="use-serial-numbers" type="checkbox" name="use-serial-numbers" <?= $checked ?>>
-				<label for="use-serial-numbers">Utilizar números de serie únicos.</label>
+				<label for="use-serial-numbers">Identificar cada grúa por número de serie.</label>
 			</div>
 
 			<?php $checked = $plus_options['use-issue-date'] ? 'checked' : ''; ?>
@@ -514,6 +506,27 @@ class Wp_Dosf_Admin {
 	<?php $pm_popup_id_val = empty($plus_options['pm-download-code-popup-id']) ? '' : 'value="' . intval($plus_options['pm-download-code-popup-id']) . '"'; ?>
 	<input id="pm-download-code-popup-id" type="number" name="pm-download-code-popup-id" min="1" <?= $pm_popup_id_val ?>>
 </div>
+		<?php
+			$status_tpl_defaults = self::default_status_templates();
+			$status_tpl_vigente  = ( isset( $plus_options['status-tpl-vigente'] ) && trim( (string) $plus_options['status-tpl-vigente'] ) !== '' )
+				? $plus_options['status-tpl-vigente']
+				: $status_tpl_defaults['vigente'];
+			$status_tpl_vencido  = ( isset( $plus_options['status-tpl-vencido'] ) && trim( (string) $plus_options['status-tpl-vencido'] ) !== '' )
+				? $plus_options['status-tpl-vencido']
+				: $status_tpl_defaults['vencido'];
+		?>
+		<div class="dosf-status-templates">
+			<h3>Mensajes del frontend</h3>
+			<p class="description">Texto que ve quien busca un certificado. Marcadores: <code>{cert_title}</code> título, <code>{serie}</code> número de serie y <code>{estado}</code> la palabra vigente o vencido.</p>
+			<div class="input">
+				<label for="status-tpl-vigente">Certificado vigente</label>
+				<textarea id="status-tpl-vigente" name="status-tpl-vigente" rows="3"><?= esc_textarea( $status_tpl_vigente ) ?></textarea>
+			</div>
+			<div class="input">
+				<label for="status-tpl-vencido">Certificado vencido</label>
+				<textarea id="status-tpl-vencido" name="status-tpl-vencido" rows="3"><?= esc_textarea( $status_tpl_vencido ) ?></textarea>
+			</div>
+		</div>
 			<input type="hidden" name="plus-options-update-nonce" id="plus-options-update-nonce" value="<?= wp_create_nonce(DOSF_NONCE_ACTION_PLUS_OPTS_UPDATE) ?>">
 			<div class="dosf-plus-options-actions">
 				<button id="dosf-plus-options-save">Guardar otras opciones</button>
@@ -620,31 +633,13 @@ class Wp_Dosf_Admin {
     }
 
 	public function receive_dosf_remove_request( WP_REST_Request $r ){
-		global $wpdb;
-		$ids_to_remove = $r->get_json_params()['istr'];
-		$res = [];
-		$res['details'] = [];
-		$ta = [];
-		if( count( $ids_to_remove ) ){
-			foreach( $ids_to_remove as $id ){
-				// Eliminando ruts.
-				$ta['del-rut-res'] = $wpdb->delete($wpdb->prefix . 'dosf_so_ruts_links',['so_id' => $id]);
-				if( $ta['del-rut-res'] === false ){
-					$ta['del-rut-res-err'] = $wpdb->last_error;
-				}
-				$ta['del-dosf-res'] = $wpdb->delete($wpdb->prefix . 'dosf_shared_objs',['id' => $id]);
-				if( $ta['del-dosf-res'] === false ){
-					$ta['del-dosf-res-err'] = $wpdb->last_error;
-				}
-				$res['details'][$id] = $ta;
-			}
-		}
-
+		$ids = $r->get_json_params();
+		$ids = isset( $ids['istr'] ) ? $ids['istr'] : array();
+		$res = array( 'details' => Dosf_Series::delete_certificates( $ids ) );
 		return new WP_REST_Response( $res );
-		
 	}
 
-	public static function get_dosf_validity_total_days(){
+	function get_dosf_validity_total_days(){
 		$plus_options = get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
 		if( isset( $plus_options['use-issue-date'] ) && $plus_options['use-issue-date'] ){
 			$punits =  intval($plus_options['expire-period-nmb']);
@@ -675,6 +670,37 @@ class Wp_Dosf_Admin {
 		return null;
 	}
 
+
+	public static function default_status_templates() {
+		$text = '{cert_title} de la serie {serie} se encuentra actualmente {estado}.';
+		return array(
+			'vigente' => $text,
+			'vencido' => $text,
+		);
+	}
+
+	public static function frontend_status_message( $plus_options, $cert_title, $serie, $status ) {
+		$status = strtolower( (string) $status );
+		if ( $status !== 'vigente' && $status !== 'vencido' ) {
+			$status = 'vencido';
+		}
+
+		$defaults = self::default_status_templates();
+		$key      = 'status-tpl-' . $status;
+		$tpl      = ( is_array( $plus_options ) && isset( $plus_options[ $key ] ) ) ? trim( (string) $plus_options[ $key ] ) : '';
+		if ( $tpl === '' ) {
+			$tpl = $defaults[ $status ];
+		}
+
+		$estado = '<span class="status ' . esc_attr( $status ) . '">' . esc_html( $status ) . '</span>';
+		$repl   = array(
+			'{cert_title}' => esc_html( (string) $cert_title ),
+			'{serie}'      => esc_html( (string) $serie ),
+			'{estado}'     => $estado,
+		);
+
+		return strtr( nl2br( esc_html( $tpl ) ), $repl );
+	}
 	public static function get_dosf_status($sql_date){
 		$plus_options = get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
 		if( isset( $plus_options['use-issue-date'] ) && $plus_options['use-issue-date'] ){
@@ -763,90 +789,13 @@ class Wp_Dosf_Admin {
 	}
 
 	public function send_so_data($r){
-		global $wpdb;
-		
-		$limit = '';
-		if(isset($_GET['length']) && $_GET['length']>0)
-            $limit = ' LIMIT ' . $_GET['start'] . ',' . $_GET['length'];
-        
-		$where = '';
-        if(isset($_GET['search']['value']) && !empty($_GET['search']['value'])){
-            $sv = $_GET['search']['value'];
-            $where  = ' WHERE file_name LIKE "%'. $sv . '%"';
-            $where .= ' OR wdsrl.rut LIKE "%' . $sv . '%"';
-            $where .= ' OR title LIKE "%' . $sv . '%"';
-        }
-
-		$isql = "SELECT SQL_CALC_FOUND_ROWS
-					wdso.id,
-					title,
-					file_name,
-					wp_file_obj_id,
-					GROUP_CONCAT(wdsrl.rut) AS linked_ruts,
-					email,
-					email2,
-					email3,
-					emision
-				FROM {$wpdb->prefix}dosf_shared_objs wdso 
-				JOIN {$wpdb->prefix}dosf_so_ruts_links wdsrl 
-					ON wdso.id = wdsrl.so_id 
-				$where 
-				GROUP BY wdso.id
-				$limit";
-		$qry = 'SELECT FOUND_ROWS() AS total_rcds';
-		
-		$sos = $wpdb->get_results($isql, OBJECT);
-		$frs = $wpdb->get_row($qry, OBJECT);
-        
-		$rc = array();
-
-        $row_data = [];
-
-        foreach($sos as $c){
-            $row_data['attachment-id'] = $c->wp_file_obj_id;
-            $rc[] = array(
-				'DT_RowId'	  => $c->id,
-				'DT_RowData'  => $row_data,
-				'id'		  => $c->id,
-                'title'       => $c->title,
-                'file_name'   => $c->file_name,
-                'linked_ruts' => $c->linked_ruts,
-				'email'		  => $c->email,
-				'email2'	  => $c->email2,
-				'email3'	  => $c->email3,
-				'emision'	  => $c->emision,
-				'status'	  => self::get_dosf_status($c->emision),
-				'vdbe'		  => self::get_dosf_validity_days_before_expiration($c->emision) ,
-				'selection'	  => '',
-				'actions'	  => ''
-            );
-        }
-
-        if($sos && empty($wpdb->last_error) ){
-            $res = array(
-                'draw' => $_GET['draw'],
-                "recordsTotal" =>  intval($frs->total_rcds),
-                "recordsFiltered" => intval($frs->total_rcds),
-                'data' => $rc
-            );
-            $response = new WP_REST_Response( $res );
-            $response->set_status( 200 );
-            
-        } else {
-			$res = array(
-                'draw' => $_GET['draw'],
-                "recordsTotal" =>  intval($frs->total_rcds),
-                "recordsFiltered" => intval($frs->total_rcds),
-                'data' => array(),
-				//'error' => new WP_Error( 'cant-read-dosf-sos', __( 'Can\'t get shared objects', 'wp-dosf' ), array( 'status' => 500 ) )
-            );
-            $response = new WP_REST_Response( $res );
-            $response->set_status( 200 );
-        }
-        return $response;
+		$res = Dosf_Series::datatables_response( $_GET );
+		$response = new WP_REST_Response( $res );
+		$response->set_status( 200 );
+		return $response;
 	}
 
-	private function generate_download_code($length = 6, $chars = null){
+	function generate_download_code($length = 6, $chars = null){
 	
 		if(is_null($chars))
 			$characters = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -884,6 +833,12 @@ class Wp_Dosf_Admin {
 
 
 
+		foreach ( array( 'status-tpl-vigente', 'status-tpl-vencido' ) as $tpl_key ) {
+			if ( isset( $data[ $tpl_key ] ) ) {
+				$data[ $tpl_key ] = sanitize_textarea_field( $data[ $tpl_key ] );
+			}
+		}
+
 		//DOSF_WP_OPT_NM_PLUS_OPTIONS
 		if( !update_option(DOSF_WP_OPT_NM_PLUS_OPTIONS,$data) ){
 			$r['error'] 	= true;
@@ -899,117 +854,29 @@ class Wp_Dosf_Admin {
 
 	public function receive_new_dosf_data_set($r){
 		$data = $r->get_json_params();
-		// validaciones del lado del server.
-		global $wpdb;
-		$tbl_nm_shared_objs = $wpdb->prefix . 'dosf_shared_objs';
-		$tbl_nm_so_ruts_links = $wpdb->prefix . 'dosf_so_ruts_links'; 
+		$saved = Dosf_Series::save_certificate( $data );
 
-		$mail_sent_res = null;
-
-		if( isset( $data['updateId'] ) && !is_null( $data['updateId'] ) ){
-
-			$dowld_code = $this->generate_download_code();
-			$upd_res = $wpdb->update(
-				$tbl_nm_shared_objs,
-				array(
-					'title' 		 => $data['title'],
-					'file_name' 	 => $data['file_name'],
-					'wp_file_obj_id' => $data['wp_obj_file_id'],
-					'email'			 => implode(',',$data['email']),
-					'email2'		 => implode(',',$data['email2']),
-					'email3'		 => implode(',',$data['email3']),
-					'download_code'  => $dowld_code,
-					'emision'		 => $data['emision']
-				),
-				[ 'id' => $data['updateId'] ]
-			);
-
-			$wpdb->delete(
-				$tbl_nm_so_ruts_links,
-				['so_id' => intval( $data['updateId'] ) ]
-			);
-
-			foreach($data["linked_ruts"] as $rut){
-				$wpdb->insert(
-					$tbl_nm_so_ruts_links,
-					array(
-						'so_id' => intval( $data['updateId'] ),
-						'rut' 	=> $rut
-					)
-				);
-			}
-
-			return [
-				'dosf_operation'		 => 'UPDATE',
-				'dosfUpdate_post_status' => 'ok',
-				'dosfAddNew_email_sent'	 => $mail_sent_res
-			];
-
-		} else {
-
-			$options = get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
-			if( isset( $options['use-serial-number'] ) && $options['use-serial-number'] ){
-				// Chequeo de existencia por número de serie:
-				if( $this->checkStoredMatchBySerialNumber( $data['title'] ) ){
-					return [
-						'dosf_operation'		 => 'INSERT',
-						'dosfAddNew_post_status' => 'error',
-						'err_code'				 => '403',
-						'err_msg'				 => 'Try duplicated serial'
-					];
-				}
-			}
-		
-			$dowld_code = $this->generate_download_code();
-			$wpdb->insert(
-				$tbl_nm_shared_objs,
-				array(
-					'title' 		 => $data['title'],
-					'file_name' 	 => $data['file_name'],
-					'wp_file_obj_id' => $data['wp_obj_file_id'],
-					'email'			 => implode(',',$data['email']),
-					'email2'		 => implode(',',$data['email2']),
-					'email3'		 => implode(',',$data['email3']),
-					'download_code'  => $dowld_code,
-					'emision'		 => $data['emision']
-				)
-			);
-			$so_id = $wpdb->insert_id;
-			if( $so_id !== false ){
-				foreach($data["linked_ruts"] as $rut){
-					$wpdb->insert(
-						$tbl_nm_so_ruts_links,
-						array(
-							'so_id' => intval($so_id),
-							'rut' 	=> $rut
-						)
-					);
-				}
-			} 
-			$wp_upload_dir_info = wp_upload_dir(); 
-			$attachment_id = intval($data['wp_obj_file_id']);
-			$file_path = get_attached_file($attachment_id);
-			$dce_args = array(
-							'email' => $data['email'],
-							'download_code' => $dowld_code,
-							'file' => $file_path
-						);
-
-
-			$mail_sent_res = $this->send_download_code_email($dce_args);
-
-			return [
-				'dosf_operation'		 => 'INSERT',
-				'dosfAddNew_post_status' => 'ok',
-				'dosfAddNew_email_sent'	 => $mail_sent_res
-			];
-
+		if ( ! empty( $saved['error'] ) ) {
+			return $saved['payload'];
 		}
 
-		
+		if ( $saved['operation'] === 'INSERT' ) {
+			$mail_sent_res = $this->send_download_code_email( $saved['mail_args'] );
+			return array(
+				'dosf_operation'         => 'INSERT',
+				'dosfAddNew_post_status' => 'ok',
+				'dosfAddNew_email_sent'  => $mail_sent_res,
+			);
+		}
+
+		return array(
+			'dosf_operation'         => 'UPDATE',
+			'dosfUpdate_post_status' => 'ok',
+			'dosfAddNew_email_sent'  => null,
+		);
 	}
 
-	public function checkStoredMatchBySerialNumber( $serial ){
+	function checkStoredMatchBySerialNumber( $serial ){
 		global $wpdb;
 		$tbl_nm_shared_objs = $wpdb->prefix . 'dosf_shared_objs';
 		$match_count = $wpdb->get_var("
@@ -1061,6 +928,7 @@ class Wp_Dosf_Admin {
 				$file_path = get_attached_file($attachment_id);
 
 				$args = array(
+					'id' => $dosf_id,
 					'email' => $rc[0]['email'],
 					'email2' => $rc[0]['email2'],
 					'download_code' => $rc[0]['download_code'],
@@ -1166,6 +1034,17 @@ class Wp_Dosf_Admin {
 	
 
 	public function send_download_code_email($args){
+		$cert_id = 0;
+		if ( ! empty( $args['id'] ) ) {
+			$cert_id = intval( $args['id'] );
+		}
+		if ( $cert_id && class_exists( 'Dosf_Series' ) ) {
+			$ctx = Dosf_Series::context( $cert_id );
+			if ( $ctx ) {
+				$args['serial'] = $ctx->serie;
+				$args['cert_title'] = $ctx->cert_title;
+			}
+		}
 
 		if(  !isset($args['download_code']) || empty($args['download_code']) )
 			return false;
@@ -1214,9 +1093,11 @@ class Wp_Dosf_Admin {
 							$args['download_code'],
 							$content
 						);
+			$content = str_replace( '{serie}', isset( $args['serial'] ) ? $args['serial'] : '', $content );
+			$content = str_replace( '{cert_title}', isset( $args['cert_title'] ) ? $args['cert_title'] : '', $content );
 			$subject = apply_filters(
 							'dosf_eml_new_obj_eml_subject',
-							'Grua PM :: Código de descarga de certificado de mantención'
+							'Grua PM :: Código de descarga ' . ( isset( $args['cert_title'] ) ? $args['cert_title'] : '' ) . ' serie ' . ( isset( $args['serial'] ) ? $args['serial'] : '' )
 						);
 
 			$header = array('Content-Type: text/html; charset=UTF-8');
@@ -1299,9 +1180,21 @@ class Wp_Dosf_Admin {
 							$args['id'],
 							$content
 						);
+			if ( ! empty( $args['id'] ) && class_exists( 'Dosf_Series' ) ) {
+			$ctx = Dosf_Series::context( intval( $args['id'] ) );
+			if ( $ctx ) {
+				$args['serial'] = $ctx->serie;
+				$args['cert_title'] = $ctx->cert_title;
+			}
+		}
 			$content = str_replace(
 							'{serie}',
 							$args['serial'],
+							$content
+						);
+			$content = str_replace(
+							'{cert_title}',
+							isset( $args['cert_title'] ) ? $args['cert_title'] : '',
 							$content
 						);
 			$content = str_replace(
@@ -1317,7 +1210,7 @@ class Wp_Dosf_Admin {
 
 			$subject = apply_filters(
 							'dosf_eml_expiration_warning_subject',
-							'Grua PM :: Certificado de mantención '.$args['serial'].' próximo a vencer'
+							'Grua PM :: ' . ( isset( $args['cert_title'] ) ? $args['cert_title'] : 'Certificado' ) . ' de la serie '.$args['serial'].' próximo a vencer'
 						);
 
 			$header = array('Content-Type: text/html; charset=UTF-8');
