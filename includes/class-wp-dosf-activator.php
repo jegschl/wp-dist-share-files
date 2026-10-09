@@ -52,11 +52,13 @@ class Wp_Dosf_Activator {
 			emision datetime DEFAULT NULL,
 			file_name varchar(256) NOT NULL,
 			wp_file_obj_id int unsigned NULL,
+			file_unavailable tinyint(1) NOT NULL DEFAULT 0,
 			created timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
 			email varchar(255) NOT NULL,
 			email2 varchar(255) NOT NULL,
 			email3 varchar(255) NOT NULL DEFAULT '',
 			download_code varchar(16) NOT NULL,
+			download_code_issued datetime NULL,
 			PRIMARY KEY  (id),
 			KEY title_idx (title(191),id),
 			KEY file_name_idx (file_name(191),id)

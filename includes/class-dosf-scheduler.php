@@ -12,6 +12,7 @@ class Wp_Dosf_Scheduler {
         add_action( DOSF_HOOK_SCHEDULED_EVENT_MONITOR, 'Wp_Dosf_Admin::verify_certs_expiration' );
 
 		add_action( DOSF_HOOK_SCHEDULED_EVENT_EWMQ_PROCESS, 'Wp_Dosf_Admin::process_certs_expiration_queue' );
+        add_action( 'dosf_scheduler_purge_expired_files', 'Wp_Dosf_Admin::purge_expired_certificate_files' );
     }
 
     public function set_schedules( $s ){
@@ -48,6 +49,16 @@ class Wp_Dosf_Scheduler {
         if( !wp_next_scheduled( DOSF_HOOK_SCHEDULED_EVENT_MONITOR ) )
         {
             wp_schedule_event( time(), DOSF_SCHEDULE_INTERVAL_MON_KEY_NM, DOSF_HOOK_SCHEDULED_EVENT_MONITOR );
+        }
+
+        $plus_options = get_option( DOSF_WP_OPT_NM_PLUS_OPTIONS );
+        $purge_hook   = 'dosf_scheduler_purge_expired_files';
+        $enabled      = is_array( $plus_options ) && ! empty( $plus_options['delete-file-after-expire'] );
+        $next         = wp_next_scheduled( $purge_hook );
+        if ( $enabled && ! $next ) {
+            wp_schedule_event( time(), 'daily', $purge_hook );
+        } elseif ( ! $enabled && $next ) {
+            wp_unschedule_event( $next, $purge_hook );
         }
 
     }

@@ -41,6 +41,8 @@ class Dosf_Series {
 
 		self::ensure_column( $tables['certs'], 'serie_id', 'int unsigned NULL' );
 		self::ensure_column( $tables['certs'], 'cert_title', "varchar(256) NOT NULL DEFAULT ''" );
+		self::ensure_column( $tables['certs'], 'file_unavailable', 'tinyint(1) NOT NULL DEFAULT 0' );
+		self::ensure_column( $tables['certs'], 'download_code_issued', 'datetime NULL' );
 		self::ensure_column( $tables['ruts'], 'serie_id', 'int unsigned NULL' );
 
 		$titles = $wpdb->get_col( "SELECT DISTINCT title FROM {$tables['certs']} WHERE title <> ''" );
@@ -99,7 +101,34 @@ class Dosf_Series {
 			);
 		}
 
+		self::mark_missing_attachments();
+
 		return true;
+	}
+
+	private static function mark_missing_attachments() {
+		global $wpdb;
+
+		$tables = self::table_names();
+		$ids   = $wpdb->get_col( "SELECT DISTINCT wp_file_obj_id FROM {$tables['certs']} WHERE wp_file_obj_id > 0" );
+		if ( ! is_array( $ids ) ) {
+			return;
+		}
+
+		foreach ( $ids as $attachment_id ) {
+			$attachment_id = intval( $attachment_id );
+			$post          = get_post( $attachment_id );
+			$missing       = ! $post || $post->post_type !== 'attachment' || $post->post_status === 'trash' || ! wp_get_attachment_url( $attachment_id );
+			if ( ! $missing ) {
+				continue;
+			}
+			$wpdb->query(
+				$wpdb->prepare(
+					"UPDATE {$tables['certs']} SET file_unavailable = 1 WHERE wp_file_obj_id = %d",
+					$attachment_id
+				)
+			);
+		}
 	}
 
 	private static function initial_cert_title( $cert ) {
@@ -223,6 +252,44 @@ class Dosf_Series {
 		return $string;
 	}
 
+	public static function refresh_download_code( $cert_id ) {
+		global $wpdb;
+
+		$cert_id = intval( $cert_id );
+		if ( $cert_id < 1 ) {
+			return '';
+		}
+
+		$tables  = self::table_names();
+		$current = $wpdb->get_var( $wpdb->prepare( "SELECT download_code FROM {$tables['certs']} WHERE id = %d", $cert_id ) );
+		if ( $current === null ) {
+			return '';
+		}
+
+		$code  = self::generate_code();
+		$guard = 0;
+		while ( strtoupper( $code ) === strtoupper( (string) $current ) && $guard < 5 ) {
+			$code = self::generate_code();
+			$guard++;
+		}
+
+		$updated = $wpdb->update(
+			$tables['certs'],
+			array(
+				'download_code'        => $code,
+				'download_code_issued' => current_time( 'mysql' ),
+			),
+			array( 'id' => $cert_id ),
+			array( '%s', '%s' ),
+			array( '%d' )
+		);
+		if ( $updated === false ) {
+			return '';
+		}
+
+		return $code;
+	}
+
 	public static function save_certificate( $data ) {
 		global $wpdb;
 
@@ -288,12 +355,27 @@ class Dosf_Series {
 			);
 		}
 
+		$attachment_id   = isset( $data['wp_obj_file_id'] ) ? intval( $data['wp_obj_file_id'] ) : 0;
+		$file_unavailable = 0;
+		if ( $attachment_id > 0 ) {
+			$sibling_marked = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT id FROM {$tables['certs']} WHERE wp_file_obj_id = %d AND file_unavailable = 1 LIMIT 1",
+					$attachment_id
+				)
+			);
+			if ( $sibling_marked || ! Wp_Dosf_Admin::attachment_is_downloadable( $attachment_id ) ) {
+				$file_unavailable = 1;
+			}
+		}
+
 		$row = array(
-			'title'          => $serie,
-			'cert_title'     => $cert_title,
-			'serie_id'       => $serie_id,
-			'file_name'      => isset( $data['file_name'] ) ? $data['file_name'] : '',
-			'wp_file_obj_id' => isset( $data['wp_obj_file_id'] ) ? intval( $data['wp_obj_file_id'] ) : 0,
+			'title'            => $serie,
+			'cert_title'       => $cert_title,
+			'serie_id'         => $serie_id,
+			'file_name'        => isset( $data['file_name'] ) ? $data['file_name'] : '',
+			'wp_file_obj_id'   => $attachment_id,
+			'file_unavailable' => $file_unavailable,
 			'email'          => self::email_list( $data, 'email' ),
 			'email2'         => self::email_list( $data, 'email2' ),
 			'email3'         => self::email_list( $data, 'email3' ),
@@ -311,6 +393,7 @@ class Dosf_Series {
 		}
 
 		$row['download_code'] = self::generate_code();
+		$row['download_code_issued'] = current_time( 'mysql' );
 		$wpdb->insert( $tables['certs'], $row );
 		$id = intval( $wpdb->insert_id );
 		self::sync_ruts( $serie_id, isset( $data['linked_ruts'] ) ? $data['linked_ruts'] : array() );
@@ -464,7 +547,8 @@ class Dosf_Series {
 						'cert_title'    => $cert->cert_title,
 						'emision'       => $cert->emision,
 						'file_name'     => $cert->file_name,
-						'attachment_id' => $cert->wp_file_obj_id,
+						'attachment_id'    => $cert->wp_file_obj_id,
+						'file_unavailable' => isset( $cert->file_unavailable ) ? intval( $cert->file_unavailable ) : 0,
 						'email'         => $cert->email,
 						'email2'        => $cert->email2,
 						'email3'        => $cert->email3,
@@ -503,7 +587,7 @@ class Dosf_Series {
 		if ( $by_serial ) {
 			if ( $exact ) {
 				$sql = $wpdb->prepare(
-					"SELECT c.id, c.cert_title AS title, s.serie, c.emision, c.file_name
+					"SELECT c.id, c.cert_title AS title, s.serie, c.emision, c.file_name, c.file_unavailable
 					 FROM {$tables['certs']} c
 					 INNER JOIN {$tables['series']} s ON s.id = c.serie_id
 					 WHERE s.serie = %s
@@ -512,7 +596,7 @@ class Dosf_Series {
 				);
 			} else {
 				$sql = $wpdb->prepare(
-					"SELECT c.id, c.cert_title AS title, s.serie, c.emision, c.file_name
+					"SELECT c.id, c.cert_title AS title, s.serie, c.emision, c.file_name, c.file_unavailable
 					 FROM {$tables['certs']} c
 					 INNER JOIN {$tables['series']} s ON s.id = c.serie_id
 					 WHERE s.serie LIKE %s
@@ -524,7 +608,7 @@ class Dosf_Series {
 			$rut = preg_replace( '/[.\-\s]/', '', $value );
 			if ( $exact ) {
 				$sql = $wpdb->prepare(
-					"SELECT DISTINCT c.id, c.cert_title AS title, s.serie, c.emision, c.file_name
+					"SELECT DISTINCT c.id, c.cert_title AS title, s.serie, c.emision, c.file_name, c.file_unavailable
 					 FROM {$tables['ruts']} r
 					 INNER JOIN {$tables['series']} s ON s.id = r.serie_id
 					 INNER JOIN {$tables['certs']} c ON c.serie_id = s.id
@@ -534,7 +618,7 @@ class Dosf_Series {
 				);
 			} else {
 				$sql = $wpdb->prepare(
-					"SELECT DISTINCT c.id, c.cert_title AS title, s.serie, c.emision, c.file_name
+					"SELECT DISTINCT c.id, c.cert_title AS title, s.serie, c.emision, c.file_name, c.file_unavailable
 					 FROM {$tables['ruts']} r
 					 INNER JOIN {$tables['series']} s ON s.id = r.serie_id
 					 INNER JOIN {$tables['certs']} c ON c.serie_id = s.id

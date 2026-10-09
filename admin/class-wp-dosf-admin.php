@@ -444,6 +444,7 @@ class Wp_Dosf_Admin {
 
 		</div>
 
+		<?php if ( current_user_can( 'manage_options' ) ) : ?>
 		<div class="dosf-plus-options">
 			<h2>Otras opciones</h2>
 			<?php $checked = $plus_options['frontend-specific-match-search'] ? 'checked' : ''; ?>
@@ -501,10 +502,60 @@ class Wp_Dosf_Admin {
 			</div>
 
 
+			<div class="input">
+				<?php $checked = ! empty( $plus_options['delete-file-after-expire'] ) ? 'checked' : ''; ?>
+				<input id="delete-file-after-expire" type="checkbox" name="delete-file-after-expire" <?= $checked ?>>
+				<label for="delete-file-after-expire">Mover a la papelera el archivo del certificado después de vencer.</label>
+			</div>
+			<div class="input">
+				<label for="delete-file-after-nmb">Eliminar transcurridos</label>
+				<?php $value = isset( $plus_options['delete-file-after-nmb'] ) && $plus_options['delete-file-after-nmb'] !== '' ? 'value="' . intval( $plus_options['delete-file-after-nmb'] ) . '"' : 'value="0"'; ?>
+				<input id="delete-file-after-nmb" type="number" name="delete-file-after-nmb" min="0" <?= $value ?>>
+				<?php $value = empty( $plus_options['delete-file-after-unit'] ) ? 'day' : $plus_options['delete-file-after-unit']; ?>
+				<select id="delete-file-after-unit" name="delete-file-after-unit">
+					<option value="day" <?= $value=='day' ? 'selected' : '' ?>>día(s)</option>
+					<option value="week" <?= $value=='week' ? 'selected' : '' ?>>semana(s)</option>
+					<option value="month" <?= $value=='month' ? 'selected' : '' ?>>mes(es)</option>
+					<option value="year" <?= $value=='year' ? 'selected' : '' ?>>año(s)</option>
+				</select>
+				<label for="delete-file-after-unit">desde el vencimiento.</label>
+				<p class="description">El plazo se cuenta desde la fecha de vencimiento. Una tarea diaria mueve el adjunto a la papelera de WordPress con el procedimiento estándar de adjuntos. El archivo permanece en el disco y se puede restaurar desde Medios → Papelera.</p>
+			</div>
 <div class="input">
-	<label for="pm-download-code-popup-id">ID del popup (Popup Maker) para ingreso de código de descarga</label>
-	<?php $pm_popup_id_val = empty($plus_options['pm-download-code-popup-id']) ? '' : 'value="' . intval($plus_options['pm-download-code-popup-id']) . '"'; ?>
-	<input id="pm-download-code-popup-id" type="number" name="pm-download-code-popup-id" min="1" <?= $pm_popup_id_val ?>>
+	<label for="download-code-valid-nmb">El código de descarga es válido durante</label>
+	<?php
+		$code_valid_nmb  = isset( $plus_options['download-code-valid-nmb'] ) ? max( 1, intval( $plus_options['download-code-valid-nmb'] ) ) : 1;
+		$code_valid_unit = isset( $plus_options['download-code-valid-unit'] ) ? $plus_options['download-code-valid-unit'] : 'hour';
+		if ( ! in_array( $code_valid_unit, array( 'minute', 'hour', 'day', 'week' ), true ) ) {
+			$code_valid_unit = 'hour';
+		}
+	?>
+	<input id="download-code-valid-nmb" type="number" name="download-code-valid-nmb" min="1" value="<?= $code_valid_nmb ?>">
+	<select id="download-code-valid-unit" name="download-code-valid-unit">
+		<option value="minute" <?= $code_valid_unit === 'minute' ? 'selected' : '' ?>>minuto(s)</option>
+		<option value="hour" <?= $code_valid_unit === 'hour' ? 'selected' : '' ?>>hora(s)</option>
+		<option value="day" <?= $code_valid_unit === 'day' ? 'selected' : '' ?>>día(s)</option>
+		<option value="week" <?= $code_valid_unit === 'week' ? 'selected' : '' ?>>semana(s)</option>
+	</select>
+	<p class="description">El plazo empieza cuando se solicita la descarga y se envía el código. Pasado ese tiempo hay que solicitar la descarga otra vez.</p>
+</div>
+<div class="input">
+	<label for="pm-download-code-popup-id">Popup (Popup Maker) para ingreso de código de descarga</label>
+	<?php
+		$pm_popup_id = empty( $plus_options['pm-download-code-popup-id'] ) ? 0 : intval( $plus_options['pm-download-code-popup-id'] );
+		$pm_popups   = self::popup_maker_choices();
+		$pm_known    = array();
+	?>
+	<select id="pm-download-code-popup-id" name="pm-download-code-popup-id">
+		<option value="0">Seleccione un popup</option>
+		<?php foreach ( $pm_popups as $pm_popup ) : ?>
+			<?php $pm_known[] = $pm_popup['id']; ?>
+			<option value="<?= intval( $pm_popup['id'] ) ?>" <?= $pm_popup_id === intval( $pm_popup['id'] ) ? 'selected' : '' ?>><?= esc_html( $pm_popup['label'] ) ?></option>
+		<?php endforeach; ?>
+		<?php if ( $pm_popup_id > 0 && ! in_array( $pm_popup_id, $pm_known, true ) ) : ?>
+			<option value="<?= $pm_popup_id ?>" selected><?= esc_html( 'Popup #' . $pm_popup_id . ' (no encontrado)' ) ?></option>
+		<?php endif; ?>
+	</select>
 </div>
 		<?php
 			$status_tpl_defaults = self::default_status_templates();
@@ -517,7 +568,7 @@ class Wp_Dosf_Admin {
 		?>
 		<div class="dosf-status-templates">
 			<h3>Mensajes del frontend</h3>
-			<p class="description">Texto que ve quien busca un certificado. Marcadores: <code>{cert_title}</code> título, <code>{serie}</code> número de serie y <code>{estado}</code> la palabra vigente o vencido.</p>
+			<p class="description">Texto que ve quien busca un certificado. Marcadores: <code>{cert_title}</code> título, <code>{serie}</code> número de serie, <code>{estado}</code> la palabra vigente o vencido y <code>{fecha_vencimiento}</code> la fecha de vencimiento, calculada sumando el plazo de vigencia a la fecha de emisión.</p>
 			<div class="input">
 				<label for="status-tpl-vigente">Certificado vigente</label>
 				<textarea id="status-tpl-vigente" name="status-tpl-vigente" rows="3"><?= esc_textarea( $status_tpl_vigente ) ?></textarea>
@@ -534,6 +585,7 @@ class Wp_Dosf_Admin {
 			</div>
 			<div id="after-try-update-res-placeholder" class="hidden">Respuesta</div>
 		</div>
+		<?php endif; ?>
 		
 		<?php
 	}
@@ -627,10 +679,14 @@ class Wp_Dosf_Admin {
                     $this,
                     'receive_plus_options'
                 ),
-                'permission_callback' => '__return_true',
+                'permission_callback' => array( $this, 'user_can_edit_plugin_options' ),
             )
 		);
     }
+
+	public function user_can_edit_plugin_options() {
+		return current_user_can( 'manage_options' );
+	}
 
 	public function receive_dosf_remove_request( WP_REST_Request $r ){
 		$ids = $r->get_json_params();
@@ -679,7 +735,236 @@ class Wp_Dosf_Admin {
 		);
 	}
 
-	public static function frontend_status_message( $plus_options, $cert_title, $serie, $status ) {
+	public static function add_calendar_interval( $date, $amount, $unit ) {
+		$units = array(
+			'minute' => 'minute',
+			'hour'   => 'hour',
+			'day'    => 'day',
+			'week'   => 'week',
+			'month'  => 'month',
+			'year'   => 'year',
+		);
+		$amount = intval( $amount );
+		if ( ! ( $date instanceof DateTime ) || $amount < 0 || ! isset( $units[ $unit ] ) ) {
+			return null;
+		}
+		$copy = clone $date;
+		if ( $amount === 0 ) {
+			return $copy;
+		}
+		$spec = $amount === 1 ? $units[ $unit ] : $units[ $unit ] . 's';
+		$copy->modify( '+' . $amount . ' ' . $spec );
+		return $copy;
+	}
+
+	public static function download_code_is_current( $issued_at ) {
+		if ( ! is_string( $issued_at ) || trim( $issued_at ) === '' || $issued_at === '0000-00-00 00:00:00' ) {
+			return false;
+		}
+
+		$plus   = get_option( DOSF_WP_OPT_NM_PLUS_OPTIONS );
+		$amount = 1;
+		$unit   = 'hour';
+		$units  = array( 'minute', 'hour', 'day', 'week' );
+		if ( is_array( $plus ) ) {
+			if ( isset( $plus['download-code-valid-nmb'] ) ) {
+				$amount = max( 1, intval( $plus['download-code-valid-nmb'] ) );
+			}
+			if ( ! empty( $plus['download-code-valid-unit'] ) && in_array( $plus['download-code-valid-unit'], $units, true ) ) {
+				$unit = $plus['download-code-valid-unit'];
+			}
+		}
+
+		try {
+			$issued = new DateTime( $issued_at );
+		} catch ( Exception $e ) {
+			return false;
+		}
+
+		$expires = self::add_calendar_interval( $issued, $amount, $unit );
+		if ( ! $expires ) {
+			return false;
+		}
+
+		return new DateTime( current_time( 'mysql' ) ) <= $expires;
+	}
+
+	public static function certificate_expiration_datetime( $plus_options, $emision ) {
+		if ( ! is_array( $plus_options ) || empty( $emision ) ) {
+			return null;
+		}
+		$amount = isset( $plus_options['expire-period-nmb'] ) ? intval( $plus_options['expire-period-nmb'] ) : 0;
+		$unit   = isset( $plus_options['expire-period-unit'] ) ? $plus_options['expire-period-unit'] : '';
+		if ( $amount < 1 ) {
+			return null;
+		}
+		try {
+			$date = new DateTime( $emision );
+		} catch ( Exception $e ) {
+			return null;
+		}
+		return self::add_calendar_interval( $date, $amount, $unit );
+	}
+
+	public static function certificate_expiration_label( $plus_options, $emision ) {
+		$date = self::certificate_expiration_datetime( $plus_options, $emision );
+		if ( ! $date ) {
+			return '';
+		}
+		$format = get_option( 'date_format' );
+		if ( ! is_string( $format ) || $format === '' ) {
+			$format = 'd/m/Y';
+		}
+		return date_i18n( $format, $date->getTimestamp() );
+	}
+
+	public static function certificate_file_due_for_removal( $plus_options, $emision, $now = null ) {
+		if ( ! is_array( $plus_options ) || empty( $plus_options['delete-file-after-expire'] ) ) {
+			return false;
+		}
+		$expires = self::certificate_expiration_datetime( $plus_options, $emision );
+		if ( ! $expires ) {
+			return false;
+		}
+		$grace_n = isset( $plus_options['delete-file-after-nmb'] ) ? intval( $plus_options['delete-file-after-nmb'] ) : 0;
+		$grace_u = isset( $plus_options['delete-file-after-unit'] ) ? $plus_options['delete-file-after-unit'] : 'day';
+		$due     = self::add_calendar_interval( $expires, $grace_n, $grace_u );
+		if ( ! $due ) {
+			return false;
+		}
+		if ( ! ( $now instanceof DateTime ) ) {
+			$now = new DateTime( 'now' );
+		}
+		return $now >= $due;
+	}
+
+	public static function attachment_is_downloadable( $attachment_id ) {
+		$post = get_post( intval( $attachment_id ) );
+		if ( ! $post || $post->post_type !== 'attachment' || $post->post_status === 'trash' ) {
+			return false;
+		}
+		return ! empty( wp_get_attachment_url( $post->ID ) );
+	}
+
+	public static function trash_certificate_attachment( $attachment_id ) {
+		$attachment_id = intval( $attachment_id );
+		$post          = get_post( $attachment_id );
+		if ( ! $post || $post->post_type !== 'attachment' ) {
+			return false;
+		}
+		if ( $post->post_status === 'trash' ) {
+			self::mark_certificates_file_unavailable( $attachment_id );
+			return true;
+		}
+		if ( defined( 'MEDIA_TRASH' ) && MEDIA_TRASH && function_exists( 'wp_delete_attachment' ) ) {
+			$result = wp_delete_attachment( $attachment_id, false );
+		} else {
+			$result = wp_trash_post( $attachment_id );
+		}
+		if ( ! empty( $result ) ) {
+			self::mark_certificates_file_unavailable( $attachment_id );
+		}
+		return ! empty( $result );
+	}
+
+	public static function mark_certificates_file_unavailable( $attachment_id ) {
+		return self::set_certificates_file_unavailable( $attachment_id, 1 );
+	}
+
+	public static function mark_certificates_file_available( $attachment_id ) {
+		return self::set_certificates_file_unavailable( $attachment_id, 0 );
+	}
+
+	private static function set_certificates_file_unavailable( $attachment_id, $unavailable ) {
+		global $wpdb;
+
+		$attachment_id = intval( $attachment_id );
+		if ( $attachment_id < 1 ) {
+			return 0;
+		}
+
+		$table   = $wpdb->prefix . 'dosf_shared_objs';
+		$updated = $wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$table} SET file_unavailable = %d WHERE wp_file_obj_id = %d",
+				$unavailable ? 1 : 0,
+				$attachment_id
+			)
+		);
+
+		return $updated === false ? 0 : intval( $updated );
+	}
+
+	public function on_attachment_trashed( $post_id ) {
+		$post = get_post( intval( $post_id ) );
+		if ( ! $post || $post->post_type !== 'attachment' ) {
+			return;
+		}
+		self::mark_certificates_file_unavailable( $post_id );
+	}
+
+	public function on_attachment_deleted( $post_id ) {
+		self::mark_certificates_file_unavailable( $post_id );
+	}
+
+	public function on_attachment_restored( $post_id ) {
+		$post = get_post( intval( $post_id ) );
+		if ( ! $post || $post->post_type !== 'attachment' ) {
+			return;
+		}
+		if ( self::attachment_is_downloadable( $post_id ) ) {
+			self::mark_certificates_file_available( $post_id );
+			return;
+		}
+		self::mark_certificates_file_unavailable( $post_id );
+	}
+
+	public static function purge_expired_certificate_files() {
+		$plus_options = get_option( DOSF_WP_OPT_NM_PLUS_OPTIONS );
+		if ( ! is_array( $plus_options ) || empty( $plus_options['delete-file-after-expire'] ) ) {
+			return 0;
+		}
+
+		global $wpdb;
+		$table = $wpdb->prefix . 'dosf_shared_objs';
+		$rows  = $wpdb->get_results( "SELECT id, emision, wp_file_obj_id FROM {$table} WHERE wp_file_obj_id > 0" );
+		if ( ! is_array( $rows ) ) {
+			return 0;
+		}
+
+		$grouped = array();
+		foreach ( $rows as $row ) {
+			$attachment_id = intval( $row->wp_file_obj_id );
+			if ( $attachment_id < 1 ) {
+				continue;
+			}
+			if ( ! isset( $grouped[ $attachment_id ] ) ) {
+				$grouped[ $attachment_id ] = array();
+			}
+			$grouped[ $attachment_id ][] = $row;
+		}
+
+		$trashed = 0;
+		$now     = new DateTime( 'now' );
+		foreach ( $grouped as $attachment_id => $certs ) {
+			$all_due = true;
+			foreach ( $certs as $cert ) {
+				if ( ! self::certificate_file_due_for_removal( $plus_options, $cert->emision, $now ) ) {
+					$all_due = false;
+					break;
+				}
+			}
+			if ( ! $all_due ) {
+				continue;
+			}
+			if ( self::trash_certificate_attachment( $attachment_id ) ) {
+				$trashed++;
+			}
+		}
+
+		return $trashed;
+	}
+	public static function frontend_status_message( $plus_options, $cert_title, $serie, $status, $emision = '' ) {
 		$status = strtolower( (string) $status );
 		if ( $status !== 'vigente' && $status !== 'vencido' ) {
 			$status = 'vencido';
@@ -694,9 +979,10 @@ class Wp_Dosf_Admin {
 
 		$estado = '<span class="status ' . esc_attr( $status ) . '">' . esc_html( $status ) . '</span>';
 		$repl   = array(
-			'{cert_title}' => esc_html( (string) $cert_title ),
-			'{serie}'      => esc_html( (string) $serie ),
-			'{estado}'     => $estado,
+			'{cert_title}'        => esc_html( (string) $cert_title ),
+			'{serie}'             => esc_html( (string) $serie ),
+			'{estado}'            => $estado,
+			'{fecha_vencimiento}' => esc_html( self::certificate_expiration_label( $plus_options, $emision ) ),
 		);
 
 		return strtr( nl2br( esc_html( $tpl ) ), $repl );
@@ -809,7 +1095,46 @@ class Wp_Dosf_Admin {
 
 	}
 
+	public static function popup_maker_choices() {
+		if ( ! post_type_exists( 'popup' ) ) {
+			return array();
+		}
+
+		$posts = get_posts( array(
+			'post_type'      => 'popup',
+			'post_status'    => array( 'publish', 'draft', 'private', 'pending' ),
+			'posts_per_page' => -1,
+			'orderby'        => 'title',
+			'order'          => 'ASC',
+		) );
+
+		$choices = array();
+		foreach ( $posts as $post ) {
+			$title = trim( $post->post_title );
+			if ( $title === '' ) {
+				$title = '(sin título)';
+			}
+			$label = $title . ' (#' . intval( $post->ID ) . ')';
+			if ( $post->post_status !== 'publish' ) {
+				$label .= ' — ' . $post->post_status;
+			}
+			$choices[] = array(
+				'id'    => intval( $post->ID ),
+				'label' => $label,
+			);
+		}
+
+		return $choices;
+	}
+
 	public function receive_plus_options($r){
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return array(
+				'error'    => true,
+				'err_code' => DOSF_PLUS_OPTS_UPDATE_ERR_INVALID_NONCE,
+			);
+		}
+
 		$data = $r->get_json_params();
 
 		$r = array(
@@ -837,6 +1162,28 @@ class Wp_Dosf_Admin {
 			if ( isset( $data[ $tpl_key ] ) ) {
 				$data[ $tpl_key ] = sanitize_textarea_field( $data[ $tpl_key ] );
 			}
+		}
+
+		$popup_id = isset( $data['pm-download-code-popup-id'] ) ? intval( $data['pm-download-code-popup-id'] ) : 0;
+		if ( $popup_id > 0 ) {
+			$popup_post = get_post( $popup_id );
+			if ( ! $popup_post || $popup_post->post_type !== 'popup' ) {
+				$popup_id = 0;
+			}
+		}
+		$data['pm-download-code-popup-id'] = $popup_id;
+
+		$data['download-code-valid-nmb'] = isset( $data['download-code-valid-nmb'] ) ? max( 1, intval( $data['download-code-valid-nmb'] ) ) : 1;
+		$code_valid_units = array( 'minute', 'hour', 'day', 'week' );
+		if ( empty( $data['download-code-valid-unit'] ) || ! in_array( $data['download-code-valid-unit'], $code_valid_units, true ) ) {
+			$data['download-code-valid-unit'] = 'hour';
+		}
+
+		$data['delete-file-after-expire'] = ! empty( $data['delete-file-after-expire'] );
+		$data['delete-file-after-nmb'] = isset( $data['delete-file-after-nmb'] ) ? max( 0, intval( $data['delete-file-after-nmb'] ) ) : 0;
+		$delete_units = array( 'day', 'week', 'month', 'year' );
+		if ( empty( $data['delete-file-after-unit'] ) || ! in_array( $data['delete-file-after-unit'], $delete_units, true ) ) {
+			$data['delete-file-after-unit'] = 'day';
 		}
 
 		//DOSF_WP_OPT_NM_PLUS_OPTIONS
@@ -926,12 +1273,21 @@ class Wp_Dosf_Admin {
 			if(count($rc) == 1){
 				$attachment_id = intval($rc[0]['wp_obj_id']);
 				$file_path = get_attached_file($attachment_id);
+				$download_code = Dosf_Series::refresh_download_code( intval( $dosf_id ) );
+				if ( $download_code === '' ) {
+					return array(
+						'error' => true,
+						'error_code' => 3,
+						'error_msg' => 'No se pudo generar un código de descarga',
+						'dosfDldCdSend_email_sent' => false,
+					);
+				}
 
 				$args = array(
 					'id' => $dosf_id,
 					'email' => $rc[0]['email'],
 					'email2' => $rc[0]['email2'],
-					'download_code' => $rc[0]['download_code'],
+					'download_code' => $download_code,
 					'file' => $file_path
 				);
 				
@@ -1239,6 +1595,8 @@ class Wp_Dosf_Admin {
 				$wpdb->insert($tbl_nm_ewmq, [ 'so_id' => $r->id ] );
 			}
 		}
+
+		self::purge_expired_certificate_files();
 
 		if( !wp_next_scheduled( DOSF_HOOK_SCHEDULED_EVENT_EWMQ_PROCESS ) )
         {

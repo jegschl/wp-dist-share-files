@@ -116,7 +116,7 @@
 					html += '<td>' + escHtml(cert.vdbe) + '</td>';
 					html += '<td>' + escHtml(cert.status) + '</td>';
 				}
-				html += '<td>' + escHtml(cert.file_name) + '</td>';
+				html += '<td>' + escHtml(cert.file_name) + (parseInt(cert.file_unavailable, 10) === 1 ? ' <span class="dosf-file-unavailable">No disponible</span>' : '') + '</td>';
 				html += '<td>' + escHtml(cert.email) + '</td>';
 				html += '<td>' + escHtml(cert.email2) + '</td>';
 				html += '<td>' + escHtml(cert.email3) + '</td>';
@@ -571,8 +571,13 @@
 					'ebep-unit'						: $('#ebep-unit').val(),
 					'monitor-expire-interval'		: $('#monitor-expire-interval').val(),
 					'pm-download-code-popup-id'		: parseInt($('#pm-download-code-popup-id').val()) || 0,
+					'download-code-valid-nmb'		: $('#download-code-valid-nmb').val(),
+					'download-code-valid-unit'		: $('#download-code-valid-unit').val(),
 					'status-tpl-vigente'			: $('#status-tpl-vigente').val(),
-					'status-tpl-vencido'			: $('#status-tpl-vencido').val()
+					'status-tpl-vencido'			: $('#status-tpl-vencido').val(),
+					'delete-file-after-expire'	: $('#delete-file-after-expire').is(':checked'),
+					'delete-file-after-nmb'		: $('#delete-file-after-nmb').val(),
+					'delete-file-after-unit'		: $('#delete-file-after-unit').val()
 				};
 
 				return JSON.stringify(config);

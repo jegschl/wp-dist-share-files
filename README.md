@@ -9,9 +9,11 @@ Plugin para **compartir y distribuir documentos** con control de vencimiento, pr
 - Gestión de certificados/documentos compartidos desde el panel de administración
 - Búsqueda pública por **RUT** o **número de serie** del equipo
 - Control de **fecha de emisión y vencimiento** con indicador visual (vigente / vencido)
-- Descarga protegida mediante **código de autorización enviado por correo electrónico**
+- Descarga protegida mediante **código de autorización enviado por correo electrónico**. Cada solicitud de descarga genera un código nuevo y anula el anterior. El plazo de validez (minuto, hora, día o semana) se configura en **Otras opciones**.
+- Papelera automática del archivo vencido, con un plazo de gracia desde el vencimiento, y marca de archivo no disponible si el adjunto se elimina o se mueve a la papelera
 - Avisos automáticos de vencimiento próximo por email (colaboradores, operadores, mecánicos)
-- Integración con **Popup Maker** para el formulario de ingreso del código de autorización
+- Integración con **Popup Maker**: el popup se elige en una lista, no escribiendo su ID
+- La configuración de **Otras opciones** solo la ve un administrador de WordPress. El gestor de certificados sigue administrando los certificados
 - Filtros de WordPress para personalizar imágenes y comportamientos
 
 ---
@@ -32,7 +34,7 @@ Plugin para **compartir y distribuir documentos** con control de vencimiento, pr
 2. Activar el plugin desde **Plugins → Plugins instalados**
 3. Instalar y activar el plugin **[Popup Maker](https://wordpress.org/plugins/popup-maker/)**
 4. Crear el popup de código de autorización (ver sección siguiente)
-5. Configurar el ID del popup en **Distribución de archivos → Otras opciones**
+5. Elegir el popup en **Distribución de archivos → Otras opciones**
 6. Agregar el shortcode `[dosf_browser]` en la página pública de certificados
 
 ---
@@ -99,16 +101,12 @@ En la pestaña **Popup Settings** del popup creado:
 | Overlay | Activado |
 | Cerrar con ESC | Activado |
 
-### Paso 3 — Obtener el ID del popup
+### Paso 3 — Elegir el popup en el plugin
 
 1. Guarda el popup
-2. En **Popup Maker → Todos los popups**, anota el **ID numérico** (columna ID, o en la URL al editar: `?post=XXXX`)
-
-### Paso 4 — Registrar el ID en el plugin
-
-1. Ve a **Distribución de archivos → Otras opciones**
-2. En el campo **"ID del popup (Popup Maker) para ingreso de código de descarga"**, ingresa el ID
-3. Haz clic en **Guardar otras opciones**
+2. Ve a **Distribución de archivos → Gestión → Otras opciones**
+3. En **Popup (Popup Maker) para ingreso de código de descarga**, elige el popup de la lista. Cada opción se muestra como título y número, por ejemplo `Descarga con código de autorización (#11927)`. Entran los popups publicados, en borrador, privados y pendientes. Si el popup guardado ya no existe, la lista conserva `Popup #ID (no encontrado)`
+4. Haz clic en **Guardar otras opciones**
 
 ---
 
@@ -119,6 +117,14 @@ En la pestaña **Popup Settings** del popup creado:
 ```
 
 Agrega este shortcode en la página donde los usuarios buscarán sus certificados. El plugin mostrará un formulario de búsqueda por RUT o número de serie según la configuración en "Otras opciones".
+
+## Quién puede configurar el plugin
+
+El menú **Distribución de archivos** (Gestión y Ayuda) está disponible para quien tenga la capacidad `jgb_collab_access`: el rol **Gestor de Certificados** y el administrador de WordPress.
+
+El bloque **Otras opciones**, al final de Gestión, solo se muestra si la sesión actual es de un administrador de WordPress (capacidad `manage_options`). Ahí se definen la búsqueda pública, el uso de número de serie y de fecha de emisión, el vencimiento, los avisos por correo, la papelera de archivos vencidos, la validez del código de descarga, el popup y los mensajes del frontend.
+
+Un gestor de certificados sigue pudiendo crear, editar y eliminar certificados. No ve ese formulario. Si llama al guardado de esas opciones, WordPress lo rechaza.
 
 ## Mensajes de vigencia en el frontend
 
@@ -131,6 +137,7 @@ Esos textos se editan en **Distribución de archivos → Gestión**, dentro de *
 | `{cert_title}` | Título del certificado |
 | `{serie}` | Número de serie |
 | `{estado}` | La palabra vigente o vencido, con su color |
+| `{fecha_vencimiento}` | Fecha de vencimiento: emisión más el plazo de «Vencimiento a los» |
 
 Si un cuadro queda vacío, el texto usado es:
 
@@ -139,6 +146,30 @@ Si un cuadro queda vacío, el texto usado es:
 ```
 
 `{estado}` es el único marcador que conserva el color. El resto del mensaje se publica como texto plano.
+
+## Papelera de archivos vencidos
+
+En **Otras opciones** se puede activar **Mover a la papelera el archivo del certificado después de vencer** e indicar cuántos días, semanas, meses o años deben pasar desde el vencimiento. Un plazo de 0 mueve el archivo en cuanto vence.
+
+El vencimiento es la fecha de emisión más el plazo de **Vencimiento a los**. Una tarea diaria de WordPress mueve el adjunto con `wp_delete_attachment` sin borrado permanente. El archivo sigue en el disco y se restaura desde **Medios → Papelera** cuando `wp-config.php` define `MEDIA_TRASH` como `true`. Sin esa constante el adjunto queda en estado papelera y el archivo no se borra, pero la pantalla de medios no muestra la papelera.
+
+Si el mismo adjunto está vinculado a varios certificados, solo pasa a la papelera cuando todos ellos ya cumplieron ese plazo.
+
+Cuando el adjunto pasa a la papelera o se elimina, cada certificado que lo usa queda marcado en su propio registro. En el listado público, en lugar del enlace de descarga, se muestra **Certificado no disponible**. En la columna de archivo del admin se muestra **No disponible**. Intentar la descarga devuelve el mismo aviso. Restaurar el adjunto quita esa marca y vuelve a habilitar la descarga.
+
+## Código de descarga
+
+Cada clic en el icono de descarga genera un código nuevo, guarda la fecha y hora de emisión y lo envía al correo del certificado. El código anterior deja de valer en ese momento.
+
+La duración se configura en **Otras opciones**, en **El código de descarga es válido durante**. El número mínimo es 1. Las unidades son minuto, hora, día o semana. Si no hay un plazo guardado, se usa **1 hora**. El plazo empieza cuando se solicita la descarga, no cuando se creó el certificado. El alta de un certificado también registra la hora de emisión del código que sale en el correo inicial.
+
+| Situación | Qué ve quien descarga |
+|---|---|
+| Código distinto al vigente | Código de descarga no válido |
+| Código vencido, o certificado sin hora de emisión | El código de descarga venció. Solicita la descarga nuevamente. |
+| Archivo en la papelera, eliminado o marcado como no disponible | Certificado no disponible |
+
+Ingresar un código correcto no genera otro. Un código nuevo aparece solo cuando se vuelve a solicitar la descarga. Un certificado antiguo sin hora de emisión se trata como vencido hasta esa nueva solicitud.
 
 ---
 
@@ -153,14 +184,14 @@ add_filter( 'dosf/front/search-rut/download-code/popupmakerId', function( $id ) 
 } );
 ```
 
-### Imagen indicadora "vigente" (ej. manito verde)
+### Imagen indicadora "vigente" (el icono por defecto es un círculo verde con un check blanco)
 ```php
 add_filter( 'dosf/front/status-indicator/vigente/img-url', function( $url ) {
     return get_template_directory_uri() . '/images/mi-imagen-vigente.png';
 } );
 ```
 
-### Imagen indicadora "vencido" (ej. manito roja)
+### Imagen indicadora "vencido" (el icono por defecto es un círculo rojo con una X blanca)
 ```php
 add_filter( 'dosf/front/status-indicator/vencido/img-url', function( $url ) {
     return get_template_directory_uri() . '/images/mi-imagen-vencida.png';
@@ -199,11 +230,13 @@ CREATE TABLE IF NOT EXISTS `umm_dosf_shared_objs` (
     `emision`        datetime      DEFAULT NULL,
     `file_name`      varchar(256)  NOT NULL,
     `wp_file_obj_id` int unsigned  NULL,
+    `file_unavailable` tinyint(1) NOT NULL DEFAULT 0,
     `created`        timestamp     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `email`          varchar(255)  NOT NULL DEFAULT '',
     `email2`         varchar(255)  NOT NULL DEFAULT '',
     `email3`         varchar(255)  NOT NULL DEFAULT '',
     `download_code`  varchar(16)   NOT NULL DEFAULT '',
+    `download_code_issued` datetime NULL,
     PRIMARY KEY (`id`),
     KEY `title_idx`     (`title`(191), `id`),
     KEY `file_name_idx` (`file_name`(191), `id`)
@@ -236,9 +269,25 @@ Después de ejecutar el SQL, desactiva y reactiva el plugin en **Plugins → Plu
 >   ADD COLUMN `email3` varchar(255) NOT NULL DEFAULT '' AFTER `email2`;
 > ```
 
+> **Si faltan las columnas de los cambios recientes** (`file_unavailable` o `download_code_issued`):
+> ```sql
+> ALTER TABLE `umm_dosf_shared_objs`
+>   ADD COLUMN `file_unavailable` tinyint(1) NOT NULL DEFAULT 0 AFTER `wp_file_obj_id`,
+>   ADD COLUMN `download_code_issued` datetime NULL AFTER `download_code`;
+> ```
+> Al cargar el plugin, si la versión de base de datos guardada no es 1.4, la migración agrega esas columnas sola.
+
 ---
 
 ## Changelog
+
+### Cambios recientes
+- `feat` Otras opciones solo es visible para un administrador de WordPress. El gestor de certificados sigue gestionando los certificados, y el guardado de la configuración rechaza al resto
+- `feat` El código de descarga cambia en cada solicitud. El anterior deja de valer. La validez se configura en minutos, horas, días o semanas; por defecto, 1 hora, contada desde el envío del código
+- `feat` El archivo vencido puede pasar a la papelera de medios tras un plazo de gracia, con la tarea diaria de WordPress y `wp_delete_attachment`. Un adjunto compartido solo se mueve cuando todos los certificados que lo usan ya cumplieron el plazo
+- `feat` Si el adjunto se elimina o va a la papelera, los certificados que lo usan quedan marcados. El público ve «Certificado no disponible» y el admin «No disponible». Restaurar el adjunto quita la marca
+- `feat` El popup de Popup Maker se elige en una lista (título y número), no escribiendo el ID
+- `feat` Los mensajes de vigencia aceptan el marcador `{fecha_vencimiento}`
 
 ### v1.0.2
 - `fix` Icono de descarga con SVG embebido, sin dependencia de Font Awesome

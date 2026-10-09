@@ -177,6 +177,9 @@ class Wp_Dosf {
 		$this->loader->add_action( 'admin_menu', $dosf_help, 'add_help_submenu', 12 );
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'dosf_settings_init' );
 		$this->loader->add_action( 'rest_api_init', $plugin_admin,'set_endpoints');
+		$this->loader->add_action( 'trashed_post', $plugin_admin, 'on_attachment_trashed' );
+		$this->loader->add_action( 'delete_attachment', $plugin_admin, 'on_attachment_deleted' );
+		$this->loader->add_action( 'untrashed_post', $plugin_admin, 'on_attachment_restored' );
 
 	}
 

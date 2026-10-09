@@ -60,12 +60,12 @@ register_deactivation_hook( __FILE__, 'deactivate_wp_dosf' );
 
 add_action( 'plugins_loaded', 'check_wp_dosf_db_version' );
 function check_wp_dosf_db_version() {
-	if ( get_site_option( 'wp_dosf_db_version' ) != '1.2' ) {
+	if ( get_site_option( 'wp_dosf_db_version' ) != '1.4' ) {
 		require_once plugin_dir_path( __FILE__ ) . 'includes/class-wp-dosf-activator.php';
 		require_once plugin_dir_path( __FILE__ ) . 'includes/class-dosf-series.php';
 		Wp_Dosf_Activator::initialize_tables();
 		if ( Dosf_Series::migrate() ) {
-			update_site_option( 'wp_dosf_db_version', '1.2' );
+			update_site_option( 'wp_dosf_db_version', '1.4' );
 		}
 	}
 }

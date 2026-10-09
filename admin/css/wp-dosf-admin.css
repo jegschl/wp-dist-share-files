@@ -214,6 +214,7 @@ table{
 .dosf-cert-tree { width: 100%; border-collapse: collapse; margin: 8px 0 12px; }
 .dosf-cert-tree th, .dosf-cert-tree td { padding: 6px 8px; border-bottom: 1px solid #dcdcde; text-align: left; vertical-align: top; }
 .dosf-cert-tree th { background: #f6f7f7; }
+.dosf-file-unavailable { color: #b32d2e; font-weight: 600; }
 .add-cert-to-serie { margin: 0 0 8px; }
 .dosf-status-templates { margin-top: 18px; max-width: 720px; }
 .dosf-status-templates h3 { margin-bottom: 6px; }

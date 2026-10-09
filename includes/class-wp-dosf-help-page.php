@@ -56,7 +56,10 @@ class Wp_Dosf_Help_Page {
             <!-- ÍNDICE -->
             <ul>
                 <li><a href="#dosf-shortcode">Shortcode público</a></li>
+                <li><a href="#dosf-access">Quién puede configurar el plugin</a></li>
                 <li><a href="#dosf-status-templates">Mensajes de vigencia</a></li>
+                <li><a href="#dosf-file-trash">Papelera de archivos vencidos</a></li>
+                <li><a href="#dosf-download-code">Código de descarga</a></li>
                 <li><a href="#dosf-popup">Integración con Popup Maker</a></li>
                 <li><a href="#dosf-filters">Filtros de WordPress</a></li>
                 <li><a href="#dosf-tables">Tablas de base de datos</a></li>
@@ -69,8 +72,16 @@ class Wp_Dosf_Help_Page {
             <h2 id="dosf-shortcode">Shortcode público</h2>
             <p>Coloca el siguiente shortcode en la página donde los usuarios buscarán sus certificados:</p>
             <pre><code>[dosf_browser]</code></pre>
-            <p>El comportamiento (búsqueda por RUT o por número de serie) se configura en <strong>Distribución de archivos → Otras opciones</strong>.</p>
+            <p>El comportamiento (búsqueda por RUT o por número de serie) se configura en <strong>Distribución de archivos → Gestión → Otras opciones</strong>. Esa pantalla solo la ve un administrador de WordPress.</p>
 
+            <h2 id="dosf-access">Quién puede configurar el plugin</h2>
+            <p>El menú <strong>Distribución de archivos</strong> (Gestión y esta ayuda) está disponible para quien tenga la capacidad <code>jgb_collab_access</code>: el rol <strong>Gestor de Certificados</strong> y el administrador de WordPress.</p>
+            <p>El bloque <strong>Otras opciones</strong>, al final de Gestión, solo se muestra si la sesión actual es de un administrador de WordPress (capacidad <code>manage_options</code>). Ahí se definen la búsqueda pública, el uso de número de serie y de fecha de emisión, el vencimiento, los avisos por correo, la papelera de archivos vencidos, la validez del código de descarga, el popup y los mensajes del frontend.</p>
+            <div class="dosf-info">
+                Un gestor de certificados sigue pudiendo crear, editar y eliminar certificados. No ve el formulario de configuración. Si llama al guardado de esas opciones, WordPress lo rechaza. Los cambios de <strong>Otras opciones</strong> los hace un administrador.
+            </div>
+
+            <hr>
 
             <h2 id="dosf-status-templates">Mensajes de vigencia en el frontend</h2>
             <p>Cuando la búsqueda pública es por número de serie y está activa la opción <strong>Coincidencias específicas</strong>, cada certificado muestra un aviso de si está vigente o vencido.</p>
@@ -80,11 +91,44 @@ class Wp_Dosf_Help_Page {
                 <tr><td><code>{cert_title}</code></td><td>Título del certificado</td></tr>
                 <tr><td><code>{serie}</code></td><td>Número de serie</td></tr>
                 <tr><td><code>{estado}</code></td><td>La palabra <em>vigente</em> o <em>vencido</em>, con el color de ese estado</td></tr>
+                <tr><td><code>{fecha_vencimiento}</code></td><td>Fecha de vencimiento: la fecha de emisión más el plazo configurado en «Vencimiento a los» (días, semanas, meses o años)</td></tr>
             </table>
             <p>Si un cuadro se deja vacío, se usa este texto:</p>
             <pre><code>{cert_title} de la serie {serie} se encuentra actualmente {estado}.</code></pre>
             <div class="dosf-info">
                 El marcador <code>{estado}</code> es el único que conserva el color verde o rojo. El resto del mensaje es texto plano: el HTML que se escriba en el cuadro se muestra como texto.
+            </div>
+
+            <hr>
+
+            <h2 id="dosf-file-trash">Papelera de archivos vencidos</h2>
+            <p>En <strong>Distribución de archivos → Gestión → Otras opciones</strong> se puede pedir que el archivo de cada certificado pase a la papelera cuando ya venció.</p>
+            <ol>
+                <li>Marca <strong>Mover a la papelera el archivo del certificado después de vencer</strong>.</li>
+                <li>Indica cuánto tiempo debe pasar <strong>desde la fecha de vencimiento</strong> (días, semanas, meses o años).</li>
+                <li>Guarda con <strong>Guardar otras opciones</strong>.</li>
+            </ol>
+            <p>La fecha de vencimiento es la de emisión más el plazo de <strong>Vencimiento a los</strong>. La tarea corre sola, una vez al día, con el programador de WordPress. Llama a <code>wp_delete_attachment</code> sin borrado permanente, que es el procedimiento de WordPress para mandar un adjunto a la papelera. El archivo sigue en el disco y se restaura desde <strong>Medios → Papelera</strong>.</p>
+            <div class="dosf-info">
+                Esa pantalla aparece si en <code>wp-config.php</code> está <code>define( 'MEDIA_TRASH', true );</code>. Sin esa constante el adjunto igual queda en estado papelera y el archivo no se borra, pero WordPress no muestra la papelera de medios.
+            </div>
+            <p>Un plazo de 0 mueve el archivo en cuanto vence. Si el mismo adjunto está vinculado a varios certificados, solo pasa a la papelera cuando todos ellos ya cumplieron ese plazo.</p>
+            <p>Al pasar el adjunto a la papelera o al eliminarlo, el plugin marca como no disponible cada certificado que usa ese archivo. La marca queda guardada en el registro del certificado. En el listado público, en lugar del enlace de descarga, se muestra <strong>Certificado no disponible</strong>. En la columna de archivo del admin se muestra <strong>No disponible</strong>. Intentar la descarga devuelve el mismo aviso. Si el adjunto se restaura desde la papelera, la marca se quita en todos esos certificados y la descarga vuelve a funcionar.</p>
+
+            <hr>
+
+            <h2 id="dosf-download-code">Código de descarga</h2>
+            <p>Cada vez que alguien pulsa el icono de descarga, el plugin genera un código nuevo, guarda la fecha y hora de emisión y lo envía al correo del certificado. El código anterior deja de valer en ese momento.</p>
+            <p>La duración se configura en <strong>Otras opciones</strong>, en <strong>El código de descarga es válido durante</strong>. El número mínimo es 1. Las unidades son minuto, hora, día o semana. Si no hay un plazo guardado, se usa <strong>1 hora</strong>. El plazo empieza cuando se solicita la descarga y se envía el código, no cuando se creó el certificado.</p>
+            <p>Al dar de alta un certificado, el correo inicial usa el código generado en ese momento y también queda registrada su hora de emisión.</p>
+            <table>
+                <tr><th>Situación</th><th>Qué ve quien descarga</th></tr>
+                <tr><td>Código distinto al vigente</td><td>Código de descarga no válido</td></tr>
+                <tr><td>Código vencido, o certificado sin hora de emisión</td><td>El código de descarga venció. Solicita la descarga nuevamente.</td></tr>
+                <tr><td>Archivo en la papelera, eliminado o marcado como no disponible</td><td>Certificado no disponible</td></tr>
+            </table>
+            <div class="dosf-info">
+                Ingresar un código correcto no genera otro. Un código nuevo aparece solo cuando se vuelve a solicitar la descarga. Un certificado antiguo sin hora de emisión se trata como vencido hasta esa nueva solicitud.
             </div>
 
             <hr>
@@ -98,7 +142,8 @@ class Wp_Dosf_Help_Page {
             <ol>
                 <li>El usuario busca su certificado por RUT o número de serie.</li>
                 <li>Hace clic en el icono de descarga junto a su resultado.</li>
-                <li>El plugin envía un <strong>código de autorización</strong> al correo registrado y abre el popup de Popup Maker.</li>
+                <li>El plugin genera un <strong>código de autorización nuevo</strong>, lo envía al correo registrado y abre el popup de Popup Maker. El código anterior deja de servir.</li>
+                <li>El código vale solo durante el plazo definido en <strong>Otras opciones</strong> (<strong>El código de descarga es válido durante</strong>). Si vence, hay que solicitar la descarga otra vez.</li>
                 <li>El usuario ingresa el código en el popup y hace clic en "Descargar".</li>
                 <li>Si el código es correcto, se inicia la descarga del archivo.</li>
             </ol>
@@ -159,12 +204,11 @@ class Wp_Dosf_Help_Page {
                 <tr><td>Cerrar con ESC</td><td>Activado</td></tr>
             </table>
 
-            <h3>Paso 3 — Registrar el ID del popup en este plugin</h3>
+            <h3>Paso 3 — Elegir el popup en este plugin</h3>
             <ol class="dosf-help-steps">
                 <li>Guarda el popup en Popup Maker.</li>
-                <li>Anota el <strong>ID numérico</strong> que aparece en la columna ID del listado de popups, o en la URL al editar: <code>?post=XXXX</code>.</li>
-                <li>Ve a <strong>Distribución de archivos → Otras opciones</strong>.</li>
-                <li>Ingresa el ID en el campo <strong>"ID del popup (Popup Maker) para ingreso de código de descarga"</strong>.</li>
+                <li>Ve a <strong>Distribución de archivos → Gestión → Otras opciones</strong>.</li>
+                <li>En <strong>Popup (Popup Maker) para ingreso de código de descarga</strong>, elige el popup de la lista. Cada opción se muestra como título y número, por ejemplo <em>Descarga con código de autorización (#11927)</em>. Entran los popups publicados, en borrador, privados y pendientes. Si el popup guardado ya no existe, la lista conserva la opción <em>Popup #ID (no encontrado)</em>.</li>
                 <li>Haz clic en <strong>Guardar otras opciones</strong>.</li>
             </ol>
 
@@ -179,13 +223,12 @@ class Wp_Dosf_Help_Page {
     return 11927; // Reemplaza con el ID de tu popup
 } );</code></pre>
 
-            <h3>Imagen indicadora "vigente" (manito verde u otra)</h3>
+            <h3>Imagen indicadora "vigente" (círculo verde con check blanco u otra)</h3>
             <pre><code>add_filter( 'dosf/front/status-indicator/vigente/img-url', function( $url ) {
-    // $url contiene la URL por defecto (hand-good.png del plugin)
     return get_template_directory_uri() . '/images/mi-imagen-vigente.png';
 } );</code></pre>
 
-            <h3>Imagen indicadora "vencido" (manito roja u otra)</h3>
+            <h3>Imagen indicadora "vencido" (círculo rojo con X u otra)</h3>
             <pre><code>add_filter( 'dosf/front/status-indicator/vencido/img-url', function( $url ) {
     return get_template_directory_uri() . '/images/mi-imagen-vencida.png';
 } );</code></pre>
@@ -220,11 +263,13 @@ CREATE TABLE IF NOT EXISTS `<?php echo esc_html( $GLOBALS['wpdb']->prefix ); ?>d
     `emision`        datetime      DEFAULT NULL,
     `file_name`      varchar(256)  NOT NULL,
     `wp_file_obj_id` int unsigned  NULL,
+    `file_unavailable` tinyint(1) NOT NULL DEFAULT 0,
     `created`        timestamp     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `email`          varchar(255)  NOT NULL DEFAULT '',
     `email2`         varchar(255)  NOT NULL DEFAULT '',
     `email3`         varchar(255)  NOT NULL DEFAULT '',
     `download_code`  varchar(16)   NOT NULL DEFAULT '',
+    `download_code_issued` datetime NULL,
     PRIMARY KEY (`id`),
     KEY `title_idx`     (`title`(191), `id`),
     KEY `file_name_idx` (`file_name`(191), `id`)
@@ -252,6 +297,13 @@ CREATE TABLE IF NOT EXISTS `<?php echo esc_html( $GLOBALS['wpdb']->prefix ); ?>d
                 <strong>Si solo falta la columna <code>email3</code></strong> (instalaciones creadas con v1.0.1 o anterior):
                 <pre style="margin:8px 0 0;"><code>ALTER TABLE `<?php echo esc_html( $GLOBALS['wpdb']->prefix ); ?>dosf_shared_objs`
   ADD COLUMN `email3` varchar(255) NOT NULL DEFAULT '' AFTER `email2`;</code></pre>
+            </div>
+            <div class="dosf-tip">
+                <strong>Si faltan las columnas de los cambios recientes</strong> (<code>file_unavailable</code> o <code>download_code_issued</code>):
+                <pre style="margin:8px 0 0;"><code>ALTER TABLE `<?php echo esc_html( $GLOBALS['wpdb']->prefix ); ?>dosf_shared_objs`
+  ADD COLUMN `file_unavailable` tinyint(1) NOT NULL DEFAULT 0 AFTER `wp_file_obj_id`,
+  ADD COLUMN `download_code_issued` datetime NULL AFTER `download_code`;</code></pre>
+                Al cargar el plugin, si la versión de base de datos guardada no es 1.4, la migración agrega esas columnas sola.
             </div>
 
             <p>Después de ejecutar el SQL, ve a <strong>Plugins → Plugins instalados</strong>, <strong>desactiva</strong> y vuelve a <strong>activar</strong> el plugin <code>jgb-dosf</code>.</p>

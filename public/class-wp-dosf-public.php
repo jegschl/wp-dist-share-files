@@ -78,19 +78,24 @@ class Wp_Dosf_Public {
 		 * class.
 		 */
 
-		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/wp-dosf-public.css', array(), $this->version, 'all' );
+		$public_css = plugin_dir_path( __FILE__ ) . 'css/wp-dosf-public.css';
+		$public_css_ver = $this->version . '.' . ( file_exists( $public_css ) ? filemtime( $public_css ) : '0' );
+		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/wp-dosf-public.css', array(), $public_css_ver, 'all' );
 
-		$img_vigente = apply_filters(
-			'dosf/front/status-indicator/vigente/img-url',
-			plugin_dir_url( __FILE__ ) . '../assets/imgs/hand-good.png'
-		);
-		$img_vencido = apply_filters(
-			'dosf/front/status-indicator/vencido/img-url',
-			plugin_dir_url( __FILE__ ) . '../assets/imgs/hand-not-good.png'
-		);
-		$inline_css = ".dosf-search-res-row .indicator.vigente { background-image: url('{$img_vigente}'); }
-.dosf-search-res-row .indicator.vencido  { background-image: url('{$img_vencido}'); }";
-		wp_add_inline_style( $this->plugin_name, $inline_css );
+		$hand_vigente = plugin_dir_url( __FILE__ ) . '../assets/imgs/hand-good.png';
+		$hand_vencido = plugin_dir_url( __FILE__ ) . '../assets/imgs/hand-not-good.png';
+		$img_vigente = apply_filters( 'dosf/front/status-indicator/vigente/img-url', $hand_vigente );
+		$img_vencido = apply_filters( 'dosf/front/status-indicator/vencido/img-url', $hand_vencido );
+		$inline_css = '';
+		if ( $img_vigente && $img_vigente !== $hand_vigente ) {
+			$inline_css .= ".dosf-search-res-row .indicator.vigente { background-image: url('" . esc_url( $img_vigente ) . "'); }";
+		}
+		if ( $img_vencido && $img_vencido !== $hand_vencido ) {
+			$inline_css .= ".dosf-search-res-row .indicator.vencido { background-image: url('" . esc_url( $img_vencido ) . "'); }";
+		}
+		if ( $inline_css !== '' ) {
+			wp_add_inline_style( $this->plugin_name, $inline_css );
+		}
 
 	}
 
@@ -163,7 +168,7 @@ class Wp_Dosf_Public {
 
 		$row = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT id, wp_file_obj_id, download_code FROM {$wpdb->prefix}dosf_shared_objs WHERE id = %d",
+				"SELECT id, wp_file_obj_id, download_code, download_code_issued, file_unavailable FROM {$wpdb->prefix}dosf_shared_objs WHERE id = %d",
 				$objid
 			)
 		);
@@ -173,6 +178,21 @@ class Wp_Dosf_Public {
 			return array(
 				'error'   => true,
 				'message' => 'Código de descarga no válido',
+			);
+		}
+
+		if ( ! Wp_Dosf_Admin::download_code_is_current( $row->download_code_issued ) ) {
+			return array(
+				'error'   => true,
+				'message' => 'El código de descarga venció. Solicita la descarga nuevamente.',
+			);
+		}
+
+		if ( ! empty( $row->file_unavailable ) || ! Wp_Dosf_Admin::attachment_is_downloadable( $row->wp_file_obj_id ) ) {
+			Wp_Dosf_Admin::mark_certificates_file_unavailable( $row->wp_file_obj_id );
+			return array(
+				'error'   => true,
+				'message' => 'Certificado no disponible',
 			);
 		}
 
@@ -226,16 +246,20 @@ class Wp_Dosf_Public {
 					foreach ( $res as $cert ) {
 						$status = strtolower( Wp_Dosf_Admin::get_dosf_status( $cert->emision ) );
 						$hr = '/objid/' . $cert->id;
-						$status_message = Wp_Dosf_Admin::frontend_status_message( $this->plus_options, $cert->title, $cert->serie, $status );
+						$status_message = Wp_Dosf_Admin::frontend_status_message( $this->plus_options, $cert->title, $cert->serie, $status, $cert->emision );
 						?>
-						<div class="dosf-search-res-row">
+						<div class="dosf-search-res-row dosf-search-res-row-status">
 							<div class="msg-indicator"><?= $status_message ?></div>
-							<div class="indicator <?= esc_attr( $status ) ?>"></div>
-							<div class="details">
+							<div class="dosf-search-res-side">
 								<div class="link">
-									<a href="<?= esc_attr( $hr ) ?>"><span class="dosf-icon-download"></span></a>
-									<span class="title">Descargar <?= esc_html( $cert->title ) ?></span>
+									<?php if ( ! empty( $cert->file_unavailable ) ) : ?>
+										<span class="dosf-file-unavailable">Certificado no disponible</span>
+									<?php else : ?>
+										<a href="<?= esc_attr( $hr ) ?>"><span class="dosf-icon-download"></span></a>
+										<span class="title">Descargar <?= esc_html( $cert->title ) ?></span>
+									<?php endif; ?>
 								</div>
+								<div class="indicator <?= esc_attr( $status ) ?>"></div>
 							</div>
 						</div>
 						<?php
@@ -249,8 +273,13 @@ class Wp_Dosf_Public {
 						?>
 						<div class="dosf-search-res-row">
 							<div class="link">
-								<a href="<?= $hr ?>"><span class="dosf-icon-download"></span></a>
-								<span class="title"><?= $so->title ?></span>
+								<?php if ( ! empty( $so->file_unavailable ) ) : ?>
+									<span class="dosf-file-unavailable">Certificado no disponible</span>
+									<span class="title"><?= esc_html( $so->title ) ?></span>
+								<?php else : ?>
+									<a href="<?= $hr ?>"><span class="dosf-icon-download"></span></a>
+									<span class="title"><?= $so->title ?></span>
+								<?php endif; ?>
 							</div>	
 						</div>
 						<?php
