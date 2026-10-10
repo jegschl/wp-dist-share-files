@@ -57,6 +57,7 @@ class Wp_Dosf_Activator {
 			email varchar(255) NOT NULL,
 			email2 varchar(255) NOT NULL,
 			email3 varchar(255) NOT NULL DEFAULT '',
+			recipient_extra longtext NULL,
 			download_code varchar(16) NOT NULL,
 			download_code_issued datetime NULL,
 			PRIMARY KEY  (id),

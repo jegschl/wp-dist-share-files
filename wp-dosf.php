@@ -16,7 +16,7 @@
  * Plugin Name:       Dist or Share Files with Wordpress
  * Plugin URI:        https://phonix.dev
  * Description:       Comparte documentos y maneja fecha de vencimientos en esos documentos.
- * Version:           1.0.1
+ * Version:           1.3.0
  * Author:            Jorge Garrido <jorge@empdigital.cl>
  * Author URI:        https://phonix.dev
  * License:           GPL-2.0+
@@ -35,7 +35,7 @@ if ( ! defined( 'WPINC' ) ) {
  * Start at version 1.0.0 and use SemVer - https://semver.org
  * Rename this for your plugin and update it as you release new versions.
  */
-define( 'WP_DOSF_VERSION', '1.2.0' );
+define( 'WP_DOSF_VERSION', '1.3.0' );
 define( 'WP_DOSF_PLUGIN_PATH',dirname( __FILE__ ) );
 /**
  * The code that runs during plugin activation.
@@ -60,12 +60,12 @@ register_deactivation_hook( __FILE__, 'deactivate_wp_dosf' );
 
 add_action( 'plugins_loaded', 'check_wp_dosf_db_version' );
 function check_wp_dosf_db_version() {
-	if ( get_site_option( 'wp_dosf_db_version' ) != '1.4' ) {
+	if ( get_site_option( 'wp_dosf_db_version' ) != '1.5' ) {
 		require_once plugin_dir_path( __FILE__ ) . 'includes/class-wp-dosf-activator.php';
 		require_once plugin_dir_path( __FILE__ ) . 'includes/class-dosf-series.php';
 		Wp_Dosf_Activator::initialize_tables();
 		if ( Dosf_Series::migrate() ) {
-			update_site_option( 'wp_dosf_db_version', '1.4' );
+			update_site_option( 'wp_dosf_db_version', '1.5' );
 		}
 	}
 }

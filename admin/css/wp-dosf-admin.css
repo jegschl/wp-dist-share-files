@@ -211,7 +211,7 @@ table{
 #tabla .actions .action:hover {
 	font-size: 17px;
 }
-.dosf-cert-tree { width: 100%; border-collapse: collapse; margin: 8px 0 12px; }
+.dosf-cert-tree { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 8px 0 12px; }
 .dosf-cert-tree th, .dosf-cert-tree td { padding: 6px 8px; border-bottom: 1px solid #dcdcde; text-align: left; vertical-align: top; }
 .dosf-cert-tree th { background: #f6f7f7; }
 .dosf-file-unavailable { color: #b32d2e; font-weight: 600; }
@@ -222,3 +222,196 @@ table{
 .dosf-status-templates .input { margin-bottom: 12px; }
 .dosf-status-templates label { display: block; font-weight: 600; margin-bottom: 4px; }
 .dosf-status-templates textarea { width: 100%; min-height: 72px; }
+.dosf-email-templates textarea { min-height: 220px; font-family: Consolas, Monaco, monospace; }
+
+.dosf-recipient-field { width: 100%; margin-bottom: 12px; }
+.dosf-recipient-field label { display: block; font-weight: 600; }
+.dosf-recipient-set { display: flex; gap: 8px; align-items: center; margin: 0 0 8px; }
+.dosf-mail-to-row label { display: inline; font-weight: 400; margin: 0 0 0 6px; }
+#dosf-open-options { cursor: pointer; }
+.dosf-admin-header .dashicons-admin-generic { color: #246355; font-size: 20px; }
+.dosf-admin-header .action-wrapper:hover .dashicons-admin-generic { color: #fff; }
+.dosf-options-dialog { max-width: calc(100vw - 24px); }
+.dosf-options-dialog .ui-dialog-content { padding: 12px 16px 20px; }
+.dosf-options-dialog .dosf-plus-options,
+.dosf-options-dialog .dosf-status-templates { max-width: none; }
+.dosf-options-dialog textarea,
+.dosf-options-dialog .large-text { width: 100%; max-width: 100%; box-sizing: border-box; }
+.dosf-options-dialog #dosf-options-tabs { border: 0; padding: 0; background: transparent; }
+.dosf-options-dialog #dosf-options-tabs > .ui-tabs-nav { background: transparent; border: 0; border-bottom: 1px solid #c3c4c7; border-radius: 0; padding: 0; }
+.dosf-options-dialog #dosf-options-tabs > .ui-tabs-nav .ui-tabs-tab { margin: 0 4px 0 0; border-bottom: 0; }
+.dosf-options-dialog #dosf-options-tabs > .ui-tabs-panel { border: 0; padding: 14px 2px 4px; background: transparent; }
+.dosf-options-dialog .dosf-plus-options-actions { border-top: 1px solid #dcdcde; padding-top: 12px; }
+.dosf-options-dialog #dosf-options-tabs .description { color: #646970; }
+.dosf-admin-add-so {
+	width: auto;
+	max-width: 860px;
+	margin: 12px 0 20px;
+	box-sizing: border-box;
+}
+.dosf-admin-add-so .fields-wrapper {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 14px 18px;
+	align-items: start;
+}
+.dosf-admin-add-so .fld-ruts,
+.dosf-admin-add-so #dosf-recipient-fields {
+	grid-column: 1 / -1;
+	width: auto;
+}
+.dosf-admin-add-so .fields-wrapper:not(:has(.fld-emision)) .fld-so {
+	grid-column: 1 / -1;
+}
+.dosf-admin-add-so .fld-serie,
+.dosf-admin-add-so .fld-title,
+.dosf-admin-add-so .fld-emision {
+	width: auto;
+	min-width: 0;
+}
+.dosf-admin-add-so .fields-wrapper label {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 4px;
+}
+.dosf-admin-add-so input[type="text"],
+.dosf-admin-add-so input[type="datetime"] {
+	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
+}
+.dosf-admin-add-so #dosf-recipient-fields {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 14px 18px;
+}
+.dosf-admin-add-so .dosf-recipient-field {
+	width: auto;
+	margin: 0;
+	min-width: 0;
+}
+.dosf-admin-add-so .dosf-recipient-field .choices {
+	width: 100%;
+	margin-bottom: 0;
+}
+.dosf-cert-tree .actions { position: relative; white-space: nowrap; }
+.dosf-cert-tree .action { position: relative; }
+.dosf-cert-tree .action[data-tip]::after {
+	content: attr(data-tip);
+	position: absolute;
+	right: 0;
+	bottom: calc(100% + 8px);
+	z-index: 30;
+	padding: 4px 8px;
+	border-radius: 4px;
+	background: #1d2327;
+	color: #fff;
+	font-size: 12px;
+	font-weight: 400;
+	line-height: 1.3;
+	white-space: nowrap;
+	opacity: 0;
+	pointer-events: none;
+	transform: translateY(4px);
+}
+.dosf-cert-tree .action[data-tip]:hover::after,
+.dosf-cert-tree .action[data-tip]:focus::after {
+	opacity: 1;
+	transform: translateY(0);
+}
+.dosf-admin-add-so .choices, .dosf-admin-add-so .choices__inner { box-sizing: border-box; width: 100%; max-width: 100%; }
+
+.dosf-email-preview-bar { margin: 8px 0 0; }
+.dosf-email-preview-dialog .ui-dialog-content {
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	box-sizing: border-box;
+}
+#dosf-email-preview-note { margin: 0 0 6px; }
+#dosf-email-preview-subject {
+	margin: 0 0 10px;
+	font-weight: 600;
+}
+#dosf-email-preview-frame {
+	flex: 1 1 auto;
+	width: 100%;
+	min-height: 0;
+	border: 1px solid #c3c4c7;
+	background: #fff;
+}
+.dosf-cert-tree .dosf-col-check { width: 4%; }
+.dosf-cert-tree .dosf-col-title { width: 26%; }
+.dosf-cert-tree .dosf-col-file { width: 18%; }
+.dosf-cert-tree .dosf-col-email { width: 40%; }
+.dosf-cert-tree .dosf-col-actions { width: 12%; }
+.dosf-cert-tree-dated .dosf-col-check { width: 4%; }
+.dosf-cert-tree-dated .dosf-col-title { width: 20%; }
+.dosf-cert-tree-dated .dosf-col-emision { width: 12%; }
+.dosf-cert-tree-dated .dosf-col-days { width: 6%; }
+.dosf-cert-tree-dated .dosf-col-status { width: 8%; }
+.dosf-cert-tree-dated .dosf-col-file { width: 12%; }
+.dosf-cert-tree-dated .dosf-col-email { width: 30%; }
+.dosf-cert-tree-dated .dosf-col-actions { width: 8%; }
+.dosf-cert-tree .dosf-cert-title-tip {
+	position: relative;
+	display: block;
+	width: 100%;
+	max-width: 100%;
+}
+.dosf-cert-tree .dosf-cert-title {
+	display: block;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.dosf-cert-tree .dosf-cert-title-tip[data-tip]::after {
+	content: attr(data-tip);
+	position: absolute;
+	left: 0;
+	bottom: calc(100% + 6px);
+	z-index: 40;
+	max-width: 420px;
+	padding: 4px 8px;
+	border-radius: 4px;
+	background: #1d2327;
+	color: #fff;
+	font-size: 12px;
+	font-weight: 400;
+	line-height: 1.35;
+	white-space: normal;
+	opacity: 0;
+	pointer-events: none;
+	transform: translateY(4px);
+}
+.dosf-cert-tree .dosf-cert-title-tip[data-tip]:hover::after,
+.dosf-cert-tree .dosf-cert-title-tip[data-tip]:focus::after {
+	opacity: 1;
+	transform: translateY(0);
+}
+.dosf-cert-tree .dosf-cert-emails { white-space: normal; overflow-wrap: anywhere; }
+.dosf-cert-tree .dosf-cert-emails strong { font-weight: 700; }
+.dosf-menu-icon-picker { display: flex; flex-wrap: wrap; gap: 6px; max-width: 560px; margin-top: 6px; }
+.dosf-menu-icon-choice {
+	width: 36px;
+	height: 36px;
+	padding: 0;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	background: #fff;
+	cursor: pointer;
+	line-height: 34px;
+}
+.dosf-menu-icon-choice .dashicons { width: 20px; height: 20px; font-size: 20px; line-height: 34px; }
+.dosf-menu-icon-choice.is-selected { border-color: #246355; background: #e7f3ef; box-shadow: 0 0 0 1px #246355; }
+.dosf-menu-preview {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	margin: 8px 0 0;
+	padding: 8px 12px;
+	background: #1d2327;
+	color: #f0f0f1;
+	border-radius: 4px;
+}
+.dosf-menu-preview .dashicons { width: 20px; height: 20px; font-size: 20px; color: #f0f0f1; }

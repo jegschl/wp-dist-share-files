@@ -49,21 +49,21 @@
 			var output = '';
 			output += '<div class="actions">';
 
-			output += '<div class="action edit-dosf">';
+			output += '<div class="action edit-dosf" data-tip="Editar certificado" aria-label="Editar certificado">';
 			output += '<i class="fas fa-edit"></i>';
 			output += '</div>';
 
-			output += '<div class="action send-dosf-download-code">';
+			output += '<div class="action send-dosf-download-code" data-tip="Enviar código de descarga" aria-label="Enviar código de descarga">';
 			output += '<i class="fas fa-paper-plane"></i>';
 			output += '</div>';
 
 			if( row['vdbe'] <= dosf_config.lastDayRangeForExprWrng ){
-				output += '<div class="action send-dosf-expirity-alert-request">';
+				output += '<div class="action send-dosf-expirity-alert-request" data-tip="Enviar aviso de vencimiento" aria-label="Enviar aviso de vencimiento">';
 				output += '<i class="fas fa-paper-plane"></i>';
 				output += '</div>';
 			}
 
-			output += '<div class="action remove-dosf">';
+			output += '<div class="action remove-dosf" data-tip="Eliminar certificado" aria-label="Eliminar certificado">';
 			output += '<i class="fas fa-minus-circle"></i>';
 			output += '</div>';
 
@@ -78,9 +78,8 @@
 
 	(function( $ ) {
 	'use strict';
-		let choiceEmlsColabs;
-		let choiceEmlsOprtrs;
-		let choiceEmlsMecans;
+		let recipientChoices = {};
+		let recipientSetsDirty = false;
 		function escHtml(value) {
 			return String(value == null ? '' : value)
 				.replace(/&/g, '&amp;')
@@ -93,12 +92,20 @@
 			if (type !== 'display') {
 				return '';
 			}
-			let html = '<table class="dosf-cert-tree"><thead><tr><th></th><th>Título</th>';
-			if (dosf_config.useIssueDate) {
+			const dated = !!dosf_config.useIssueDate;
+			let html = '<table class="dosf-cert-tree' + (dated ? ' dosf-cert-tree-dated' : '') + '"><colgroup>';
+			html += '<col class="dosf-col-check"><col class="dosf-col-title">';
+			if (dated) {
+				html += '<col class="dosf-col-emision"><col class="dosf-col-days"><col class="dosf-col-status">';
+			}
+			html += '<col class="dosf-col-file"><col class="dosf-col-email"><col class="dosf-col-actions"></colgroup>';
+			html += '<thead><tr><th></th><th class="dosf-cert-title-col">Título</th>';
+			if (dated) {
 				html += '<th>Emisión</th><th>Días</th><th>Estado</th>';
 			}
-			html += '<th>Archivo</th><th>Colaboradores</th><th>Operadores</th><th>Mecánicos</th><th>Acciones</th></tr></thead><tbody>';
+			html += '<th>Archivo</th><th>Email</th><th>Acciones</th></tr></thead><tbody>';
 			(row.certificates || []).forEach(function(cert) {
+				const recipients = cert.recipients || {};
 				html += '<tr id="' + escHtml(cert.id) + '" class="dosf-cert-row"'
 					+ ' data-serie="' + escHtml(row.serie) + '"'
 					+ ' data-ruts="' + escHtml(row.linked_ruts) + '"'
@@ -106,20 +113,26 @@
 					+ ' data-emision="' + escHtml(cert.emision) + '"'
 					+ ' data-file="' + escHtml(cert.file_name) + '"'
 					+ ' data-attachment-id="' + escHtml(cert.attachment_id) + '"'
-					+ ' data-email="' + escHtml(cert.email) + '"'
-					+ ' data-email2="' + escHtml(cert.email2) + '"'
-					+ ' data-email3="' + escHtml(cert.email3) + '">';
+					+ ' data-recipients="' + escHtml(JSON.stringify(recipients)) + '">';
 				html += '<td><input type="checkbox" class="dosf-checker" /></td>';
-				html += '<td>' + escHtml(cert.cert_title) + '</td>';
+				const certTitle = cert.cert_title == null ? '' : String(cert.cert_title);
+				html += '<td class="dosf-cert-title-cell"><span class="dosf-cert-title-tip" data-tip="' + escHtml(certTitle) + '" tabindex="0">';
+				html += '<span class="dosf-cert-title">' + escHtml(certTitle) + '</span></span></td>';
 				if (dosf_config.useIssueDate) {
 					html += '<td>' + escHtml(cert.emision) + '</td>';
 					html += '<td>' + escHtml(cert.vdbe) + '</td>';
 					html += '<td>' + escHtml(cert.status) + '</td>';
 				}
 				html += '<td>' + escHtml(cert.file_name) + (parseInt(cert.file_unavailable, 10) === 1 ? ' <span class="dosf-file-unavailable">No disponible</span>' : '') + '</td>';
-				html += '<td>' + escHtml(cert.email) + '</td>';
-				html += '<td>' + escHtml(cert.email2) + '</td>';
-				html += '<td>' + escHtml(cert.email3) + '</td>';
+				let emailParts = [];
+				(dosf_config.recipientSets || []).forEach(function(set) {
+					const emails = String(recipients[set.id] || '').trim();
+					if (emails === '') {
+						return;
+					}
+					emailParts.push('<strong>' + escHtml(set.name) + '</strong>: ' + escHtml(emails));
+				});
+				html += '<td class="dosf-cert-emails">' + emailParts.join(' - ') + '</td>';
 				html += '<td>' + actions_data_render(null, 'display', cert) + '</td>';
 				html += '</tr>';
 			});
@@ -182,12 +195,137 @@
 					}
 				]
 			});
+
+			if ( $('#dosf-options-tabs').length ) {
+				$('#dosf-options-tabs').tabs();
+			}
+
+			if ( $('.dosf-plus-options').length && $('#dosf-open-options').length ) {
+				$('.dosf-plus-options').dialog({
+					modal: true,
+					autoOpen: false,
+					draggable: true,
+					resizable: true,
+					width: Math.min(960, $(window).width() - 48),
+					height: Math.min(760, $(window).height() - 80),
+					title: 'Opciones',
+					closeText: 'Cerrar',
+					dialogClass: 'dosf-options-dialog'
+				});
+				$('#dosf-open-options').on('click', function() {
+					$('.dosf-plus-options').dialog('open');
+					if ( $('#dosf-options-tabs').length ) {
+						$('#dosf-options-tabs').tabs('refresh');
+					}
+				});
+			}
+
+						function dosfRefreshMenuPreview() {
+				if ( !$('#dosf-menu-label').length ) {
+					return;
+				}
+				var label = $.trim($('#dosf-menu-label').val());
+				if (!label) {
+					label = 'Distribución de archivos';
+				}
+				$('#dosf-menu-preview-label').text(label);
+				var icon = $('#dosf-menu-icon').val() || 'dashicons-forms';
+				$('#dosf-menu-preview-icon').attr('class', 'dashicons ' + icon);
+			}
+			$('#dosf-menu-label').on('input', dosfRefreshMenuPreview);
+			$('.dosf-menu-icon-choice').on('click', function() {
+				var icon = $(this).attr('data-icon');
+				$('#dosf-menu-icon').val(icon);
+				$('.dosf-menu-icon-choice').removeClass('is-selected').attr('aria-pressed', 'false');
+				$(this).addClass('is-selected').attr('aria-pressed', 'true');
+				$('#dosf-menu-icon-name').text($(this).attr('data-label') || '');
+				dosfRefreshMenuPreview();
+			});
+if ( $('#dosf-email-preview-dialog').length ) {
+				$('#dosf-email-preview-dialog').dialog({
+					modal: true,
+					autoOpen: false,
+					draggable: true,
+					resizable: true,
+					width: Math.min(860, $(window).width() - 48),
+					height: Math.min(720, $(window).height() - 80),
+					closeText: 'Cerrar',
+					dialogClass: 'dosf-email-preview-dialog',
+					close: function() {
+						$('#dosf-email-preview-frame').attr('srcdoc', '');
+					}
+				});
+				$('.dosf-email-preview').on('click', function() {
+					var kind = $(this).attr('data-kind');
+					var titles = {
+						download: 'Vista previa: código de descarga',
+						expire: 'Vista previa: aviso de vencimiento'
+					};
+					var sample = {
+						'{cert_title}': 'Certificado de ejemplo',
+						'{serie}': 'GA000000000',
+						'{download_code}': 'A1B2C3',
+						'{validez_codigo}': dosfCodeValidityLabel( $('#download-code-valid-nmb').val(), $('#download-code-valid-unit').val() ),
+						'{dias_vigencia}': '15',
+						'{emision}': '01-10-2026',
+						'{id}': '1'
+					};
+					var subject = dosfFillEmailPreview( $('#email-tpl-' + kind + '-subject').val(), sample, false );
+					var html = dosfFillEmailPreview( $('#email-tpl-' + kind + '-html').val(), sample, true );
+					$('#dosf-email-preview-dialog').dialog( 'option', 'title', titles[kind] || 'Vista previa del correo' );
+					$('#dosf-email-preview-subject').text( subject === '' ? '(Sin asunto)' : subject );
+					var frame = document.getElementById('dosf-email-preview-frame');
+					if ( html === '' ) {
+						frame.srcdoc = '<p style="font-family:sans-serif;color:#646970;">El HTML del correo está vacío.</p>';
+					} else {
+						frame.srcdoc = html;
+					}
+					$('#dosf-email-preview-dialog').dialog('open');
+				});
+			}
 			
 			var file_frame;
 			var wp_media_post_id = wp.media.model.settings.post.id;
 			var set_to_post_id;
 
+
+		function dosfCodeValidityLabel(amount, unit) {
+			var n = parseInt(amount, 10);
+			if (isNaN(n) || n < 1) {
+				n = 1;
+			}
+			var words = {
+				minute: ['minuto', 'minutos'],
+				hour: ['hora', 'horas'],
+				day: ['día', 'días'],
+				week: ['semana', 'semanas']
+			};
+			var pair = words[unit] || words.hour;
+			return n + ' ' + (n === 1 ? pair[0] : pair[1]);
+		}
+
+		function dosfFillEmailPreview(template, pairs, escapeValues) {
+			var out = String(template || '');
+			Object.keys(pairs).forEach(function(token) {
+				var value = String(pairs[token]);
+				if (escapeValues) {
+					value = value
+						.replace(/&/g, '&amp;')
+						.replace(/</g, '&lt;')
+						.replace(/>/g, '&gt;')
+						.replace(/"/g, '&quot;');
+				}
+				out = out.split(token).join(value);
+			});
+			return out;
+		}
 			function onDttblDraw(){
+				$('.dosf-cert-title-tip').each(function() {
+					const inner = this.querySelector('.dosf-cert-title');
+					if (!inner || inner.scrollWidth <= inner.clientWidth + 1) {
+						$(this).removeAttr('data-tip').removeAttr('tabindex');
+					}
+				});
 				const itemActionReqSendDwldCodeSelector = '.action.send-dosf-download-code';
 				$(itemActionReqSendDwldCodeSelector).off('click');
 				$(itemActionReqSendDwldCodeSelector).on('click',dttblItemActionReqSendDownloadCodeEmail);
@@ -339,9 +477,9 @@
 				$( '#dosf-file-selectd' ).text(''),
 				$( '#dosf_so_serie' ).val('').prop('readonly', false);
 				$( '#dosf_so_cert_title' ).val('');
-				choiceEmlsColabs.clearStore();
-				choiceEmlsOprtrs.clearStore();
-				choiceEmlsMecans.clearStore();
+				Object.keys(recipientChoices).forEach(function(id) {
+					recipientChoices[id].clearStore();
+				});
 				
 				if( !$('.dosf-admin-add-so .notice.notice-error').hasClass('hidden') ){
 					$('.dosf-admin-add-so .notice.notice-error').addClass('hidden')
@@ -362,9 +500,15 @@
 				$( '#dosf_so_cert_title' ).val(row.attr('data-cert-title'));
 				$( '#dosf_so_emision' ).val(row.attr('data-emision'));
 				$( '#dosf_so_ruts_linked' ).val(row.attr('data-ruts'));
-				fillEmails(choiceEmlsColabs, row.attr('data-email'));
-				fillEmails(choiceEmlsOprtrs, row.attr('data-email2'));
-				fillEmails(choiceEmlsMecans, row.attr('data-email3'));
+				let storedRecipients = {};
+				try {
+					storedRecipients = JSON.parse(row.attr('data-recipients') || '{}') || {};
+				} catch (e) {
+					storedRecipients = {};
+				}
+				Object.keys(recipientChoices).forEach(function(id) {
+					fillEmails(recipientChoices[id], storedRecipients[id] || '');
+				});
 				$( '#dosf_attachment_id').val( row.attr('data-attachment-id') );
 				$( '#dosf-file-selectd' ).text(row.attr('data-file'));
 				
@@ -526,9 +670,7 @@
 					'linked_ruts': 		ruts,
 					'serie': 			$('#dosf_so_serie').val(),
 					'cert_title': 		$('#dosf_so_cert_title').val(),
-					'email': 			choiceEmlsColabs.getValue(true),
-					'email2': 			choiceEmlsOprtrs.getValue(true),
-					'email3':			choiceEmlsMecans.getValue(true),
+					'recipients':		recipientsPayload(),
 					'updateId': 		currentEditionDosfId 
 				};
 
@@ -564,9 +706,11 @@
 					'nonce'							: $('#plus-options-update-nonce'),
 					'frontend-specific-match-search': $('#especific-match').is(':checked'),
 					'use-serial-number' 			: $('#use-serial-numbers').is(':checked'),
+					'serial-search-label'			: $('#serial-search-label').val(),
 					'use-issue-date'				: $('#use-issue-date').is(':checked'),
 					'expire-period-nmb'				: $('#expire-period-nmb').val(),
 					'expire-period-unit'			: $('#expire-period-unit').val(),
+					'validity-date-format'		: $('#validity-date-format').val(),
 					'ebep-nmb'						: $('#ebep-nmb').val(),
 					'ebep-unit'						: $('#ebep-unit').val(),
 					'monitor-expire-interval'		: $('#monitor-expire-interval').val(),
@@ -577,8 +721,18 @@
 					'status-tpl-vencido'			: $('#status-tpl-vencido').val(),
 					'delete-file-after-expire'	: $('#delete-file-after-expire').is(':checked'),
 					'delete-file-after-nmb'		: $('#delete-file-after-nmb').val(),
-					'delete-file-after-unit'		: $('#delete-file-after-unit').val()
+					'delete-file-after-unit'		: $('#delete-file-after-unit').val(),
+					'email-tpl-download-subject'	: $('#email-tpl-download-subject').val(),
+					'email-tpl-download-html'		: $('#email-tpl-download-html').val(),
+					'email-tpl-expire-subject'	: $('#email-tpl-expire-subject').val(),
+					'email-tpl-expire-html'		: $('#email-tpl-expire-html').val(),
+					'menu-label'					: $('#dosf-menu-label').val(),
+					'menu-icon'					: $('#dosf-menu-icon').val()
 				};
+				config['recipient-sets'] = collectRecipientSets();
+				$('.dosf-mail-to').each(function() {
+					config[$(this).attr('data-kind') + '-mail-to-' + $(this).attr('data-set-id')] = $(this).is(':checked');
+				});
 
 				return JSON.stringify(config);
 			}
@@ -594,6 +748,16 @@
 			}
 
 			$( '#dosf-plus-options-save' ).on('click',function(evnt){
+				var setNameMissing = false;
+				$('#dosf-recipient-set-list .dosf-recipient-set-name').each(function(){
+					if (!$.trim($(this).val())) {
+						setNameMissing = true;
+					}
+				});
+				if (setNameMissing) {
+					window.alert('Cada conjunto de destinatarios necesita un nombre.');
+					return;
+				}
 				setPlusOptionsFieldsInProcessingMode();
 
 				const cfg = preparePlusOptions();
@@ -605,10 +769,21 @@
 					accepts: 'application/json; charset=UTF-8',
 					contentType: 'application/json; charset=UTF-8',
 					data: cfg,
+					beforeSend: function( xhr ){
+						xhr.setRequestHeader( 'X-WP-Nonce', dosf_config.restNonce );
+					},
 					complete: function(jqXHR, textStatus){
 						setPlusOptionsFieldsInNormalMode();
 					},
-					success: function(data,  textStatus,  jqXHR){},
+					success: function(data,  textStatus,  jqXHR){
+						var menuDirty = $('#dosf-menu-label').length && (
+							$('#dosf-menu-label').val() !== $('#dosf-menu-label').attr('data-saved') ||
+							$('#dosf-menu-icon').val() !== $('#dosf-menu-icon').attr('data-saved')
+						);
+						if ((recipientSetsDirty || menuDirty) && data && !data.error) {
+							window.location.reload();
+						}
+					},
 					error: function(jqXHR, textStatus, errorThrown){
 						console.log('Error intentando enviar datos de opciones adicionales para almacenar en el servidor.');
 						console.log("Estos son los datos del error:");
@@ -691,11 +866,72 @@
 				customAddItemText: 'Solo se permite agregar emails'
 			};
 
-			choiceEmlsColabs = new Choices($('#dosf_so_email')[0],choicesEmlsCfg);
+			function recipientsPayload() {
+				const out = {};
+				Object.keys(recipientChoices).forEach(function(id) {
+					out[id] = recipientChoices[id].getValue(true);
+				});
+				return out;
+			}
 
-			choiceEmlsOprtrs = new Choices($('#dosf_so_email2')[0],choicesEmlsCfg);
+			function collectRecipientSets() {
+				const sets = [];
+				$('#dosf-recipient-set-list .dosf-recipient-set').each(function() {
+					sets.push({
+						id: $(this).attr('data-set-id'),
+						name: $(this).find('.dosf-recipient-set-name').val()
+					});
+				});
+				return sets;
+			}
 
-			choiceEmlsMecans = new Choices($('#dosf_so_email3')[0],choicesEmlsCfg);
+			function newRecipientSetId() {
+				let hex = '';
+				while (hex.length < 8) {
+					hex += Math.random().toString(16).slice(2);
+				}
+				return 'set_' + hex.slice(0, 8);
+			}
+
+			$('.dosf-recipient-input').each(function() {
+				const id = $(this).attr('data-set-id');
+				recipientChoices[id] = new Choices(this, choicesEmlsCfg);
+			});
+
+			$('#dosf-recipient-set-add').on('click', function() {
+				const name = $.trim($('#dosf-recipient-set-new').val());
+				if (!name) {
+					return;
+				}
+				const id = newRecipientSetId();
+				const row = $('<div class="dosf-recipient-set"></div>').attr('data-set-id', id);
+				row.append($('<input type="text" class="dosf-recipient-set-name regular-text" maxlength="80">').val(name));
+				row.append($('<button type="button" class="button dosf-recipient-set-remove">Eliminar</button>'));
+				$('#dosf-recipient-set-list').append(row);
+				['download', 'expire'].forEach(function(kind) {
+					const mailId = kind + '-mail-to-' + id;
+					const wrap = $('<div class="input dosf-mail-to-row"></div>').attr('data-set-id', id);
+					wrap.append($('<input type="checkbox" class="dosf-mail-to">').attr({ id: mailId, 'data-kind': kind, 'data-set-id': id }));
+					wrap.append($('<label class="dosf-mail-to-label"></label>').attr('for', mailId).text(name));
+					$('.dosf-mail-kind[data-kind="' + kind + '"] .dosf-mail-kind-sets').append(wrap);
+				});
+				$('#dosf-recipient-set-new').val('');
+				recipientSetsDirty = true;
+			});
+
+			$(document).on('click', '.dosf-recipient-set-remove', function() {
+				const id = $(this).closest('.dosf-recipient-set').attr('data-set-id');
+				$('.dosf-mail-to-row[data-set-id="' + id + '"]').remove();
+				$(this).closest('.dosf-recipient-set').remove();
+				recipientSetsDirty = true;
+			});
+
+			$(document).on('input', '.dosf-recipient-set-name', function() {
+				const id = $(this).closest('.dosf-recipient-set').attr('data-set-id');
+				const name = $(this).val();
+				$('.dosf-mail-to-row[data-set-id="' + id + '"] .dosf-mail-to-label').text(name);
+				recipientSetsDirty = true;
+			});
 
 
 		});

@@ -14,6 +14,7 @@
  */
 
  define('DOSF_WP_OPT_NM_PLUS_OPTIONS','dosf_plus_options_settings');
+ define('DOSF_WP_OPT_NM_RECIPIENT_SETS','dosf_recipient_sets');
 
 /**
  * The core plugin class.

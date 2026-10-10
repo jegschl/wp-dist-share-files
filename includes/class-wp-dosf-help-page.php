@@ -57,9 +57,12 @@ class Wp_Dosf_Help_Page {
             <ul>
                 <li><a href="#dosf-shortcode">Shortcode público</a></li>
                 <li><a href="#dosf-access">Quién puede configurar el plugin</a></li>
+                <li><a href="#dosf-admin-list">Listado de certificados</a></li>
+                <li><a href="#dosf-menu">Menú del plugin</a></li>
                 <li><a href="#dosf-status-templates">Mensajes de vigencia</a></li>
                 <li><a href="#dosf-file-trash">Papelera de archivos vencidos</a></li>
                 <li><a href="#dosf-download-code">Código de descarga</a></li>
+                <li><a href="#dosf-emails">Plantillas de correo</a></li>
                 <li><a href="#dosf-popup">Integración con Popup Maker</a></li>
                 <li><a href="#dosf-filters">Filtros de WordPress</a></li>
                 <li><a href="#dosf-tables">Tablas de base de datos</a></li>
@@ -72,41 +75,54 @@ class Wp_Dosf_Help_Page {
             <h2 id="dosf-shortcode">Shortcode público</h2>
             <p>Coloca el siguiente shortcode en la página donde los usuarios buscarán sus certificados:</p>
             <pre><code>[dosf_browser]</code></pre>
-            <p>El comportamiento (búsqueda por RUT o por número de serie) se configura en <strong>Distribución de archivos → Gestión → Otras opciones</strong>. Esa pantalla solo la ve un administrador de WordPress.</p>
+            <p>El comportamiento (búsqueda por RUT o por número de serie) se configura en <strong>Distribución de archivos → Gestión → Opciones</strong>. Ese botón y el popup solo los ve un administrador de WordPress.</p>
 
             <h2 id="dosf-access">Quién puede configurar el plugin</h2>
             <p>El menú <strong>Distribución de archivos</strong> (Gestión y esta ayuda) está disponible para quien tenga la capacidad <code>jgb_collab_access</code>: el rol <strong>Gestor de Certificados</strong> y el administrador de WordPress.</p>
-            <p>El bloque <strong>Otras opciones</strong>, al final de Gestión, solo se muestra si la sesión actual es de un administrador de WordPress (capacidad <code>manage_options</code>). Ahí se definen la búsqueda pública, el uso de número de serie y de fecha de emisión, el vencimiento, los avisos por correo, la papelera de archivos vencidos, la validez del código de descarga, el popup y los mensajes del frontend.</p>
+            <p>En Gestión, el botón <strong>Opciones</strong> abre un popup con la configuración en cinco pestañas: <strong>Búsqueda</strong>, <strong>Vigencia</strong>, <strong>Descarga</strong>, <strong>Correos</strong> y <strong>Sistema</strong>. Búsqueda define la consulta pública. Vigencia define el plazo, los mensajes de vigente o vencido, los avisos y la papelera. Descarga define el código y su popup. Correos define los conjuntos de destinatarios, a quién llega cada mensaje y las plantillas. Sistema define el texto y el icono del menú lateral de WordPress. El botón solo se muestra si la sesión actual es de un administrador de WordPress (capacidad <code>manage_options</code>).</p>
             <div class="dosf-info">
-                Un gestor de certificados sigue pudiendo crear, editar y eliminar certificados. No ve el formulario de configuración. Si llama al guardado de esas opciones, WordPress lo rechaza. Los cambios de <strong>Otras opciones</strong> los hace un administrador.
+                Un gestor de certificados sigue pudiendo crear, editar y eliminar certificados. No ve el botón <strong>Opciones</strong>. La ruta de la API que guarda esa configuración también exige <code>manage_options</code>: si alguien más la llama, WordPress la rechaza.
             </div>
+
+            <h2 id="dosf-admin-list">Listado de certificados</h2>
+            <p>En Gestión, cada serie muestra sus certificados en una tabla. La columna <strong>Título</strong> ocupa el 20&nbsp;% del ancho cuando hay fecha de emisión, y el 26&nbsp;% cuando no. Si el título no cabe, se corta con puntos suspensivos y, al pasar el mouse, un tooltip muestra el título completo. Los títulos cortos se ven enteros y no muestran tooltip.</p>
+            <p>Los correos de los conjuntos van en una sola columna, <strong>Email</strong>, que es la más ancha: 30&nbsp;% con fecha de emisión y 40&nbsp;% sin ella. Solo aparecen los conjuntos que tienen direcciones. El nombre del conjunto va en negrita y los grupos se separan con un guion. Por ejemplo: <strong>Emails de colaboradores:</strong> julio@gmail.com, jegschl@gmail.com - <strong>Emails de operadores:</strong> luciano@aol.com.</p>
+            <p>Los iconos de la columna <strong>Acciones</strong> muestran un tooltip: Editar certificado, Enviar código de descarga, Enviar aviso de vencimiento y Eliminar certificado. El aviso de vencimiento solo aparece cuando el certificado está dentro del plazo de aviso.</p>
+
+            <h2 id="dosf-menu">Menú del plugin</h2>
+            <p>En <strong>Opciones → Sistema</strong> se cambia lo que WordPress muestra en el menú lateral.</p>
+            <ul>
+                <li><strong>Label para la opción del menú</strong> es un texto de hasta 40 caracteres. Si se deja vacío, el menú muestra <strong>Distribución de archivos</strong>.</li>
+                <li><strong>Icono del menú</strong> es uno de los iconos estándar de WordPress. El predeterminado es el de formulario. Una vista previa, debajo de la cuadrícula, muestra el icono y el texto juntos.</li>
+            </ul>
+            <p>Al guardar un cambio de texto o de icono, la página se recarga para que el menú lateral lo refleje. Gestión y Ayuda siguen como submenús de esa entrada.</p>
 
             <hr>
 
             <h2 id="dosf-status-templates">Mensajes de vigencia en el frontend</h2>
             <p>Cuando la búsqueda pública es por número de serie y está activa la opción <strong>Coincidencias específicas</strong>, cada certificado muestra un aviso de si está vigente o vencido.</p>
-            <p>Esos textos se editan en <strong>Distribución de archivos → Gestión</strong>, al final de <strong>Otras opciones</strong>, en el bloque <strong>Mensajes del frontend</strong>. Hay un cuadro para el certificado vigente y otro para el vencido. El cambio se aplica al pulsar <strong>Guardar otras opciones</strong>.</p>
+            <p>Esos textos se editan en <strong>Distribución de archivos → Gestión → Opciones</strong>, pestaña <strong>Vigencia</strong>, en el bloque <strong>Mensajes del frontend</strong>. Hay un cuadro para el certificado vigente y otro para el vencido. El cambio se aplica al pulsar <strong>Guardar opciones</strong>.</p>
             <table>
                 <tr><th>Marcador</th><th>Se reemplaza por</th></tr>
                 <tr><td><code>{cert_title}</code></td><td>Título del certificado</td></tr>
                 <tr><td><code>{serie}</code></td><td>Número de serie</td></tr>
                 <tr><td><code>{estado}</code></td><td>La palabra <em>vigente</em> o <em>vencido</em>, con el color de ese estado</td></tr>
-                <tr><td><code>{fecha_vencimiento}</code></td><td>Fecha de vencimiento: la fecha de emisión más el plazo configurado en «Vencimiento a los» (días, semanas, meses o años)</td></tr>
+                <tr><td><code>{fecha_vencimiento}</code></td><td>Fecha de vencimiento: la fecha de emisión más el plazo configurado en «Vencimiento a los». El formato se elige en <strong>Formato de la fecha de vigencia</strong>. Por defecto es el de Chile, día-mes-año (09-10-2026).</td></tr>
             </table>
             <p>Si un cuadro se deja vacío, se usa este texto:</p>
             <pre><code>{cert_title} de la serie {serie} se encuentra actualmente {estado}.</code></pre>
             <div class="dosf-info">
-                El marcador <code>{estado}</code> es el único que conserva el color verde o rojo. El resto del mensaje es texto plano: el HTML que se escriba en el cuadro se muestra como texto.
+                El marcador <code>{estado}</code> sigue en verde o rojo. El resto del mensaje admite HTML de formato, en una parte del texto o en todo: <code>&lt;b&gt;</code>, <code>&lt;strong&gt;</code>, <code>&lt;u&gt;</code>, <code>&lt;i&gt;</code>, <code>&lt;em&gt;</code>, <code>&lt;br&gt;</code> y <code>&lt;span style="..."&gt;</code> (color, tipo de letra, tamaño, negrita o subrayado). El mismo formato vale para el texto del campo de búsqueda por número de serie. Cualquier otra etiqueta se descarta. Los valores de los marcadores se publican como texto. Las plantillas de correo siguen siendo HTML completo.
             </div>
 
             <hr>
 
             <h2 id="dosf-file-trash">Papelera de archivos vencidos</h2>
-            <p>En <strong>Distribución de archivos → Gestión → Otras opciones</strong> se puede pedir que el archivo de cada certificado pase a la papelera cuando ya venció.</p>
+            <p>En <strong>Distribución de archivos → Gestión → Opciones</strong> se puede pedir que el archivo de cada certificado pase a la papelera cuando ya venció.</p>
             <ol>
                 <li>Marca <strong>Mover a la papelera el archivo del certificado después de vencer</strong>.</li>
                 <li>Indica cuánto tiempo debe pasar <strong>desde la fecha de vencimiento</strong> (días, semanas, meses o años).</li>
-                <li>Guarda con <strong>Guardar otras opciones</strong>.</li>
+                <li>Guarda con <strong>Guardar opciones</strong>.</li>
             </ol>
             <p>La fecha de vencimiento es la de emisión más el plazo de <strong>Vencimiento a los</strong>. La tarea corre sola, una vez al día, con el programador de WordPress. Llama a <code>wp_delete_attachment</code> sin borrado permanente, que es el procedimiento de WordPress para mandar un adjunto a la papelera. El archivo sigue en el disco y se restaura desde <strong>Medios → Papelera</strong>.</p>
             <div class="dosf-info">
@@ -119,7 +135,7 @@ class Wp_Dosf_Help_Page {
 
             <h2 id="dosf-download-code">Código de descarga</h2>
             <p>Cada vez que alguien pulsa el icono de descarga, el plugin genera un código nuevo, guarda la fecha y hora de emisión y lo envía al correo del certificado. El código anterior deja de valer en ese momento.</p>
-            <p>La duración se configura en <strong>Otras opciones</strong>, en <strong>El código de descarga es válido durante</strong>. El número mínimo es 1. Las unidades son minuto, hora, día o semana. Si no hay un plazo guardado, se usa <strong>1 hora</strong>. El plazo empieza cuando se solicita la descarga y se envía el código, no cuando se creó el certificado.</p>
+            <p>La duración se configura en <strong>Opciones</strong>, en <strong>El código de descarga es válido durante</strong>. El número mínimo es 1. Las unidades son minuto, hora, día o semana. Si no hay un plazo guardado, se usa <strong>1 hora</strong>. El plazo empieza cuando se solicita la descarga y se envía el código, no cuando se creó el certificado. En la plantilla de ese correo, <code>{validez_codigo}</code> se reemplaza por ese plazo en palabras, por ejemplo <strong>30 minutos</strong> o <strong>1 hora</strong>.</p>
             <p>Al dar de alta un certificado, el correo inicial usa el código generado en ese momento y también queda registrada su hora de emisión.</p>
             <table>
                 <tr><th>Situación</th><th>Qué ve quien descarga</th></tr>
@@ -129,6 +145,21 @@ class Wp_Dosf_Help_Page {
             </table>
             <div class="dosf-info">
                 Ingresar un código correcto no genera otro. Un código nuevo aparece solo cuando se vuelve a solicitar la descarga. Un certificado antiguo sin hora de emisión se trata como vencido hasta esa nueva solicitud.
+            </div>
+
+            <hr>
+
+            <h2 id="dosf-emails">Plantillas de correo</h2>
+            <p>En <strong>Opciones → Correos → Conjuntos de destinatarios</strong> se crean, eliminan o renombran los grupos de correos. Al empezar hay tres: colaboradores, operadores y mecánicos. En cada certificado se agregan, quitan o editan los correos de cada conjunto.</p>
+            <p>En <strong>Destinatarios de los correos</strong> se marca qué conjuntos reciben cada mensaje. Por defecto, el código de descarga va a colaboradores y operadores, y el aviso de vencimiento va a mecánicos.</p>
+            <p>En <strong>Opciones → Correos → Plantillas de correo</strong> un administrador puede editar el asunto y el código HTML de los dos correos del plugin. <strong>Vista previa</strong> abre un popup con el asunto y el HTML tal como están en los cuadros, también si todavía no se han guardado. No envía el correo. Los datos de ejemplo son el título Certificado de ejemplo, la serie GA000000000 y el código A1B2C3. <code>{validez_codigo}</code> usa el plazo escrito en la pestaña Descarga. El aviso de vencimiento usa 15 días, la emisión 01-10-2026 y el id 1. El cambio se guarda con <strong>Guardar opciones</strong>. Si un cuadro se deja vacío y se guarda, vuelve la plantilla que trae el plugin.</p>
+            <table>
+                <tr><th>Correo</th><th>Cuándo se envía</th><th>Marcadores</th></tr>
+                <tr><td>Código de descarga</td><td>Al crear el certificado y cada vez que se solicita la descarga</td><td><code>{cert_title}</code>, <code>{serie}</code>, <code>{download_code}</code>, <code>{validez_codigo}</code></td></tr>
+                <tr><td>Aviso de vencimiento</td><td>Cuando el certificado entra en el plazo de aviso configurado</td><td><code>{cert_title}</code>, <code>{serie}</code>, <code>{dias_vigencia}</code>, <code>{emision}</code>, <code>{id}</code></td></tr>
+            </table>
+            <div class="dosf-info">
+                El HTML es el mensaje completo, con el encabezado y el pie. Los marcadores se reemplazan al enviar el correo.
             </div>
 
             <hr>
@@ -143,7 +174,7 @@ class Wp_Dosf_Help_Page {
                 <li>El usuario busca su certificado por RUT o número de serie.</li>
                 <li>Hace clic en el icono de descarga junto a su resultado.</li>
                 <li>El plugin genera un <strong>código de autorización nuevo</strong>, lo envía al correo registrado y abre el popup de Popup Maker. El código anterior deja de servir.</li>
-                <li>El código vale solo durante el plazo definido en <strong>Otras opciones</strong> (<strong>El código de descarga es válido durante</strong>). Si vence, hay que solicitar la descarga otra vez.</li>
+                <li>El código vale solo durante el plazo definido en <strong>Opciones</strong> (<strong>El código de descarga es válido durante</strong>). Si vence, hay que solicitar la descarga otra vez.</li>
                 <li>El usuario ingresa el código en el popup y hace clic en "Descargar".</li>
                 <li>Si el código es correcto, se inicia la descarga del archivo.</li>
             </ol>
@@ -207,9 +238,9 @@ class Wp_Dosf_Help_Page {
             <h3>Paso 3 — Elegir el popup en este plugin</h3>
             <ol class="dosf-help-steps">
                 <li>Guarda el popup en Popup Maker.</li>
-                <li>Ve a <strong>Distribución de archivos → Gestión → Otras opciones</strong>.</li>
+                <li>Ve a <strong>Distribución de archivos → Gestión</strong> y pulsa <strong>Opciones</strong>.</li>
                 <li>En <strong>Popup (Popup Maker) para ingreso de código de descarga</strong>, elige el popup de la lista. Cada opción se muestra como título y número, por ejemplo <em>Descarga con código de autorización (#11927)</em>. Entran los popups publicados, en borrador, privados y pendientes. Si el popup guardado ya no existe, la lista conserva la opción <em>Popup #ID (no encontrado)</em>.</li>
-                <li>Haz clic en <strong>Guardar otras opciones</strong>.</li>
+                <li>Haz clic en <strong>Guardar opciones</strong>.</li>
             </ol>
 
             <hr>
@@ -268,6 +299,7 @@ CREATE TABLE IF NOT EXISTS `<?php echo esc_html( $GLOBALS['wpdb']->prefix ); ?>d
     `email`          varchar(255)  NOT NULL DEFAULT '',
     `email2`         varchar(255)  NOT NULL DEFAULT '',
     `email3`         varchar(255)  NOT NULL DEFAULT '',
+    `recipient_extra` longtext     NULL,
     `download_code`  varchar(16)   NOT NULL DEFAULT '',
     `download_code_issued` datetime NULL,
     PRIMARY KEY (`id`),
@@ -303,7 +335,7 @@ CREATE TABLE IF NOT EXISTS `<?php echo esc_html( $GLOBALS['wpdb']->prefix ); ?>d
                 <pre style="margin:8px 0 0;"><code>ALTER TABLE `<?php echo esc_html( $GLOBALS['wpdb']->prefix ); ?>dosf_shared_objs`
   ADD COLUMN `file_unavailable` tinyint(1) NOT NULL DEFAULT 0 AFTER `wp_file_obj_id`,
   ADD COLUMN `download_code_issued` datetime NULL AFTER `download_code`;</code></pre>
-                Al cargar el plugin, si la versión de base de datos guardada no es 1.4, la migración agrega esas columnas sola.
+                Al cargar el plugin, si la versión de base de datos guardada no es 1.5, la migración agrega esas columnas sola. Los correos de conjuntos creados después de los tres iniciales se guardan en <code>recipient_extra</code>.
             </div>
 
             <p>Después de ejecutar el SQL, ve a <strong>Plugins → Plugins instalados</strong>, <strong>desactiva</strong> y vuelve a <strong>activar</strong> el plugin <code>jgb-dosf</code>.</p>

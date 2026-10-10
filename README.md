@@ -9,11 +9,13 @@ Plugin para **compartir y distribuir documentos** con control de vencimiento, pr
 - Gestión de certificados/documentos compartidos desde el panel de administración
 - Búsqueda pública por **RUT** o **número de serie** del equipo
 - Control de **fecha de emisión y vencimiento** con indicador visual (vigente / vencido)
-- Descarga protegida mediante **código de autorización enviado por correo electrónico**. Cada solicitud de descarga genera un código nuevo y anula el anterior. El plazo de validez (minuto, hora, día o semana) se configura en **Otras opciones**.
+- Descarga protegida mediante **código de autorización enviado por correo electrónico**. Cada solicitud de descarga genera un código nuevo y anula el anterior. El plazo de validez (minuto, hora, día o semana) se configura en **Opciones**.
 - Papelera automática del archivo vencido, con un plazo de gracia desde el vencimiento, y marca de archivo no disponible si el adjunto se elimina o se mueve a la papelera
-- Avisos automáticos de vencimiento próximo por email (colaboradores, operadores, mecánicos)
+- Avisos automáticos de vencimiento próximo por email. Los conjuntos de destinatarios se crean, renombran y asignan a cada correo
 - Integración con **Popup Maker**: el popup se elige en una lista, no escribiendo su ID
-- La configuración de **Otras opciones** solo la ve un administrador de WordPress. El gestor de certificados sigue administrando los certificados
+- La configuración se abre con el botón **Opciones** y solo la ve un administrador de WordPress. El gestor de certificados sigue administrando los certificados
+- Textos públicos con formato HTML acotado, plantillas de correo en HTML completo y vista previa del correo antes de guardarlo
+- Menú lateral con texto e icono configurables, y listado de certificados con el título recortado y una sola columna de emails
 - Filtros de WordPress para personalizar imágenes y comportamientos
 
 ---
@@ -34,7 +36,7 @@ Plugin para **compartir y distribuir documentos** con control de vencimiento, pr
 2. Activar el plugin desde **Plugins → Plugins instalados**
 3. Instalar y activar el plugin **[Popup Maker](https://wordpress.org/plugins/popup-maker/)**
 4. Crear el popup de código de autorización (ver sección siguiente)
-5. Elegir el popup en **Distribución de archivos → Otras opciones**
+5. Elegir el popup en **Distribución de archivos → Gestión → Opciones**
 6. Agregar el shortcode `[dosf_browser]` en la página pública de certificados
 
 ---
@@ -104,9 +106,9 @@ En la pestaña **Popup Settings** del popup creado:
 ### Paso 3 — Elegir el popup en el plugin
 
 1. Guarda el popup
-2. Ve a **Distribución de archivos → Gestión → Otras opciones**
+2. Ve a **Distribución de archivos → Gestión** y pulsa **Opciones**
 3. En **Popup (Popup Maker) para ingreso de código de descarga**, elige el popup de la lista. Cada opción se muestra como título y número, por ejemplo `Descarga con código de autorización (#11927)`. Entran los popups publicados, en borrador, privados y pendientes. Si el popup guardado ya no existe, la lista conserva `Popup #ID (no encontrado)`
-4. Haz clic en **Guardar otras opciones**
+4. Haz clic en **Guardar opciones**
 
 ---
 
@@ -116,28 +118,44 @@ En la pestaña **Popup Settings** del popup creado:
 [dosf_browser]
 ```
 
-Agrega este shortcode en la página donde los usuarios buscarán sus certificados. El plugin mostrará un formulario de búsqueda por RUT o número de serie según la configuración en "Otras opciones".
+Agrega este shortcode en la página donde los usuarios buscarán sus certificados. El plugin mostrará un formulario de búsqueda por RUT o número de serie según la configuración en "Opciones".
 
 ## Quién puede configurar el plugin
 
 El menú **Distribución de archivos** (Gestión y Ayuda) está disponible para quien tenga la capacidad `jgb_collab_access`: el rol **Gestor de Certificados** y el administrador de WordPress.
 
-El bloque **Otras opciones**, al final de Gestión, solo se muestra si la sesión actual es de un administrador de WordPress (capacidad `manage_options`). Ahí se definen la búsqueda pública, el uso de número de serie y de fecha de emisión, el vencimiento, los avisos por correo, la papelera de archivos vencidos, la validez del código de descarga, el popup y los mensajes del frontend.
+En Gestión, el botón **Opciones** abre un popup con la configuración en cinco pestañas: **Búsqueda**, **Vigencia**, **Descarga**, **Correos** y **Sistema**. Búsqueda define la consulta pública. Vigencia define el plazo, los mensajes de vigente o vencido, los avisos y la papelera. Descarga define el código y su popup. Correos define los conjuntos de destinatarios, a quién llega cada mensaje y las plantillas. Sistema define el texto y el icono del menú lateral de WordPress. El botón solo se muestra si la sesión actual es de un administrador de WordPress (capacidad `manage_options`).
 
-Un gestor de certificados sigue pudiendo crear, editar y eliminar certificados. No ve ese formulario. Si llama al guardado de esas opciones, WordPress lo rechaza.
+Un gestor de certificados sigue pudiendo crear, editar y eliminar certificados. No ve el botón **Opciones**. La ruta de la API que guarda esa configuración también exige `manage_options`: si alguien más la llama, WordPress la rechaza.
+
+## Listado de certificados
+
+En Gestión, cada serie muestra sus certificados en una tabla. La columna **Título** ocupa el 20 % del ancho cuando hay fecha de emisión, y el 26 % cuando no. Si el título no cabe, se corta con puntos suspensivos y, al pasar el mouse, un tooltip muestra el título completo. Los títulos cortos se ven enteros y no muestran tooltip.
+
+Los correos de los conjuntos van en una sola columna, **Email**, que es la más ancha: 30 % con fecha de emisión y 40 % sin ella. Solo aparecen los conjuntos que tienen direcciones. El nombre del conjunto va en negrita y los grupos se separan con un guion. Por ejemplo: **Emails de colaboradores:** julio@gmail.com, jegschl@gmail.com - **Emails de operadores:** luciano@aol.com.
+
+Los iconos de **Acciones** muestran un tooltip: Editar certificado, Enviar código de descarga, Enviar aviso de vencimiento y Eliminar certificado. El aviso de vencimiento solo aparece cuando el certificado está dentro del plazo de aviso.
+
+## Menú del plugin
+
+En **Opciones → Sistema** se cambia lo que WordPress muestra en el menú lateral.
+
+**Label para la opción del menú** es un texto de hasta 40 caracteres. Si se deja vacío, el menú muestra **Distribución de archivos**.
+
+**Icono del menú** es uno de los iconos estándar de WordPress. El predeterminado es el de formulario. Una vista previa muestra el icono y el texto juntos. Al guardar un cambio de texto o de icono, la página se recarga para que el menú lateral lo refleje. Gestión y Ayuda siguen como submenús de esa entrada.
 
 ## Mensajes de vigencia en el frontend
 
 Con la búsqueda por número de serie y la opción **Coincidencias específicas** activa, cada resultado indica si el certificado está vigente o vencido.
 
-Esos textos se editan en **Distribución de archivos → Gestión**, dentro de **Otras opciones → Mensajes del frontend**. Hay un cuadro para el certificado vigente y otro para el vencido. Hay que pulsar **Guardar otras opciones**.
+Esos textos se editan en **Distribución de archivos → Gestión → Opciones**, pestaña **Vigencia**, dentro de **Mensajes del frontend**. Hay un cuadro para el certificado vigente y otro para el vencido. Hay que pulsar **Guardar opciones**.
 
 | Marcador | Se reemplaza por |
 |---|---|
 | `{cert_title}` | Título del certificado |
 | `{serie}` | Número de serie |
 | `{estado}` | La palabra vigente o vencido, con su color |
-| `{fecha_vencimiento}` | Fecha de vencimiento: emisión más el plazo de «Vencimiento a los» |
+| `{fecha_vencimiento}` | Fecha de vencimiento: emisión más el plazo de «Vencimiento a los». El formato se elige en **Formato de la fecha de vigencia**. Por defecto es el de Chile, día-mes-año (09-10-2026). |
 
 Si un cuadro queda vacío, el texto usado es:
 
@@ -145,11 +163,26 @@ Si un cuadro queda vacío, el texto usado es:
 {cert_title} de la serie {serie} se encuentra actualmente {estado}.
 ```
 
-`{estado}` es el único marcador que conserva el color. El resto del mensaje se publica como texto plano.
+`{estado}` conserva el color verde o rojo. El resto del mensaje, y también el texto del campo de búsqueda por número de serie, admite HTML de formato en una parte del texto o en todo: `<b>`, `<strong>`, `<u>`, `<i>`, `<em>`, `<br>` y `<span style="...">` para color, tipo de letra, tamaño, negrita o subrayado. El resto de etiquetas se descarta. Los valores que sustituyen a los marcadores se publican como texto. Las plantillas de correo siguen siendo HTML completo y no usan esta lista.
+
+## Plantillas de correo
+
+En **Opciones → Correos → Conjuntos de destinatarios** se crean, eliminan o renombran los grupos de correos. Al empezar hay tres: colaboradores, operadores y mecánicos. En cada certificado se agregan, quitan o editan los correos de cada conjunto.
+
+En **Destinatarios de los correos** se marca qué conjuntos reciben cada mensaje. Por defecto, el código de descarga va a colaboradores y operadores, y el aviso de vencimiento va a mecánicos.
+
+En **Opciones → Correos → Plantillas de correo** se editan el asunto y el código HTML de cada correo. **Vista previa** abre un popup con el asunto y el HTML tal como están en los cuadros, también si todavía no se han guardado. No envía el correo. Los datos de ejemplo son el título Certificado de ejemplo, la serie GA000000000 y el código A1B2C3. `{validez_codigo}` usa el plazo escrito en la pestaña Descarga. El aviso de vencimiento usa 15 días, la emisión 01-10-2026 y el id 1. Si un cuadro se deja vacío y se guarda, vuelve la plantilla incluida en el plugin.
+
+| Correo | Cuándo se envía | Marcadores |
+|---|---|---|
+| Código de descarga | Al crear el certificado y cada vez que se solicita la descarga | `{cert_title}`, `{serie}`, `{download_code}`, `{validez_codigo}` |
+| Aviso de vencimiento | Cuando el certificado entra en el plazo de aviso configurado | `{cert_title}`, `{serie}`, `{dias_vigencia}`, `{emision}`, `{id}` |
+
+El HTML es el mensaje completo, con el encabezado y el pie. Los marcadores se reemplazan al enviar el correo.
 
 ## Papelera de archivos vencidos
 
-En **Otras opciones** se puede activar **Mover a la papelera el archivo del certificado después de vencer** e indicar cuántos días, semanas, meses o años deben pasar desde el vencimiento. Un plazo de 0 mueve el archivo en cuanto vence.
+En **Opciones** se puede activar **Mover a la papelera el archivo del certificado después de vencer** e indicar cuántos días, semanas, meses o años deben pasar desde el vencimiento. Un plazo de 0 mueve el archivo en cuanto vence.
 
 El vencimiento es la fecha de emisión más el plazo de **Vencimiento a los**. Una tarea diaria de WordPress mueve el adjunto con `wp_delete_attachment` sin borrado permanente. El archivo sigue en el disco y se restaura desde **Medios → Papelera** cuando `wp-config.php` define `MEDIA_TRASH` como `true`. Sin esa constante el adjunto queda en estado papelera y el archivo no se borra, pero la pantalla de medios no muestra la papelera.
 
@@ -161,7 +194,7 @@ Cuando el adjunto pasa a la papelera o se elimina, cada certificado que lo usa q
 
 Cada clic en el icono de descarga genera un código nuevo, guarda la fecha y hora de emisión y lo envía al correo del certificado. El código anterior deja de valer en ese momento.
 
-La duración se configura en **Otras opciones**, en **El código de descarga es válido durante**. El número mínimo es 1. Las unidades son minuto, hora, día o semana. Si no hay un plazo guardado, se usa **1 hora**. El plazo empieza cuando se solicita la descarga, no cuando se creó el certificado. El alta de un certificado también registra la hora de emisión del código que sale en el correo inicial.
+La duración se configura en **Opciones**, en **El código de descarga es válido durante**. El número mínimo es 1. Las unidades son minuto, hora, día o semana. Si no hay un plazo guardado, se usa **1 hora**. El plazo empieza cuando se solicita la descarga, no cuando se creó el certificado. El alta de un certificado también registra la hora de emisión del código que sale en el correo inicial. En la plantilla de ese correo, `{validez_codigo}` se reemplaza por ese plazo en palabras, por ejemplo **30 minutos** o **1 hora**.
 
 | Situación | Qué ve quien descarga |
 |---|---|
@@ -235,6 +268,7 @@ CREATE TABLE IF NOT EXISTS `umm_dosf_shared_objs` (
     `email`          varchar(255)  NOT NULL DEFAULT '',
     `email2`         varchar(255)  NOT NULL DEFAULT '',
     `email3`         varchar(255)  NOT NULL DEFAULT '',
+    `recipient_extra` longtext     NULL,
     `download_code`  varchar(16)   NOT NULL DEFAULT '',
     `download_code_issued` datetime NULL,
     PRIMARY KEY (`id`),
@@ -275,14 +309,23 @@ Después de ejecutar el SQL, desactiva y reactiva el plugin en **Plugins → Plu
 >   ADD COLUMN `file_unavailable` tinyint(1) NOT NULL DEFAULT 0 AFTER `wp_file_obj_id`,
 >   ADD COLUMN `download_code_issued` datetime NULL AFTER `download_code`;
 > ```
-> Al cargar el plugin, si la versión de base de datos guardada no es 1.4, la migración agrega esas columnas sola.
+> Al cargar el plugin, si la versión de base de datos guardada no es 1.5, la migración agrega esas columnas sola. Los correos de conjuntos creados después de los tres iniciales se guardan en `recipient_extra`.
 
 ---
 
 ## Changelog
 
+### v1.3.0
+- `feat` La configuración queda en un popup con las pestañas Búsqueda, Vigencia, Descarga, Correos y Sistema
+- `feat` Los conjuntos de destinatarios se crean, renombran, eliminan y se asignan a cada correo. En el certificado, los correos de cada conjunto se editan por separado
+- `feat` El texto de búsqueda por serie y los mensajes de vigente y vencido aceptan HTML de formato. Las plantillas de correo siguen siendo HTML completo
+- `feat` Vista previa del correo en un popup, sin enviarlo, con el HTML del cuadro y el plazo de validez escrito en las opciones
+- `feat` El marcador `{validez_codigo}` indica en el correo del código cuánto tiempo vale, según el plazo configurado
+- `feat` En el listado, el título se recorta con puntos suspensivos y tooltip, y los correos quedan en una sola columna Email
+- `feat` El texto y el icono del menú lateral se eligen en Sistema. Si el texto queda vacío, el menú sigue como Distribución de archivos
+
 ### Cambios recientes
-- `feat` Otras opciones solo es visible para un administrador de WordPress. El gestor de certificados sigue gestionando los certificados, y el guardado de la configuración rechaza al resto
+- `feat` La configuración se abre con el botón Opciones, solo visible para un administrador de WordPress. La ruta que la guarda exige el mismo permiso. El gestor de certificados sigue gestionando los certificados
 - `feat` El código de descarga cambia en cada solicitud. El anterior deja de valer. La validez se configura en minutos, horas, días o semanas; por defecto, 1 hora, contada desde el envío del código
 - `feat` El archivo vencido puede pasar a la papelera de medios tras un plazo de gracia, con la tarea diaria de WordPress y `wp_delete_attachment`. Un adjunto compartido solo se mueve cuando todos los certificados que lo usan ya cumplieron el plazo
 - `feat` Si el adjunto se elimina o va a la papelera, los certificados que lo usan quedan marcados. El público ve «Certificado no disponible» y el admin «No disponible». Restaurar el adjunto quita la marca

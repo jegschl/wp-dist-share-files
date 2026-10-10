@@ -218,7 +218,7 @@ class Wp_Dosf_Public {
 		$useSerialNmbCriterial = false;
 		if( $useSerialNmbCriterial = ( isset($this->plus_options['use-serial-number']) && $this->plus_options['use-serial-number'] ) ){
 			$urlGetParamNm = 'dosf-search-serial';
-			$browse_input_label = 'Ingrese número de serie';
+			$browse_input_label = Wp_Dosf_Admin::serial_search_label( $this->plus_options );
 		}
 		$valueToSearch = filter_input(INPUT_GET, $urlGetParamNm );
 		if( $valueToSearch !== false && !is_null($valueToSearch)){
@@ -229,7 +229,7 @@ class Wp_Dosf_Public {
 			<div id="dosf-browser-wrapper">
 				<form method="get">
 					<div class="input-text">
-						<label><?= $browse_input_label?></label>
+						<label><?= Wp_Dosf_Admin::render_config_html( $browse_input_label ) ?></label>
 						<input type="text" name="<?= $urlGetParamNm  ?>" value="<?=$valueToSearch?>">
 					</div>
 					<input type="submit" value="Volver a buscar">
@@ -296,27 +296,16 @@ class Wp_Dosf_Public {
 				<?php
 			}
 			?>
-			<?php if ( is_array( $res ) && count( $res ) > 0 ) : ?>
-			<div id="dosf-browser-wrapper">
-				<form method="get">
-					<div class="input-text">
-						<label><?= $browse_input_label?></label>
-						<input type="text" name="<?= $urlGetParamNm  ?>" value="<?=$valueToSearch?>">
-					</div>
-					<input type="submit" value="Volver a buscar">
-				</form>
-			</div>
-			<?php endif; ?>
 			<?php
 		} else {
 			?>
 			<div id="dosf-browser-wrapper">
 				<form method="get">
 					<div class="input-text">
-						<label><?= $browse_input_label?></label>
+						<label><?= Wp_Dosf_Admin::render_config_html( $browse_input_label ) ?></label>
 						<input type="text" name="<?= $urlGetParamNm  ?>">
 					</div>
-					<input type="submit">
+					<input type="submit" value="Buscar">
 				</form>
 			</div>
 			<?php

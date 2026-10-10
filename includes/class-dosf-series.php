@@ -43,6 +43,7 @@ class Dosf_Series {
 		self::ensure_column( $tables['certs'], 'cert_title', "varchar(256) NOT NULL DEFAULT ''" );
 		self::ensure_column( $tables['certs'], 'file_unavailable', 'tinyint(1) NOT NULL DEFAULT 0' );
 		self::ensure_column( $tables['certs'], 'download_code_issued', 'datetime NULL' );
+		self::ensure_column( $tables['certs'], 'recipient_extra', 'longtext NULL' );
 		self::ensure_column( $tables['ruts'], 'serie_id', 'int unsigned NULL' );
 
 		$titles = $wpdb->get_col( "SELECT DISTINCT title FROM {$tables['certs']} WHERE title <> ''" );
@@ -243,6 +244,146 @@ class Dosf_Series {
 		return (string) $data[ $key ];
 	}
 
+	public static function sanitize_email_list( $raw ) {
+		$parts = preg_split( '/\s*,\s*/', (string) $raw );
+		$seen  = array();
+		$list  = array();
+		if ( ! is_array( $parts ) ) {
+			return '';
+		}
+		foreach ( $parts as $part ) {
+			$part = sanitize_email( trim( $part ) );
+			if ( $part === '' || ! is_email( $part ) ) {
+				continue;
+			}
+			$token = strtolower( $part );
+			if ( isset( $seen[ $token ] ) ) {
+				continue;
+			}
+			$seen[ $token ] = true;
+			$list[]         = $part;
+		}
+		return implode( ',', $list );
+	}
+
+	public static function recipient_map( $cert ) {
+		$extra = array();
+		if ( is_object( $cert ) && ! empty( $cert->recipient_extra ) ) {
+			$decoded = json_decode( $cert->recipient_extra, true );
+			if ( is_array( $decoded ) ) {
+				$extra = $decoded;
+			}
+		}
+		$map = array();
+		if ( ! class_exists( 'Wp_Dosf_Admin' ) ) {
+			return $map;
+		}
+		foreach ( Wp_Dosf_Admin::recipient_sets() as $set ) {
+			$id = $set['id'];
+			if ( $id === 'email' || $id === 'email2' || $id === 'email3' ) {
+				$map[ $id ] = ( is_object( $cert ) && isset( $cert->$id ) ) ? (string) $cert->$id : '';
+			} else {
+				$map[ $id ] = isset( $extra[ $id ] ) ? (string) $extra[ $id ] : '';
+			}
+		}
+		return $map;
+	}
+
+	public static function recipient_storage( $data, $current ) {
+		$sets  = class_exists( 'Wp_Dosf_Admin' ) ? Wp_Dosf_Admin::recipient_sets() : array();
+		$known = array();
+		foreach ( $sets as $set ) {
+			$known[ $set['id'] ] = true;
+		}
+
+		$legacy = array(
+			'email'  => ( $current && isset( $current->email ) ) ? (string) $current->email : '',
+			'email2' => ( $current && isset( $current->email2 ) ) ? (string) $current->email2 : '',
+			'email3' => ( $current && isset( $current->email3 ) ) ? (string) $current->email3 : '',
+		);
+		$extra = array();
+		if ( $current && ! empty( $current->recipient_extra ) ) {
+			$decoded = json_decode( $current->recipient_extra, true );
+			if ( is_array( $decoded ) ) {
+				$extra = $decoded;
+			}
+		}
+		foreach ( array_keys( $extra ) as $id ) {
+			if ( ! isset( $known[ $id ] ) ) {
+				unset( $extra[ $id ] );
+			}
+		}
+
+		$incoming = ( isset( $data['recipients'] ) && is_array( $data['recipients'] ) ) ? $data['recipients'] : null;
+		if ( $incoming === null ) {
+			foreach ( array( 'email', 'email2', 'email3' ) as $key ) {
+				if ( isset( $known[ $key ] ) && array_key_exists( $key, $data ) ) {
+					$legacy[ $key ] = self::sanitize_email_list( self::email_list( $data, $key ) );
+				}
+			}
+		} else {
+			foreach ( $sets as $set ) {
+				$id = $set['id'];
+				if ( ! array_key_exists( $id, $incoming ) ) {
+					continue;
+				}
+				$value = self::sanitize_email_list( self::email_list( $incoming, $id ) );
+				if ( $id === 'email' || $id === 'email2' || $id === 'email3' ) {
+					$legacy[ $id ] = $value;
+				} else {
+					$extra[ $id ] = $value;
+				}
+			}
+		}
+
+		return array(
+			'email'           => $legacy['email'],
+			'email2'          => $legacy['email2'],
+			'email3'          => $legacy['email3'],
+			'recipient_extra' => wp_json_encode( $extra ),
+		);
+	}
+
+	public static function purge_removed_recipient_sets( $kept_ids ) {
+		global $wpdb;
+
+		if ( ! is_array( $kept_ids ) ) {
+			return;
+		}
+		$tables = self::table_names();
+		$column = $wpdb->get_var( $wpdb->prepare( 'SHOW COLUMNS FROM `' . $tables['certs'] . '` LIKE %s', 'recipient_extra' ) );
+		if ( $column !== 'recipient_extra' ) {
+			return;
+		}
+		$rows = $wpdb->get_results( "SELECT id, recipient_extra FROM {$tables['certs']} WHERE recipient_extra IS NOT NULL AND recipient_extra <> ''" );
+		if ( ! is_array( $rows ) ) {
+			return;
+		}
+		foreach ( $rows as $row ) {
+			$extra = json_decode( $row->recipient_extra, true );
+			if ( ! is_array( $extra ) ) {
+				continue;
+			}
+			$changed = false;
+			foreach ( array_keys( $extra ) as $id ) {
+				if ( ! isset( $kept_ids[ $id ] ) ) {
+					unset( $extra[ $id ] );
+					$changed = true;
+				}
+			}
+			if ( ! $changed ) {
+				continue;
+			}
+			$wpdb->update(
+				$tables['certs'],
+				array( 'recipient_extra' => wp_json_encode( $extra ) ),
+				array( 'id' => intval( $row->id ) ),
+				array( '%s' ),
+				array( '%d' )
+			);
+		}
+	}
+
 	public static function generate_code( $length = 6 ) {
 		$characters = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 		$string     = '';
@@ -369,6 +510,7 @@ class Dosf_Series {
 			}
 		}
 
+		$emails = self::recipient_storage( $data, $update_id ? $current : null );
 		$row = array(
 			'title'            => $serie,
 			'cert_title'       => $cert_title,
@@ -376,10 +518,11 @@ class Dosf_Series {
 			'file_name'        => isset( $data['file_name'] ) ? $data['file_name'] : '',
 			'wp_file_obj_id'   => $attachment_id,
 			'file_unavailable' => $file_unavailable,
-			'email'          => self::email_list( $data, 'email' ),
-			'email2'         => self::email_list( $data, 'email2' ),
-			'email3'         => self::email_list( $data, 'email3' ),
-			'emision'        => isset( $data['emision'] ) ? $data['emision'] : null,
+			'email'            => $emails['email'],
+			'email2'           => $emails['email2'],
+			'email3'           => $emails['email3'],
+			'recipient_extra'  => $emails['recipient_extra'],
+			'emision'          => isset( $data['emision'] ) ? $data['emision'] : null,
 		);
 
 		if ( $update_id ) {
@@ -411,6 +554,7 @@ class Dosf_Series {
 				'id'            => $id,
 				'email'         => $row['email'],
 				'email2'        => $row['email2'],
+				'email3'        => $row['email3'],
 				'download_code' => $row['download_code'],
 				'file'          => $file_path,
 				'serial'        => $serie,
@@ -502,7 +646,8 @@ class Dosf_Series {
 		if ( $search !== '' ) {
 			$like  = '%' . $wpdb->esc_like( $search ) . '%';
 			$where = $wpdb->prepare(
-				'(s.serie LIKE %s OR c.cert_title LIKE %s OR c.file_name LIKE %s OR c.email LIKE %s OR c.email2 LIKE %s OR c.email3 LIKE %s OR r.rut LIKE %s)',
+				'(s.serie LIKE %s OR c.cert_title LIKE %s OR c.file_name LIKE %s OR c.email LIKE %s OR c.email2 LIKE %s OR c.email3 LIKE %s OR c.recipient_extra LIKE %s OR r.rut LIKE %s)',
+				$like,
 				$like,
 				$like,
 				$like,
@@ -552,6 +697,7 @@ class Dosf_Series {
 						'email'         => $cert->email,
 						'email2'        => $cert->email2,
 						'email3'        => $cert->email3,
+						'recipients'    => self::recipient_map( $cert ),
 						'status'        => Wp_Dosf_Admin::get_dosf_status( $cert->emision ),
 						'vdbe'          => Wp_Dosf_Admin::get_dosf_validity_days_before_expiration( $cert->emision ),
 					);

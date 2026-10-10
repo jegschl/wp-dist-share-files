@@ -95,7 +95,9 @@ class Wp_Dosf_Admin {
 		 * class.
 		 */
 
-		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/wp-dosf-admin.css', array(), $this->version, 'all' );
+		$admin_css     = plugin_dir_path( __FILE__ ) . 'css/wp-dosf-admin.css';
+		$admin_css_ver = $this->version . '.' . ( file_exists( $admin_css ) ? filemtime( $admin_css ) : '0' );
+		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/wp-dosf-admin.css', array(), $admin_css_ver, 'all' );
 		
 		wp_enqueue_style( 
 			'dosf_jquery_dtp_css', 
@@ -176,6 +178,8 @@ class Wp_Dosf_Admin {
 				'urlSndDC'		 			=> rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_SEND_DWNL_CD . '/' ),
 				'urlSndExpWrng'	 			=> rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_SEND_EXPRT_WRNG . '/' ),
 				'urlUpdPlusOpts' 			=> rest_url( '/'. DOSF_APIREST_BASE_ROUTE .DOSF_URI_ID_UPD_PLUS_OPTIONS . '/'),
+				'restNonce' 				=> wp_create_nonce( 'wp_rest' ),
+				'recipientSets'			=> self::recipient_sets(),
 				'useIssueDate'	 			=> isset( $this->plus_options['use-issue-date'] ) && $this->plus_options['use-issue-date'],
 				'expirityBefDayC'			=> self::get_dosf_validity_total_days(),
 				'lastDayRangeForExprWrng'	=> self::get_last_range_days_before_expiration()
@@ -231,14 +235,79 @@ class Wp_Dosf_Admin {
 	/**** Creando una pgina en el admin para configurar las imgenes de los ads y los links de cada una ****/
 	//add_action( 'admin_menu', 'dosf_menu' );
 
+	public static function menu_icon_choices() {
+		return array(
+			'dashicons-forms'          => 'Formulario',
+			'dashicons-awards'         => 'Certificado',
+			'dashicons-media-document' => 'Documento',
+			'dashicons-media-text'     => 'Texto',
+			'dashicons-media-default'  => 'Archivo',
+			'dashicons-portfolio'      => 'Portafolio',
+			'dashicons-clipboard'      => 'Portapapeles',
+			'dashicons-paperclip'      => 'Adjunto',
+			'dashicons-download'       => 'Descarga',
+			'dashicons-email'          => 'Correo',
+			'dashicons-admin-page'     => 'Página',
+			'dashicons-admin-generic'  => 'Ajustes',
+			'dashicons-admin-tools'    => 'Herramientas',
+			'dashicons-shield'         => 'Escudo',
+			'dashicons-lock'           => 'Candado',
+			'dashicons-id'             => 'Identificación',
+			'dashicons-groups'         => 'Grupos',
+			'dashicons-building'       => 'Edificio',
+			'dashicons-calendar-alt'   => 'Calendario',
+			'dashicons-clock'          => 'Reloj',
+			'dashicons-search'         => 'Búsqueda',
+			'dashicons-list-view'      => 'Lista',
+			'dashicons-category'       => 'Categoría',
+			'dashicons-star-filled'    => 'Estrella',
+			'dashicons-archive'        => 'Archivo comprimido',
+			'dashicons-book-alt'       => 'Libro',
+			'dashicons-tickets'        => 'Tickets',
+			'dashicons-hammer'         => 'Martillo',
+			'dashicons-images-alt2'    => 'Imagen',
+			'dashicons-admin-site'     => 'Sitio',
+		);
+	}
+
+	public static function menu_label( $plus_options = null ) {
+		if ( $plus_options === null ) {
+			$plus_options = get_option( DOSF_WP_OPT_NM_PLUS_OPTIONS );
+		}
+		$label = '';
+		if ( is_array( $plus_options ) && isset( $plus_options['menu-label'] ) ) {
+			$label = trim( (string) $plus_options['menu-label'] );
+		}
+		if ( $label === '' ) {
+			$label = 'Distribución de archivos';
+		}
+		return $label;
+	}
+
+	public static function menu_icon( $plus_options = null ) {
+		if ( $plus_options === null ) {
+			$plus_options = get_option( DOSF_WP_OPT_NM_PLUS_OPTIONS );
+		}
+		$icon = 'dashicons-forms';
+		if ( is_array( $plus_options ) && ! empty( $plus_options['menu-icon'] ) ) {
+			$candidate = (string) $plus_options['menu-icon'];
+			if ( isset( self::menu_icon_choices()[ $candidate ] ) ) {
+				$icon = $candidate;
+			}
+		}
+		return $icon;
+	}
+
 	public function dosf_menu() {
-		add_menu_page( 
-			apply_filters('dosf-admin/admin-page-title','Distribución de archivos'), 
-			apply_filters('dosf-admin/admin-menu-title','Distribución de archivos'), 
-			'jgb_collab_access', 
-			'dosf-admin',  //'dosf/dosf-admin.php', 
-			array($this,'dosf_admin_page'), 
-			'dashicons-forms', 
+		$plus  = get_option( DOSF_WP_OPT_NM_PLUS_OPTIONS );
+		$label = self::menu_label( $plus );
+		add_menu_page(
+			apply_filters( 'dosf-admin/admin-page-title', $label ),
+			apply_filters( 'dosf-admin/admin-menu-title', $label ),
+			'jgb_collab_access',
+			'dosf-admin',
+			array( $this, 'dosf_admin_page' ),
+			self::menu_icon( $plus ),
 			11
 		);
 	}
@@ -348,74 +417,57 @@ class Wp_Dosf_Admin {
 			
 			<div id="add-dosf" class="action-wrapper"><span class="dashicons dashicons-plus-alt"></span>Agregar certificado</div>
 			<div id="rem-dosf" class="action-wrapper disabled"><span class="dashicons dashicons-dismiss"></span>Remover seleccionados</div>
-					
+			<?php if ( current_user_can( 'manage_options' ) ) : ?>
+			<div id="dosf-open-options" class="action-wrapper"><span class="dashicons dashicons-admin-generic"></span>Opciones</div>
+			<?php endif; ?>
 		</div>
 
 		<div class="dosf-admin-add-so" style="display: none;">
 			<div class="title"></div>
 			<div class="fields-wrapper">
-				<div class="fld-so">
-					<label>Seleccionar archivo</label>
-					<button class="dosf-button" id="browse-file">Buscar...</button>
-					<div class="file-selected" id="dosf-file-selectd"></div>
-					<input type='hidden' name='dosf_fl_attachment_id' id='dosf_attachment_id' value='' />
-				</div>
 				<div class="fld-serie">
-					<label>Número de serie</label>
+					<label for="dosf_so_serie">Número de serie</label>
 					<input name="dosf_so_serie" id="dosf_so_serie" type="text" />
 				</div>
 				<div class="fld-title">
-					<label>Título del certificado</label>
+					<label for="dosf_so_cert_title">Título del certificado</label>
 					<input name="dosf_so_cert_title" id="dosf_so_cert_title" type="text" />
 				</div>
-				
 				<?php if( isset( $plus_options['use-issue-date'] ) && $plus_options['use-issue-date'] ) : ?>
 				<div class="fld-emision">
-					<label>Emisión</label>
+					<label for="dosf_so_emision">Emisión</label>
 					<input name="dosf_so_emision" id="dosf_so_emision" type="datetime" />
 				</div>
 				<?php endif; ?>
-
-				<div class="fld-ruts"> 
-					<label>RUTs asociados</label>
-					<input 
-						type="text" 
+				<div class="fld-so">
+					<label>Archivo del certificado</label>
+					<button class="dosf-button" id="browse-file" type="button">Buscar...</button>
+					<div class="file-selected" id="dosf-file-selectd"></div>
+					<input type='hidden' name='dosf_fl_attachment_id' id='dosf_attachment_id' value='' />
+				</div>
+				<div class="fld-ruts">
+					<label for="dosf_so_ruts_linked">RUTs asociados</label>
+					<input
+						type="text"
 						id="dosf_so_ruts_linked"
 						name="dosf_so_ruts_linked"
-						placeholder="Separar RUTs con comas y sin puntos ni guines"
+						placeholder="Separar RUTs con comas y sin puntos ni guiones"
 					>
 				</div>
-				<div class="fld-email"> 
-					<label>Emails colarboradores</label>
-					<input 
-						type="text" 
-						id="dosf_so_email"
-						name="dosf_so_email"
-						placeholder="Ingrese emails de colaboradores para enviar código de descarga"
+				<div id="dosf-recipient-fields">
+				<?php foreach ( self::recipient_sets() as $recipient_set ) : ?>
+				<div class="fld-email dosf-recipient-field">
+					<label for="dosf_so_recipients_<?= esc_attr( $recipient_set['id'] ) ?>"><?= esc_html( $recipient_set['name'] ) ?></label>
+					<input
+						type="text"
+						class="dosf-recipient-input"
+						id="dosf_so_recipients_<?= esc_attr( $recipient_set['id'] ) ?>"
+						data-set-id="<?= esc_attr( $recipient_set['id'] ) ?>"
+						placeholder="Escriba un correo y pulse Enter"
 					>
 				</div>
-
-				<div class="fld-email2"> 
-					<label>Emails operadores</label>
-					<input 
-						type="text" 
-						id="dosf_so_email2"
-						name="dosf_so_email2"
-						placeholder="Ingrese emails de operadores para enviar código de descarga"
-					>
-				</div>
-
-				<div class="fld-email3"> 
-					<label>Emails Mecánico</label>
-					<input 
-						type="text" 
-						id="dosf_so_email3"
-						name="dosf_so_email3"
-						placeholder="Ingrese emails de mecánicos para enviar aviso de vencimiento de mantención"
-					>
-				</div>
-
-			</div>
+				<?php endforeach; ?>
+				</div>			</div>
 			<div class="actions-wrapper">
 				<div class="save"><button>Guardar</button></div>
 				<div class="cancel"><button>Cancelar</button></div>
@@ -445,146 +497,267 @@ class Wp_Dosf_Admin {
 		</div>
 
 		<?php if ( current_user_can( 'manage_options' ) ) : ?>
-		<div class="dosf-plus-options">
-			<h2>Otras opciones</h2>
-			<?php $checked = $plus_options['frontend-specific-match-search'] ? 'checked' : ''; ?>
-			<div class="input">
-				<input id="especific-match" type="checkbox" name="especific-match" <?= $checked ?>>
-				<label for="especific-match">Coincidencias específicas en las búsquedas del frontend.</label>
+		<div class="dosf-plus-options" title="Opciones">
+			<div id="dosf-options-tabs">
+				<ul>
+					<li><a href="#dosf-tab-search">Búsqueda</a></li>
+					<li><a href="#dosf-tab-validity">Vigencia</a></li>
+					<li><a href="#dosf-tab-download">Descarga</a></li>
+					<li><a href="#dosf-tab-mail">Correos</a></li>
+					<li><a href="#dosf-tab-system">Sistema</a></li>
+				</ul>
+				<div id="dosf-tab-search">
+					<p class="description">Cómo se busca un certificado en el sitio público.</p>
+					<?php $checked = $plus_options['frontend-specific-match-search'] ? 'checked' : ''; ?>
+					<div class="input">
+						<input id="especific-match" type="checkbox" name="especific-match" <?= $checked ?>>
+						<label for="especific-match">Coincidencias específicas en las búsquedas del frontend.</label>
+					</div>
+					<?php $checked = $plus_options['use-serial-number'] ? 'checked' : ''; ?>
+					<div class="input">
+						<input id="use-serial-numbers" type="checkbox" name="use-serial-numbers" <?= $checked ?>>
+						<label for="use-serial-numbers">Identificar cada grúa por número de serie.</label>
+					</div>
+					<div class="input">
+						<label for="serial-search-label">Texto del campo de búsqueda por número de serie</label>
+						<textarea id="serial-search-label" name="serial-search-label" rows="3"><?= esc_textarea( self::serial_search_label( $plus_options ) ) ?></textarea>
+						<p class="description">Se muestra en el frontend, encima del campo, cuando la búsqueda es por número de serie. <?= self::config_text_format_hint() ?></p>
+					</div>
+				</div>
+				<div id="dosf-tab-validity">
+					<p class="description">Cuándo vence un certificado, qué texto ve quien lo busca y qué pasa con el archivo vencido.</p>
+					<?php $checked = $plus_options['use-issue-date'] ? 'checked' : ''; ?>
+					<div class="input">
+						<input id="use-issue-date" type="checkbox" name="use-issue-date" <?= $checked ?>>
+						<label for="use-issue-date">Utilizar fecha de emisión.</label>
+					</div>
+					<div class="input">
+						<label for="expire-period-nmb">Vencimiento a los</label>
+						<?php $value = empty($plus_options['expire-period-nmb']) ? '' : 'value="'.intval($plus_options['expire-period-nmb']).'"'; ?>
+						<input id="expire-period-nmb" type="number" name="expire-period-nmb" min="1" <?= $value ?>>
+						<?php $value = empty($plus_options['expire-period-unit']) ? '' : $plus_options['expire-period-unit']; ?>
+						<select id="expire-period-unit" name="expire-period-unit">
+							<option value="">Seleccione intervalo</option>
+							<option value="day" <?= $value=='day' ? 'selected' : ''?>>día(s)</option>
+							<option value="week" <?= $value=='week' ? 'selected' : ''?>>semana(s)</option>
+							<option value="month" <?= $value=='month' ? 'selected' : ''?>>mes(es)</option>
+							<option value="year" <?= $value=='year' ? 'selected' : ''?>>año(s)</option>
+						</select>
+					</div>
+					<div class="input">
+						<label for="validity-date-format">Formato de la fecha de vigencia</label>
+						<select id="validity-date-format" name="validity-date-format">
+							<?php
+							$validity_format = self::validity_date_format( $plus_options );
+							foreach ( self::validity_date_formats() as $format_key => $format_label ) :
+							?>
+							<option value="<?= esc_attr( $format_key ) ?>" <?= $validity_format === $format_key ? 'selected' : '' ?>><?= esc_html( $format_label ) ?></option>
+							<?php endforeach; ?>
+						</select>
+						<p class="description">Se usa en el marcador {fecha_vencimiento}. El estándar de Chile es día-mes-año, por ejemplo 09-10-2026.</p>
+					</div>
+					<?php
+						$status_tpl_defaults = self::default_status_templates();
+						$status_tpl_vigente  = ( isset( $plus_options['status-tpl-vigente'] ) && trim( (string) $plus_options['status-tpl-vigente'] ) !== '' )
+							? $plus_options['status-tpl-vigente']
+							: $status_tpl_defaults['vigente'];
+						$status_tpl_vencido  = ( isset( $plus_options['status-tpl-vencido'] ) && trim( (string) $plus_options['status-tpl-vencido'] ) !== '' )
+							? $plus_options['status-tpl-vencido']
+							: $status_tpl_defaults['vencido'];
+					?>
+					<div class="dosf-status-templates">
+						<h3>Mensajes del frontend</h3>
+						<p class="description">Texto que ve quien busca un certificado. Marcadores: <code>{cert_title}</code> título, <code>{serie}</code> número de serie, <code>{estado}</code> la palabra vigente o vencido y <code>{fecha_vencimiento}</code> la fecha de vencimiento, calculada sumando el plazo de vigencia a la fecha de emisión. <?= self::config_text_format_hint() ?></p>
+						<div class="input">
+							<label for="status-tpl-vigente">Certificado vigente</label>
+							<textarea id="status-tpl-vigente" name="status-tpl-vigente" rows="3"><?= esc_textarea( $status_tpl_vigente ) ?></textarea>
+						</div>
+						<div class="input">
+							<label for="status-tpl-vencido">Certificado vencido</label>
+							<textarea id="status-tpl-vencido" name="status-tpl-vencido" rows="3"><?= esc_textarea( $status_tpl_vencido ) ?></textarea>
+						</div>
+					</div>
+					<div class="dosf-status-templates">
+						<h3>Avisos y papelera</h3>
+						<div class="input">
+							<label for="ebep-period">Aviso por email dentro de los</label>
+							<?php $value = empty($plus_options['ebep-nmb']) ? '' : 'value="'.intval($plus_options['ebep-nmb']).'"'; ?>
+							<input id="ebep-nmb" type="number" name="ebep-nmb" min="1" <?= $value ?>>
+							<?php $value = empty($plus_options['ebep-unit']) ? '' : $plus_options['ebep-unit']; ?>
+							<select id="ebep-unit" name="ebep-unit">
+								<option value="">Seleccione intervalo</option>
+								<option value="day" <?= $value=='day' ? 'selected' : ''?>>día(s)</option>
+								<option value="week" <?= $value=='week' ? 'selected' : ''?>>semana(s)</option>
+								<option value="month" <?= $value=='month' ? 'selected' : ''?>>mes(es)</option>
+								<option value="year" <?= $value=='year' ? 'selected' : ''?>>año(s)</option>
+							</select>
+							<label for="ebep-period"> antes de vencer.</label>
+						</div>
+						<div class="input">
+							<label for="monitor-expire-interval">Monitorear vencimientos cada </label>
+							<?php $value = empty($plus_options['monitor-expire-interval']) ? '' : 'value="'.intval($plus_options['monitor-expire-interval']).'"'; ?>
+							<input id="monitor-expire-interval" type="number" name="monitor-expire-interval" min="1" <?= $value ?>>
+							<label for="monitor-expire-interval"> día(s).</label>
+						</div>
+						<div class="input">
+							<?php $checked = ! empty( $plus_options['delete-file-after-expire'] ) ? 'checked' : ''; ?>
+							<input id="delete-file-after-expire" type="checkbox" name="delete-file-after-expire" <?= $checked ?>>
+							<label for="delete-file-after-expire">Mover a la papelera el archivo del certificado después de vencer.</label>
+						</div>
+						<div class="input">
+							<label for="delete-file-after-nmb">Eliminar transcurridos</label>
+							<?php $value = isset( $plus_options['delete-file-after-nmb'] ) && $plus_options['delete-file-after-nmb'] !== '' ? 'value="' . intval( $plus_options['delete-file-after-nmb'] ) . '"' : 'value="0"'; ?>
+							<input id="delete-file-after-nmb" type="number" name="delete-file-after-nmb" min="0" <?= $value ?>>
+							<?php $value = empty( $plus_options['delete-file-after-unit'] ) ? 'day' : $plus_options['delete-file-after-unit']; ?>
+							<select id="delete-file-after-unit" name="delete-file-after-unit">
+								<option value="day" <?= $value=='day' ? 'selected' : '' ?>>día(s)</option>
+								<option value="week" <?= $value=='week' ? 'selected' : '' ?>>semana(s)</option>
+								<option value="month" <?= $value=='month' ? 'selected' : '' ?>>mes(es)</option>
+								<option value="year" <?= $value=='year' ? 'selected' : '' ?>>año(s)</option>
+							</select>
+							<label for="delete-file-after-unit">desde el vencimiento.</label>
+							<p class="description">El plazo se cuenta desde la fecha de vencimiento. Una tarea diaria mueve el adjunto a la papelera de WordPress con el procedimiento estándar de adjuntos. El archivo permanece en el disco y se puede restaurar desde Medios → Papelera.</p>
+						</div>
+					</div>
+				</div>
+				<div id="dosf-tab-download">
+					<p class="description">El código que se envía para autorizar una descarga y el popup donde se ingresa.</p>
+					<div class="input">
+						<label for="download-code-valid-nmb">El código de descarga es válido durante</label>
+						<?php
+							$code_valid_nmb  = isset( $plus_options['download-code-valid-nmb'] ) ? max( 1, intval( $plus_options['download-code-valid-nmb'] ) ) : 1;
+							$code_valid_unit = isset( $plus_options['download-code-valid-unit'] ) ? $plus_options['download-code-valid-unit'] : 'hour';
+							if ( ! in_array( $code_valid_unit, array( 'minute', 'hour', 'day', 'week' ), true ) ) {
+								$code_valid_unit = 'hour';
+							}
+						?>
+						<input id="download-code-valid-nmb" type="number" name="download-code-valid-nmb" min="1" value="<?= $code_valid_nmb ?>">
+						<select id="download-code-valid-unit" name="download-code-valid-unit">
+							<option value="minute" <?= $code_valid_unit === 'minute' ? 'selected' : '' ?>>minuto(s)</option>
+							<option value="hour" <?= $code_valid_unit === 'hour' ? 'selected' : '' ?>>hora(s)</option>
+							<option value="day" <?= $code_valid_unit === 'day' ? 'selected' : '' ?>>día(s)</option>
+							<option value="week" <?= $code_valid_unit === 'week' ? 'selected' : '' ?>>semana(s)</option>
+						</select>
+						<p class="description">El plazo empieza cuando se solicita la descarga y se envía el código. Pasado ese tiempo hay que solicitar la descarga otra vez.</p>
+					</div>
+					<div class="input">
+						<label for="pm-download-code-popup-id">Popup (Popup Maker) para ingreso de código de descarga</label>
+						<?php
+							$pm_popup_id = empty( $plus_options['pm-download-code-popup-id'] ) ? 0 : intval( $plus_options['pm-download-code-popup-id'] );
+							$pm_popups   = self::popup_maker_choices();
+							$pm_known    = array();
+						?>
+						<select id="pm-download-code-popup-id" name="pm-download-code-popup-id">
+							<option value="0">Seleccione un popup</option>
+							<?php foreach ( $pm_popups as $pm_popup ) : ?>
+								<?php $pm_known[] = $pm_popup['id']; ?>
+								<option value="<?= intval( $pm_popup['id'] ) ?>" <?= $pm_popup_id === intval( $pm_popup['id'] ) ? 'selected' : '' ?>><?= esc_html( $pm_popup['label'] ) ?></option>
+							<?php endforeach; ?>
+							<?php if ( $pm_popup_id > 0 && ! in_array( $pm_popup_id, $pm_known, true ) ) : ?>
+								<option value="<?= $pm_popup_id ?>" selected><?= esc_html( 'Popup #' . $pm_popup_id . ' (no encontrado)' ) ?></option>
+							<?php endif; ?>
+						</select>
+					</div>
+				</div>
+				<div id="dosf-tab-mail">
+					<p class="description">A quién se escribe y con qué texto.</p>
+					<div class="dosf-status-templates" id="dosf-recipient-sets">
+						<h3>Conjuntos de destinatarios</h3>
+						<p class="description">Cada conjunto agrupa correos de un certificado. Se puede crear un conjunto, eliminarlo o cambiarle el nombre. Los correos se agregan, quitan o editan en cada certificado.</p>
+						<div id="dosf-recipient-set-list">
+							<?php foreach ( self::recipient_sets() as $recipient_set ) : ?>
+							<div class="dosf-recipient-set" data-set-id="<?= esc_attr( $recipient_set['id'] ) ?>">
+								<input type="text" class="dosf-recipient-set-name regular-text" maxlength="80" value="<?= esc_attr( $recipient_set['name'] ) ?>">
+								<button type="button" class="button dosf-recipient-set-remove">Eliminar</button>
+							</div>
+							<?php endforeach; ?>
+						</div>
+						<div class="input">
+							<input type="text" id="dosf-recipient-set-new" class="regular-text" maxlength="80" placeholder="Nombre del conjunto">
+							<button type="button" class="button" id="dosf-recipient-set-add">Agregar conjunto</button>
+						</div>
+						<h3>Destinatarios de los correos</h3>
+						<p class="description">Marque qué conjuntos reciben cada mensaje. Por defecto, el código de descarga va a colaboradores y operadores, y el aviso de vencimiento va a mecánicos.</p>
+						<?php foreach ( array( 'download' => 'Código de descarga', 'expire' => 'Aviso de vencimiento' ) as $mail_kind => $mail_title ) : ?>
+						<div class="dosf-mail-kind" data-kind="<?= esc_attr( $mail_kind ) ?>">
+							<p><strong><?= esc_html( $mail_title ) ?></strong></p>
+							<div class="dosf-mail-kind-sets">
+							<?php foreach ( self::recipient_sets() as $recipient_set ) : ?>
+								<?php $mail_id = $mail_kind . '-mail-to-' . $recipient_set['id']; ?>
+								<div class="input dosf-mail-to-row" data-set-id="<?= esc_attr( $recipient_set['id'] ) ?>">
+									<input id="<?= esc_attr( $mail_id ) ?>" class="dosf-mail-to" type="checkbox" data-kind="<?= esc_attr( $mail_kind ) ?>" data-set-id="<?= esc_attr( $recipient_set['id'] ) ?>" <?= self::mail_goes_to( $plus_options, $mail_kind, $recipient_set['id'] ) ? 'checked' : '' ?>>
+									<label class="dosf-mail-to-label" for="<?= esc_attr( $mail_id ) ?>"><?= esc_html( $recipient_set['name'] ) ?></label>
+								</div>
+							<?php endforeach; ?>
+							</div>
+						</div>
+						<?php endforeach; ?>
+					</div>
+					<div class="dosf-status-templates dosf-email-templates">
+						<h3>Plantillas de correo</h3>
+						<p class="description">Código HTML de cada correo que envía el plugin. <strong>Vista previa</strong> abre el correo con datos de ejemplo, sin enviarlo y sin guardar. Si un cuadro se deja vacío y se guarda, se usa otra vez la plantilla incluida con el plugin.</p>
+						<div class="input">
+							<label for="email-tpl-download-subject">Asunto del correo con el código de descarga</label>
+							<input id="email-tpl-download-subject" type="text" class="large-text" value="<?= esc_attr( self::email_template_value( $plus_options, 'download-subject' ) ) ?>">
+							<p class="description">Marcadores: <code>{cert_title}</code>, <code>{serie}</code>, <code>{download_code}</code> y <code>{validez_codigo}</code> (el plazo de <strong>El código de descarga es válido durante</strong>, por ejemplo 30 minutos o 1 hora). Se envía al crear el certificado y cada vez que se solicita la descarga.</p>
+						</div>
+						<div class="input">
+							<label for="email-tpl-download-html">HTML del correo con el código de descarga</label>
+							<textarea id="email-tpl-download-html" rows="14"><?= esc_textarea( self::email_template_value( $plus_options, 'download-html' ) ) ?></textarea>
+							<p class="dosf-email-preview-bar"><button type="button" class="button dosf-email-preview" data-kind="download">Vista previa</button></p>
+						</div>
+						<div class="input">
+							<label for="email-tpl-expire-subject">Asunto del aviso de vencimiento</label>
+							<input id="email-tpl-expire-subject" type="text" class="large-text" value="<?= esc_attr( self::email_template_value( $plus_options, 'expire-subject' ) ) ?>">
+							<p class="description">Marcadores: <code>{cert_title}</code>, <code>{serie}</code>, <code>{dias_vigencia}</code>, <code>{emision}</code> y <code>{id}</code>.</p>
+						</div>
+						<div class="input">
+							<label for="email-tpl-expire-html">HTML del aviso de vencimiento</label>
+							<textarea id="email-tpl-expire-html" rows="14"><?= esc_textarea( self::email_template_value( $plus_options, 'expire-html' ) ) ?></textarea>
+							<p class="dosf-email-preview-bar"><button type="button" class="button dosf-email-preview" data-kind="expire">Vista previa</button></p>
+						</div>
+					</div>
+				</div>
+				<div id="dosf-tab-system">
+					<p class="description">Texto e icono del menú lateral de WordPress para este plugin.</p>
+					<?php
+						$menu_label_saved = ( is_array( $plus_options ) && isset( $plus_options['menu-label'] ) ) ? (string) $plus_options['menu-label'] : '';
+						$menu_icon_saved  = self::menu_icon( $plus_options );
+						$menu_icon_names  = self::menu_icon_choices();
+					?>
+					<div class="input">
+						<label for="dosf-menu-label">Label para la opción del menú</label>
+						<input id="dosf-menu-label" type="text" class="regular-text" maxlength="40" data-saved="<?= esc_attr( $menu_label_saved ) ?>" value="<?= esc_attr( $menu_label_saved ) ?>" placeholder="Distribución de archivos">
+						<p class="description">Si se deja vacío, el menú muestra «Distribución de archivos».</p>
+					</div>
+					<div class="input">
+						<label>Icono del menú</label>
+						<input type="hidden" id="dosf-menu-icon" data-saved="<?= esc_attr( $menu_icon_saved ) ?>" value="<?= esc_attr( $menu_icon_saved ) ?>">
+						<div class="dosf-menu-icon-picker">
+							<?php foreach ( $menu_icon_names as $menu_icon_slug => $menu_icon_name ) : ?>
+								<button type="button" class="dosf-menu-icon-choice<?= $menu_icon_saved === $menu_icon_slug ? ' is-selected' : '' ?>" data-icon="<?= esc_attr( $menu_icon_slug ) ?>" data-label="<?= esc_attr( $menu_icon_name ) ?>" aria-label="<?= esc_attr( $menu_icon_name ) ?>" aria-pressed="<?= $menu_icon_saved === $menu_icon_slug ? 'true' : 'false' ?>">
+									<span class="dashicons <?= esc_attr( $menu_icon_slug ) ?>"></span>
+								</button>
+							<?php endforeach; ?>
+						</div>
+						<p class="description">Iconos estándar de WordPress. El elegido se muestra junto al título en el menú lateral. Ahora: <strong id="dosf-menu-icon-name"><?= esc_html( $menu_icon_names[ $menu_icon_saved ] ) ?></strong>.</p>
+					</div>
+					<p class="dosf-menu-preview" aria-hidden="true"><span id="dosf-menu-preview-icon" class="dashicons <?= esc_attr( $menu_icon_saved ) ?>"></span><span id="dosf-menu-preview-label"><?= esc_html( self::menu_label( $plus_options ) ) ?></span></p>
+				</div>
 			</div>
-
-			<?php $checked = $plus_options['use-serial-number'] ? 'checked' : ''; ?>
-			<div class="input">
-				<input id="use-serial-numbers" type="checkbox" name="use-serial-numbers" <?= $checked ?>>
-				<label for="use-serial-numbers">Identificar cada grúa por número de serie.</label>
-			</div>
-
-			<?php $checked = $plus_options['use-issue-date'] ? 'checked' : ''; ?>
-			<div class="input">
-				<input id="use-issue-date" type="checkbox" name="use-issue-date" <?= $checked ?>>
-				<label for="use-issue-date">Utilizar fecha de emisión.</label>
-			</div>
-
-			<div class="input">
-				<label for="expire-period-nmb">Vencimiento a los</label>
-				<?php $value = empty($plus_options['expire-period-nmb']) ? '' : 'value="'.intval($plus_options['expire-period-nmb']).'"'; ?>
-				<input id="expire-period-nmb" type="number" name="expire-period-nmb" min="1" <?= $value ?>>
-				<?php $value = empty($plus_options['expire-period-unit']) ? '' : $plus_options['expire-period-unit']; ?>
-				<select id="expire-period-unit" name="expire-period-unit">
-					<option value="">Seleccione intervalo</option>
-					<option value="day" <?= $value=='day' ? 'selected' : ''?>>día(s)</option>
-					<option value="week" <?= $value=='week' ? 'selected' : ''?>>semana(s)</option>
-					<option value="month" <?= $value=='month' ? 'selected' : ''?>>mes(es)</option>
-					<option value="year" <?= $value=='year' ? 'selected' : ''?>>año(s)</option>
-				</select>
-			</div>
-
-			<div class="input">
-				<label for="ebep-period">Aviso por email dentro de los</label>
-				<?php $value = empty($plus_options['ebep-nmb']) ? '' : 'value="'.intval($plus_options['ebep-nmb']).'"'; ?>
-				<input id="ebep-nmb" type="number" name="ebep-nmb" min="1" <?= $value ?>>
-				<?php $value = empty($plus_options['ebep-unit']) ? '' : $plus_options['ebep-unit']; ?>
-				<select id="ebep-unit" name="ebep-unit">
-					<option value="">Seleccione intervalo</option>
-					<option value="day" <?= $value=='day' ? 'selected' : ''?>>día(s)</option>
-					<option value="week" <?= $value=='week' ? 'selected' : ''?>>semana(s)</option>
-					<option value="month" <?= $value=='month' ? 'selected' : ''?>>mes(es)</option>
-					<option value="year" <?= $value=='year' ? 'selected' : ''?>>año(s)</option>
-				</select>
-				<label for="ebep-period"> antes de vencer.</label>
-			</div>
-
-			<div class="input">
-				<label for="monitor-expire-interval">Monitorear vencimientos cada </label>
-				<?php $value = empty($plus_options['monitor-expire-interval']) ? '' : 'value="'.intval($plus_options['monitor-expire-interval']).'"'; ?>
-				<input id="monitor-expire-interval" type="number" name="monitor-expire-interval" min="1" <?= $value ?>>
-				<label for="monitor-expire-interval"> día(s).</label>
-			</div>
-
-
-			<div class="input">
-				<?php $checked = ! empty( $plus_options['delete-file-after-expire'] ) ? 'checked' : ''; ?>
-				<input id="delete-file-after-expire" type="checkbox" name="delete-file-after-expire" <?= $checked ?>>
-				<label for="delete-file-after-expire">Mover a la papelera el archivo del certificado después de vencer.</label>
-			</div>
-			<div class="input">
-				<label for="delete-file-after-nmb">Eliminar transcurridos</label>
-				<?php $value = isset( $plus_options['delete-file-after-nmb'] ) && $plus_options['delete-file-after-nmb'] !== '' ? 'value="' . intval( $plus_options['delete-file-after-nmb'] ) . '"' : 'value="0"'; ?>
-				<input id="delete-file-after-nmb" type="number" name="delete-file-after-nmb" min="0" <?= $value ?>>
-				<?php $value = empty( $plus_options['delete-file-after-unit'] ) ? 'day' : $plus_options['delete-file-after-unit']; ?>
-				<select id="delete-file-after-unit" name="delete-file-after-unit">
-					<option value="day" <?= $value=='day' ? 'selected' : '' ?>>día(s)</option>
-					<option value="week" <?= $value=='week' ? 'selected' : '' ?>>semana(s)</option>
-					<option value="month" <?= $value=='month' ? 'selected' : '' ?>>mes(es)</option>
-					<option value="year" <?= $value=='year' ? 'selected' : '' ?>>año(s)</option>
-				</select>
-				<label for="delete-file-after-unit">desde el vencimiento.</label>
-				<p class="description">El plazo se cuenta desde la fecha de vencimiento. Una tarea diaria mueve el adjunto a la papelera de WordPress con el procedimiento estándar de adjuntos. El archivo permanece en el disco y se puede restaurar desde Medios → Papelera.</p>
-			</div>
-<div class="input">
-	<label for="download-code-valid-nmb">El código de descarga es válido durante</label>
-	<?php
-		$code_valid_nmb  = isset( $plus_options['download-code-valid-nmb'] ) ? max( 1, intval( $plus_options['download-code-valid-nmb'] ) ) : 1;
-		$code_valid_unit = isset( $plus_options['download-code-valid-unit'] ) ? $plus_options['download-code-valid-unit'] : 'hour';
-		if ( ! in_array( $code_valid_unit, array( 'minute', 'hour', 'day', 'week' ), true ) ) {
-			$code_valid_unit = 'hour';
-		}
-	?>
-	<input id="download-code-valid-nmb" type="number" name="download-code-valid-nmb" min="1" value="<?= $code_valid_nmb ?>">
-	<select id="download-code-valid-unit" name="download-code-valid-unit">
-		<option value="minute" <?= $code_valid_unit === 'minute' ? 'selected' : '' ?>>minuto(s)</option>
-		<option value="hour" <?= $code_valid_unit === 'hour' ? 'selected' : '' ?>>hora(s)</option>
-		<option value="day" <?= $code_valid_unit === 'day' ? 'selected' : '' ?>>día(s)</option>
-		<option value="week" <?= $code_valid_unit === 'week' ? 'selected' : '' ?>>semana(s)</option>
-	</select>
-	<p class="description">El plazo empieza cuando se solicita la descarga y se envía el código. Pasado ese tiempo hay que solicitar la descarga otra vez.</p>
-</div>
-<div class="input">
-	<label for="pm-download-code-popup-id">Popup (Popup Maker) para ingreso de código de descarga</label>
-	<?php
-		$pm_popup_id = empty( $plus_options['pm-download-code-popup-id'] ) ? 0 : intval( $plus_options['pm-download-code-popup-id'] );
-		$pm_popups   = self::popup_maker_choices();
-		$pm_known    = array();
-	?>
-	<select id="pm-download-code-popup-id" name="pm-download-code-popup-id">
-		<option value="0">Seleccione un popup</option>
-		<?php foreach ( $pm_popups as $pm_popup ) : ?>
-			<?php $pm_known[] = $pm_popup['id']; ?>
-			<option value="<?= intval( $pm_popup['id'] ) ?>" <?= $pm_popup_id === intval( $pm_popup['id'] ) ? 'selected' : '' ?>><?= esc_html( $pm_popup['label'] ) ?></option>
-		<?php endforeach; ?>
-		<?php if ( $pm_popup_id > 0 && ! in_array( $pm_popup_id, $pm_known, true ) ) : ?>
-			<option value="<?= $pm_popup_id ?>" selected><?= esc_html( 'Popup #' . $pm_popup_id . ' (no encontrado)' ) ?></option>
-		<?php endif; ?>
-	</select>
-</div>
-		<?php
-			$status_tpl_defaults = self::default_status_templates();
-			$status_tpl_vigente  = ( isset( $plus_options['status-tpl-vigente'] ) && trim( (string) $plus_options['status-tpl-vigente'] ) !== '' )
-				? $plus_options['status-tpl-vigente']
-				: $status_tpl_defaults['vigente'];
-			$status_tpl_vencido  = ( isset( $plus_options['status-tpl-vencido'] ) && trim( (string) $plus_options['status-tpl-vencido'] ) !== '' )
-				? $plus_options['status-tpl-vencido']
-				: $status_tpl_defaults['vencido'];
-		?>
-		<div class="dosf-status-templates">
-			<h3>Mensajes del frontend</h3>
-			<p class="description">Texto que ve quien busca un certificado. Marcadores: <code>{cert_title}</code> título, <code>{serie}</code> número de serie, <code>{estado}</code> la palabra vigente o vencido y <code>{fecha_vencimiento}</code> la fecha de vencimiento, calculada sumando el plazo de vigencia a la fecha de emisión.</p>
-			<div class="input">
-				<label for="status-tpl-vigente">Certificado vigente</label>
-				<textarea id="status-tpl-vigente" name="status-tpl-vigente" rows="3"><?= esc_textarea( $status_tpl_vigente ) ?></textarea>
-			</div>
-			<div class="input">
-				<label for="status-tpl-vencido">Certificado vencido</label>
-				<textarea id="status-tpl-vencido" name="status-tpl-vencido" rows="3"><?= esc_textarea( $status_tpl_vencido ) ?></textarea>
-			</div>
-		</div>
 			<input type="hidden" name="plus-options-update-nonce" id="plus-options-update-nonce" value="<?= wp_create_nonce(DOSF_NONCE_ACTION_PLUS_OPTS_UPDATE) ?>">
 			<div class="dosf-plus-options-actions">
-				<button id="dosf-plus-options-save">Guardar otras opciones</button>
+				<button id="dosf-plus-options-save">Guardar opciones</button>
 				<div class="processing hidden"><img src="<?= $processing_img_src ?>"></div>
 			</div>
 			<div id="after-try-update-res-placeholder" class="hidden">Respuesta</div>
 		</div>
+		<div id="dosf-email-preview-dialog" title="Vista previa del correo" style="display:none">
+			<p id="dosf-email-preview-note" class="description">Datos de ejemplo. El correo real usa el certificado que se envía.</p>
+			<p id="dosf-email-preview-subject"></p>
+			<iframe id="dosf-email-preview-frame" sandbox title="Vista previa del correo"></iframe>
+		</div>
+
 		<?php endif; ?>
 		
 		<?php
@@ -727,6 +900,49 @@ class Wp_Dosf_Admin {
 	}
 
 
+	public static function config_text_allowed_html() {
+		$span = array(
+			'style' => true,
+		);
+		return array(
+			'b'      => array(),
+			'strong' => array(),
+			'i'      => array(),
+			'em'     => array(),
+			'u'      => array(),
+			'br'     => array(),
+			'span'   => $span,
+			'font'   => array(
+				'color' => true,
+				'face'  => true,
+				'size'  => true,
+			),
+		);
+	}
+
+	public static function format_config_html( $html ) {
+		return trim( wp_kses( (string) $html, self::config_text_allowed_html() ) );
+	}
+
+	public static function render_config_html( $html ) {
+		return nl2br( self::format_config_html( $html ) );
+	}
+
+	public static function config_text_format_hint() {
+		return 'El formato se escribe en HTML y puede cubrir una parte del texto o todo: <code>&lt;b&gt;negrita&lt;/b&gt;</code>, <code>&lt;u&gt;subrayado&lt;/u&gt;</code>, <code>&lt;i&gt;cursiva&lt;/i&gt;</code>, <code>&lt;span style="color:#c0392b"&gt;color&lt;/span&gt;</code>, <code>&lt;span style="font-family:Georgia, serif"&gt;tipo de letra&lt;/span&gt;</code> y <code>&lt;span style="font-size:18px"&gt;tamaño&lt;/span&gt;</code>.';
+	}
+
+	public static function serial_search_label( $plus_options ) {
+		$default = 'Ingrese número de serie sin punto y sin guión (por ejemplo G1000000000 ó GA000000000)';
+		if ( is_array( $plus_options ) && isset( $plus_options['serial-search-label'] ) ) {
+			$label = trim( (string) $plus_options['serial-search-label'] );
+			if ( $label !== '' ) {
+				return $label;
+			}
+		}
+		return $default;
+	}
+
 	public static function default_status_templates() {
 		$text = '{cert_title} de la serie {serie} se encuentra actualmente {estado}.';
 		return array(
@@ -755,6 +971,27 @@ class Wp_Dosf_Admin {
 		$spec = $amount === 1 ? $units[ $unit ] : $units[ $unit ] . 's';
 		$copy->modify( '+' . $amount . ' ' . $spec );
 		return $copy;
+	}
+
+	public static function download_code_validity_label( $plus_options ) {
+		$amount = 1;
+		$unit   = 'hour';
+		$units  = array(
+			'minute' => array( 'minuto', 'minutos' ),
+			'hour'   => array( 'hora', 'horas' ),
+			'day'    => array( 'día', 'días' ),
+			'week'   => array( 'semana', 'semanas' ),
+		);
+		if ( is_array( $plus_options ) ) {
+			if ( isset( $plus_options['download-code-valid-nmb'] ) ) {
+				$amount = max( 1, intval( $plus_options['download-code-valid-nmb'] ) );
+			}
+			if ( ! empty( $plus_options['download-code-valid-unit'] ) && isset( $units[ $plus_options['download-code-valid-unit'] ] ) ) {
+				$unit = $plus_options['download-code-valid-unit'];
+			}
+		}
+		$word = $amount === 1 ? $units[ $unit ][0] : $units[ $unit ][1];
+		return $amount . ' ' . $word;
 	}
 
 	public static function download_code_is_current( $issued_at ) {
@@ -806,16 +1043,29 @@ class Wp_Dosf_Admin {
 		return self::add_calendar_interval( $date, $amount, $unit );
 	}
 
+	public static function validity_date_formats() {
+		return array(
+			'd-m-Y'           => 'Chile: día-mes-año (09-10-2026)',
+			'd/m/Y'           => 'Día/mes/año (09/10/2026)',
+			'j \d\e F \d\e Y' => 'Día de mes de año (9 de octubre de 2026)',
+			'Y-m-d'           => 'Año-mes-día (2026-10-09)',
+		);
+	}
+
+	public static function validity_date_format( $plus_options ) {
+		$formats = self::validity_date_formats();
+		if ( is_array( $plus_options ) && isset( $plus_options['validity-date-format'] ) && isset( $formats[ $plus_options['validity-date-format'] ] ) ) {
+			return $plus_options['validity-date-format'];
+		}
+		return 'd-m-Y';
+	}
+
 	public static function certificate_expiration_label( $plus_options, $emision ) {
 		$date = self::certificate_expiration_datetime( $plus_options, $emision );
 		if ( ! $date ) {
 			return '';
 		}
-		$format = get_option( 'date_format' );
-		if ( ! is_string( $format ) || $format === '' ) {
-			$format = 'd/m/Y';
-		}
-		return date_i18n( $format, $date->getTimestamp() );
+		return date_i18n( self::validity_date_format( $plus_options ), $date->getTimestamp() );
 	}
 
 	public static function certificate_file_due_for_removal( $plus_options, $emision, $now = null ) {
@@ -985,7 +1235,7 @@ class Wp_Dosf_Admin {
 			'{fecha_vencimiento}' => esc_html( self::certificate_expiration_label( $plus_options, $emision ) ),
 		);
 
-		return strtr( nl2br( esc_html( $tpl ) ), $repl );
+		return strtr( self::render_config_html( $tpl ), $repl );
 	}
 	public static function get_dosf_status($sql_date){
 		$plus_options = get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
@@ -1160,7 +1410,7 @@ class Wp_Dosf_Admin {
 
 		foreach ( array( 'status-tpl-vigente', 'status-tpl-vencido' ) as $tpl_key ) {
 			if ( isset( $data[ $tpl_key ] ) ) {
-				$data[ $tpl_key ] = sanitize_textarea_field( $data[ $tpl_key ] );
+				$data[ $tpl_key ] = self::format_config_html( $data[ $tpl_key ] );
 			}
 		}
 
@@ -1179,6 +1429,81 @@ class Wp_Dosf_Admin {
 			$data['download-code-valid-unit'] = 'hour';
 		}
 
+		$formats = array_keys( self::validity_date_formats() );
+		if ( empty( $data['validity-date-format'] ) || ! in_array( $data['validity-date-format'], $formats, true ) ) {
+			$data['validity-date-format'] = 'd-m-Y';
+		}
+
+		if ( isset( $data['recipient-sets'] ) && is_array( $data['recipient-sets'] ) ) {
+			$recipient_sets = self::sanitize_recipient_sets( $data['recipient-sets'] );
+			update_option( DOSF_WP_OPT_NM_RECIPIENT_SETS, $recipient_sets, false );
+			$kept_sets = array();
+			foreach ( $recipient_sets as $recipient_set ) {
+				$kept_sets[ $recipient_set['id'] ] = true;
+			}
+			if ( class_exists( 'Dosf_Series' ) ) {
+				Dosf_Series::purge_removed_recipient_sets( $kept_sets );
+			}
+		} else {
+			$recipient_sets = self::recipient_sets();
+		}
+		unset( $data['recipient-sets'] );
+
+		$valid_set_ids = array();
+		foreach ( $recipient_sets as $recipient_set ) {
+			$valid_set_ids[ $recipient_set['id'] ] = true;
+		}
+		$mail_keys_sent = array();
+		foreach ( array_keys( $data ) as $mail_key ) {
+			if ( ! preg_match( '/^(download|expire)-mail-to-(.+)$/', $mail_key, $mail_match ) ) {
+				continue;
+			}
+			if ( ! isset( $valid_set_ids[ $mail_match[2] ] ) ) {
+				unset( $data[ $mail_key ] );
+				continue;
+			}
+			$data[ $mail_key ]           = ! empty( $data[ $mail_key ] );
+			$mail_keys_sent[ $mail_key ] = true;
+		}
+		foreach ( $recipient_sets as $recipient_set ) {
+			foreach ( array( 'download', 'expire' ) as $mail_kind ) {
+				$mail_key = $mail_kind . '-mail-to-' . $recipient_set['id'];
+				if ( ! isset( $mail_keys_sent[ $mail_key ] ) ) {
+					$data[ $mail_key ] = self::mail_goes_to( array(), $mail_kind, $recipient_set['id'] );
+				}
+			}
+		}
+
+		foreach ( array( 'email-tpl-download-subject', 'email-tpl-expire-subject' ) as $mail_key ) {
+			$data[ $mail_key ] = isset( $data[ $mail_key ] ) ? sanitize_text_field( $data[ $mail_key ] ) : '';
+		}
+		foreach ( array( 'email-tpl-download-html', 'email-tpl-expire-html' ) as $mail_key ) {
+			$html = isset( $data[ $mail_key ] ) ? (string) $data[ $mail_key ] : '';
+			if ( ! current_user_can( 'unfiltered_html' ) ) {
+				$html = wp_kses_post( $html );
+			}
+			$data[ $mail_key ] = $html;
+		}
+
+		$menu_label = isset( $data['menu-label'] ) ? sanitize_text_field( $data['menu-label'] ) : '';
+		$menu_label = trim( $menu_label );
+		if ( function_exists( 'mb_substr' ) ) {
+			$menu_label = mb_substr( $menu_label, 0, 40 );
+		} else {
+			$menu_label = substr( $menu_label, 0, 40 );
+		}
+		$data['menu-label'] = $menu_label;
+		$menu_icon = isset( $data['menu-icon'] ) ? sanitize_text_field( $data['menu-icon'] ) : '';
+		if ( ! isset( self::menu_icon_choices()[ $menu_icon ] ) ) {
+			$menu_icon = 'dashicons-forms';
+		}
+		$data['menu-icon'] = $menu_icon;
+
+		$data['serial-search-label'] = isset( $data['serial-search-label'] ) ? self::format_config_html( $data['serial-search-label'] ) : '';
+		if ( $data['serial-search-label'] === '' ) {
+			$data['serial-search-label'] = self::serial_search_label( array() );
+		}
+
 		$data['delete-file-after-expire'] = ! empty( $data['delete-file-after-expire'] );
 		$data['delete-file-after-nmb'] = isset( $data['delete-file-after-nmb'] ) ? max( 0, intval( $data['delete-file-after-nmb'] ) ) : 0;
 		$delete_units = array( 'day', 'week', 'month', 'year' );
@@ -1188,9 +1513,12 @@ class Wp_Dosf_Admin {
 
 		//DOSF_WP_OPT_NM_PLUS_OPTIONS
 		if( !update_option(DOSF_WP_OPT_NM_PLUS_OPTIONS,$data) ){
-			$r['error'] 	= true;
-			$r['err_code']	= DOSF_PLUS_OPTS_UPDATE_ERR_DB;
-			return $r;
+			$stored_plus = get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
+			if ( $stored_plus != $data ) {
+				$r['error'] 	= true;
+				$r['err_code']	= DOSF_PLUS_OPTS_UPDATE_ERR_DB;
+				return $r;
+			}
 		}
 
 		$r['updated_data'] = $data;
@@ -1244,8 +1572,9 @@ class Wp_Dosf_Admin {
 			$isql = "SELECT 
 						file_name,
 						wp_file_obj_id,
-						email,
+									email,
 						email2,
+						email3,
 						download_code
 
 					FROM {$wpdb->prefix}dosf_shared_objs wdso 
@@ -1265,6 +1594,7 @@ class Wp_Dosf_Admin {
 					'wp_obj_id'   => $c->wp_file_obj_id,
 					'email'		  => $c->email,
 					'email2'	  => $c->email2,
+					'email3'	  => $c->email3,
 					'download_code'	  => $c->download_code
 					
 				);
@@ -1287,6 +1617,7 @@ class Wp_Dosf_Admin {
 					'id' => $dosf_id,
 					'email' => $rc[0]['email'],
 					'email2' => $rc[0]['email2'],
+					'email3' => $rc[0]['email3'],
 					'download_code' => $download_code,
 					'file' => $file_path
 				);
@@ -1389,6 +1720,190 @@ class Wp_Dosf_Admin {
 	}
 	
 
+
+	public static function read_bundled_email_file( $filename ) {
+		$path = WP_DOSF_PLUGIN_PATH . '/templates/emails/' . $filename;
+		if ( ! is_readable( $path ) ) {
+			return '';
+		}
+		$contents = file_get_contents( $path );
+		return is_string( $contents ) ? $contents : '';
+	}
+
+	public static function default_email_templates() {
+		$header = self::read_bundled_email_file( 'email_header.tpl' );
+		$footer = self::read_bundled_email_file( 'email_footer.tpl' );
+		return array(
+			'download-subject' => 'Grua PM :: Código de descarga {cert_title} serie {serie}',
+			'download-html'    => $header . self::read_bundled_email_file( 'email_new_dosf_content.tpl' ) . $footer,
+			'expire-subject'   => 'Grua PM :: {cert_title} de la serie {serie} próximo a vencer',
+			'expire-html'      => $header . self::read_bundled_email_file( 'email_expiration_warning.tpl' ) . $footer,
+		);
+	}
+
+	public static function email_template_value( $plus_options, $key ) {
+		$defaults   = self::default_email_templates();
+		$option_key = 'email-tpl-' . $key;
+		if ( is_array( $plus_options ) && isset( $plus_options[ $option_key ] ) && trim( (string) $plus_options[ $option_key ] ) !== '' ) {
+			return (string) $plus_options[ $option_key ];
+		}
+		return isset( $defaults[ $key ] ) ? $defaults[ $key ] : '';
+	}
+
+	public static function fill_email_template( $template, $pairs, $escape_html ) {
+		$search  = array();
+		$replace = array();
+		foreach ( $pairs as $token => $value ) {
+			$search[]  = $token;
+			$text      = (string) $value;
+			$replace[] = $escape_html ? esc_html( $text ) : $text;
+		}
+		return str_replace( $search, $replace, (string) $template );
+	}
+
+	public static function default_recipient_sets() {
+		return array(
+			array(
+				'id'   => 'email',
+				'name' => 'Emails de colaboradores',
+			),
+			array(
+				'id'   => 'email2',
+				'name' => 'Emails de operadores',
+			),
+			array(
+				'id'   => 'email3',
+				'name' => 'Emails de mecánicos',
+			),
+		);
+	}
+
+	private static function recipient_set_id_ok( $id ) {
+		return $id === 'email' || $id === 'email2' || $id === 'email3' || (bool) preg_match( '/^set_[a-z0-9]{6,12}$/', (string) $id );
+	}
+
+	public static function recipient_sets() {
+		$stored = get_option( DOSF_WP_OPT_NM_RECIPIENT_SETS, null );
+		if ( ! is_array( $stored ) ) {
+			$stored = self::default_recipient_sets();
+			update_option( DOSF_WP_OPT_NM_RECIPIENT_SETS, $stored, false );
+		}
+		$clean = array();
+		foreach ( $stored as $set ) {
+			if ( ! is_array( $set ) || empty( $set['id'] ) || ! isset( $set['name'] ) ) {
+				continue;
+			}
+			$id   = (string) $set['id'];
+			$name = trim( (string) $set['name'] );
+			if ( $name === '' || ! self::recipient_set_id_ok( $id ) ) {
+				continue;
+			}
+			$clean[] = array(
+				'id'   => $id,
+				'name' => $name,
+			);
+		}
+		return $clean;
+	}
+
+	public static function sanitize_recipient_sets( $raw ) {
+		$clean = array();
+		$seen  = array();
+		if ( ! is_array( $raw ) ) {
+			return self::recipient_sets();
+		}
+		foreach ( $raw as $item ) {
+			if ( ! is_array( $item ) ) {
+				continue;
+			}
+			$name = isset( $item['name'] ) ? sanitize_text_field( $item['name'] ) : '';
+			$name = trim( $name );
+			if ( $name === '' ) {
+				continue;
+			}
+			if ( function_exists( 'mb_substr' ) ) {
+				$name = mb_substr( $name, 0, 80 );
+			} else {
+				$name = substr( $name, 0, 80 );
+			}
+			$id = isset( $item['id'] ) ? (string) $item['id'] : '';
+			if ( ! self::recipient_set_id_ok( $id ) || isset( $seen[ $id ] ) ) {
+				$id = 'set_' . substr( md5( uniqid( '', true ) ), 0, 8 );
+			}
+			$seen[ $id ] = true;
+			$clean[]     = array(
+				'id'   => $id,
+				'name' => $name,
+			);
+		}
+		return $clean;
+	}
+
+	public static function mail_recipient_groups() {
+		$groups = array();
+		foreach ( self::recipient_sets() as $set ) {
+			$groups[ $set['id'] ] = $set['name'];
+		}
+		return $groups;
+	}
+
+	public static function mail_goes_to( $plus_options, $kind, $group ) {
+		$key = $kind . '-mail-to-' . $group;
+		if ( is_array( $plus_options ) && array_key_exists( $key, $plus_options ) ) {
+			return ! empty( $plus_options[ $key ] );
+		}
+		if ( $kind === 'download' ) {
+			return $group === 'email' || $group === 'email2';
+		}
+		return $group === 'email3';
+	}
+
+	public static function mail_recipients( $plus_options, $kind, $args ) {
+		$map = array();
+		if ( ! empty( $args['id'] ) && class_exists( 'Dosf_Series' ) ) {
+			$row = Dosf_Series::context( intval( $args['id'] ) );
+			if ( $row ) {
+				$map = Dosf_Series::recipient_map( $row );
+			}
+		}
+		if ( isset( $args['recipients'] ) && is_array( $args['recipients'] ) ) {
+			foreach ( $args['recipients'] as $id => $value ) {
+				$map[ $id ] = is_array( $value ) ? implode( ',', $value ) : (string) $value;
+			}
+		}
+		foreach ( self::recipient_sets() as $set ) {
+			$id = $set['id'];
+			if ( ! isset( $map[ $id ] ) && isset( $args[ $id ] ) ) {
+				$map[ $id ] = is_array( $args[ $id ] ) ? implode( ',', $args[ $id ] ) : (string) $args[ $id ];
+			}
+		}
+
+		$seen = array();
+		$list = array();
+		foreach ( self::mail_recipient_groups() as $group => $label ) {
+			if ( ! self::mail_goes_to( $plus_options, $kind, $group ) ) {
+				continue;
+			}
+			$raw   = isset( $map[ $group ] ) ? (string) $map[ $group ] : '';
+			$parts = preg_split( '/\s*,\s*/', $raw );
+			if ( ! is_array( $parts ) ) {
+				continue;
+			}
+			foreach ( $parts as $part ) {
+				$part = trim( $part );
+				if ( $part === '' ) {
+					continue;
+				}
+				$token = strtolower( $part );
+				if ( isset( $seen[ $token ] ) ) {
+					continue;
+				}
+				$seen[ $token ] = true;
+				$list[]         = $part;
+			}
+		}
+		return implode( ',', $list );
+	}
 	public function send_download_code_email($args){
 		$cert_id = 0;
 		if ( ! empty( $args['id'] ) ) {
@@ -1405,57 +1920,26 @@ class Wp_Dosf_Admin {
 		if(  !isset($args['download_code']) || empty($args['download_code']) )
 			return false;
 
-		if( empty( $args['email'] ) && empty( $args['email2'] )	)
+		$plus_mail = get_option( DOSF_WP_OPT_NM_PLUS_OPTIONS );
+		$email = self::mail_recipients( $plus_mail, 'download', $args );
+		if ( $email === '' ) {
 			return false;
+		}
 
-		$header_template_path = apply_filters(
-									'osf_eml_tpl_new_obj_header',
-									WP_DOSF_PLUGIN_PATH . '/templates/emails/email_header.tpl'
-								);
-		
-		$content_template_path = apply_filters(
-									'dosf_eml_tpl_new_obj_content_path',
-									WP_DOSF_PLUGIN_PATH . '/templates/emails/email_new_dosf_content.tpl'
-								);
-
-		$footer_template_path = apply_filters(
-									'dosf_eml_tpl_new_obj_footer',
-									WP_DOSF_PLUGIN_PATH . '/templates/emails/email_footer.tpl'
-								);
+		$pairs = array(
+			'{download_code}'  => $args['download_code'],
+			'{serie}'          => isset( $args['serial'] ) ? $args['serial'] : '',
+			'{cert_title}'     => isset( $args['cert_title'] ) ? $args['cert_title'] : '',
+			'{validez_codigo}' => self::download_code_validity_label( $plus_mail ),
+		);
+		$content = self::fill_email_template( self::email_template_value( $plus_mail, 'download-html' ), $pairs, true );
+		$subject = apply_filters(
+			'dosf_eml_new_obj_eml_subject',
+			self::fill_email_template( self::email_template_value( $plus_mail, 'download-subject' ), $pairs, false )
+		);
 
 		$mail_sent_res = false;
-		if(file_exists($content_template_path)){
-			$email = '';
-
-			if( !empty( $args['email'] ) )
-				$email .= $args['email'];
-
-			if( !empty( $args['email'] ) && !empty( $args['email2'] ) )
-				$email .= ',';
-			
-			if( !empty( $args['email2'] ) )
-				$email .= $args['email2'];
-
-			$content = '';
-			if(file_exists($header_template_path)){
-				$content  .= file_get_contents($header_template_path);
-			}
-			$content .= file_get_contents($content_template_path);
-			if(file_exists($footer_template_path)){
-				$content .= file_get_contents($footer_template_path);
-			}
-			$content = str_replace(
-							'{download_code}',
-							$args['download_code'],
-							$content
-						);
-			$content = str_replace( '{serie}', isset( $args['serial'] ) ? $args['serial'] : '', $content );
-			$content = str_replace( '{cert_title}', isset( $args['cert_title'] ) ? $args['cert_title'] : '', $content );
-			$subject = apply_filters(
-							'dosf_eml_new_obj_eml_subject',
-							'Grua PM :: Código de descarga ' . ( isset( $args['cert_title'] ) ? $args['cert_title'] : '' ) . ' serie ' . ( isset( $args['serial'] ) ? $args['serial'] : '' )
-						);
-
+		if ( $content !== '' ) {
 			$header = array('Content-Type: text/html; charset=UTF-8');
 			$header = apply_filters(
 						'dosf_eml_new_obj_eml_header',
@@ -1483,92 +1967,44 @@ class Wp_Dosf_Admin {
 			return false;
 		}
 			
-		if(!isset($args['email3']) || !isset($args['emision']) )
+		if ( empty( $args['emision'] ) ) {
 			return false;
+		}
 
-		if( empty($args['email3']) || empty($args['emision']) )
+		$email = apply_filters(
+			'dosf_eml_expiration_warning_str_dest_recipts',
+			self::mail_recipients( $plus_options, 'expire', $args )
+		);
+		if ( $email === '' ) {
 			return false;
+		}
 
 		if( Wp_Dosf_Admin::get_dosf_validity_days_before_expiration( $args['emision'] ) > Wp_Dosf_Admin::get_last_range_days_before_expiration() ){
 			return false;
 		}
 
-		$header_template_path = apply_filters(
-									'osf_eml_tpl_expiration_warning_header',
-									WP_DOSF_PLUGIN_PATH . '/templates/emails/email_header.tpl'
-								);
-		
-		$content_template_path = apply_filters(
-									'dosf_eml_tpl_expiration_warning_content_path',
-									WP_DOSF_PLUGIN_PATH . '/templates/emails/email_expiration_warning.tpl'
-								);
-
-		$footer_template_path = apply_filters(
-									'dosf_eml_tpl_expiration_warning_footer',
-									WP_DOSF_PLUGIN_PATH . '/templates/emails/email_footer.tpl'
-								);
-
-		$mail_sent_res = false;
-		if(file_exists($content_template_path)){
-			$email  = $args['email3'];
-			$email = apply_filters( 'dosf_eml_expiration_warning_str_dest_recipts', $email );
-			$content = '';
-			if(file_exists($header_template_path)){
-				$content  .= file_get_contents($header_template_path);
-			}
-			$content .= file_get_contents($content_template_path);
-			if(file_exists($footer_template_path)){
-				$content .= file_get_contents($footer_template_path);
-			}
-
-			/* $rc[] = array(
-					
-					'id'   		=> $c->id,
-					'serial'   	=> $c->title,
-					'email'		=> $c->email,
-					'email2'	=> $c->email2,
-					'email3'	=> $c->email3,
-					'emision'	=> $c->emision
-					
-				); */
-			$content = str_replace(
-							'{id}',
-							$args['id'],
-							$content
-						);
-			if ( ! empty( $args['id'] ) && class_exists( 'Dosf_Series' ) ) {
+				if ( ! empty( $args['id'] ) && class_exists( 'Dosf_Series' ) ) {
 			$ctx = Dosf_Series::context( intval( $args['id'] ) );
 			if ( $ctx ) {
-				$args['serial'] = $ctx->serie;
+				$args['serial']     = $ctx->serie;
 				$args['cert_title'] = $ctx->cert_title;
 			}
 		}
-			$content = str_replace(
-							'{serie}',
-							$args['serial'],
-							$content
-						);
-			$content = str_replace(
-							'{cert_title}',
-							isset( $args['cert_title'] ) ? $args['cert_title'] : '',
-							$content
-						);
-			$content = str_replace(
-							'{emision}',
-							$args['emision'],
-							$content
-						);
-			$content = str_replace(
-						'{dias_vigencia}',
-						self::get_dosf_validity_days_before_expiration($args['emision']),
-						$content
-					);
+		$pairs = array(
+			'{id}'             => isset( $args['id'] ) ? $args['id'] : '',
+			'{serie}'          => isset( $args['serial'] ) ? $args['serial'] : '',
+			'{cert_title}'     => isset( $args['cert_title'] ) ? $args['cert_title'] : '',
+			'{emision}'        => $args['emision'],
+			'{dias_vigencia}'  => self::get_dosf_validity_days_before_expiration( $args['emision'] ),
+		);
+		$content = self::fill_email_template( self::email_template_value( $plus_options, 'expire-html' ), $pairs, true );
+		$subject = apply_filters(
+			'dosf_eml_expiration_warning_subject',
+			self::fill_email_template( self::email_template_value( $plus_options, 'expire-subject' ), $pairs, false )
+		);
 
-			$subject = apply_filters(
-							'dosf_eml_expiration_warning_subject',
-							'Grua PM :: ' . ( isset( $args['cert_title'] ) ? $args['cert_title'] : 'Certificado' ) . ' de la serie '.$args['serial'].' próximo a vencer'
-						);
-
+		$mail_sent_res = false;
+		if ( $content !== '' ) {
 			$header = array('Content-Type: text/html; charset=UTF-8');
 			$header = apply_filters(
 						'dosf_eml_expiration_warning_eml_header',
@@ -1615,6 +2051,7 @@ class Wp_Dosf_Admin {
 					so.id,
 					so.title,
 					so.email,
+					so.email2,
 					so.email3,
 					so.emision,
 					ewmq.id as ewmq_id
@@ -1630,7 +2067,8 @@ class Wp_Dosf_Admin {
 					'id'   		=> $r->id,
 					'serial'   	=> $r->title,
 					'email'		=> $r->email,
-					'email3'	=> $r->email3, //mecánico
+					'email2'	=> $r->email2,
+					'email3'	=> $r->email3,
 					'emision'	=> $r->emision
 				];
 				Wp_Dosf_Admin::send_expiration_warning_email( $args );

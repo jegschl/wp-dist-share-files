@@ -12,4 +12,5 @@
 		>
 			<p>Código de descarga para <strong>{cert_title}</strong> de la serie <strong>{serie}</strong>.</p>
 			<p style="font-weight: 600; font-size: 20px;">Código de descarga: <span style="color: blue"><strong>{download_code}</strong></span></p>
+			<p>Este código es válido durante <strong>{validez_codigo}</strong>.</p>
 		</div>
