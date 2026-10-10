@@ -404,11 +404,13 @@ table{
 }
 .dosf-menu-icon-choice .dashicons { width: 20px; height: 20px; font-size: 20px; line-height: 34px; }
 .dosf-menu-icon-choice.is-selected { border-color: #246355; background: #e7f3ef; box-shadow: 0 0 0 1px #246355; }
+.dosf-menu-preview-wrap { margin-top: 10px; }
+.dosf-menu-preview-wrap .description { margin: 0 0 6px; }
 .dosf-menu-preview {
 	display: inline-flex;
 	align-items: center;
 	gap: 8px;
-	margin: 8px 0 0;
+	margin: 0;
 	padding: 8px 12px;
 	background: #1d2327;
 	color: #f0f0f1;

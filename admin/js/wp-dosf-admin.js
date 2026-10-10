@@ -1011,12 +1011,53 @@ if ( $('#dosf-email-preview-dialog').length ) {
 				expiredFileRequest( 'restore', $(this).attr('data-attachment'), $(this) );
 			});
 
+			let expiredDeleteAttachmentId = '';
+			let $expiredDeleteButton = null;
+			const expiredDeleteDlg = $('#dosf-expired-delete-dlg').dialog({
+				modal: true,
+				autoOpen: false,
+				draggable: false,
+				resizable: false,
+				width: 420,
+				appendTo: 'body',
+				closeText: 'Cerrar',
+				buttons: [
+					{
+						text: 'Cancelar',
+						click: function() {
+							$(this).dialog('close');
+						}
+					},
+					{
+						text: 'Eliminar',
+						click: function() {
+							$(this).dialog('close');
+							if ( expiredDeleteAttachmentId && $expiredDeleteButton ) {
+								expiredFileRequest( 'delete', expiredDeleteAttachmentId, $expiredDeleteButton );
+							}
+						}
+					}
+				],
+				open: function() {
+					let z = 100000;
+					$('.ui-dialog:visible').each(function() {
+						const zi = parseInt( $(this).css('z-index'), 10 );
+						if ( zi > z ) {
+							z = zi;
+						}
+					});
+					$(this).dialog('widget').css('z-index', z + 2);
+					$('.ui-widget-overlay').last().css('z-index', z + 1);
+				}
+			});
+
 			$(document).on('click', '.dosf-expired-delete', function() {
-				const attachmentId = $(this).attr('data-attachment');
-				if ( ! window.confirm( 'Se borrará el PDF de la tabla del plugin. No se puede deshacer.' ) ) {
+				if ( $(this).prop('disabled') ) {
 					return;
 				}
-				expiredFileRequest( 'delete', attachmentId, $(this) );
+				expiredDeleteAttachmentId = $(this).attr('data-attachment');
+				$expiredDeleteButton = $(this);
+				expiredDeleteDlg.dialog('open');
 			});
 
 		});

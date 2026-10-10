@@ -95,7 +95,8 @@ class Wp_Dosf_Help_Page {
             <p>En <strong>Opciones → Sistema</strong> se cambia lo que WordPress muestra en el menú lateral.</p>
             <ul>
                 <li><strong>Label para la opción del menú</strong> es un texto de hasta 40 caracteres. Si se deja vacío, el menú muestra <strong>Distribución de archivos</strong>.</li>
-                <li><strong>Icono del menú</strong> es uno de los iconos estándar de WordPress. El predeterminado es el de formulario. Una vista previa, debajo de la cuadrícula, muestra el icono y el texto juntos.</li>
+                <li><strong>Icono del menú</strong> es uno de los iconos estándar de WordPress. El predeterminado es el de formulario.</li>
+                <li><strong>Vista previa del menú lateral</strong> queda debajo de la cuadrícula y antes de <strong>Certificados vencidos</strong>. Muestra el icono y el texto juntos, y cambia al escribir el texto o al elegir otro icono, sin guardar.</li>
             </ul>
             <p>Al guardar un cambio de texto o de icono, la página se recarga para que el menú lateral lo refleje. Gestión y Ayuda siguen como submenús de esa entrada.</p>
 
@@ -115,10 +116,10 @@ class Wp_Dosf_Help_Page {
                 <tr><th>Acción</th><th>Qué hace</th></tr>
                 <tr><td>Descargar</td><td>Entrega el PDF en esa pantalla, con la sesión de administrador. No publica una URL.</td></tr>
                 <tr><td>Restaurar</td><td>Lo deja en el catálogo para asignarlo al crear o editar un certificado. El certificado vencido sigue sin ofrecerse al público y la URL del adjunto no vuelve.</td></tr>
-                <tr><td>Eliminar</td><td>Borra el PDF de <code>dosf_private_files</code>. Si un certificado vigente usa el mismo archivo, el botón queda desactivado.</td></tr>
+                <tr><td>Eliminar</td><td>Abre el cuadro <strong>Eliminar PDF</strong> y pide confirmación. Si se confirma, borra el PDF de <code>dosf_private_files</code>. <strong>Cancelar</strong> no borra nada. Si un certificado vigente usa el mismo archivo, el botón queda desactivado.</td></tr>
             </table>
             <div class="dosf-info">
-                La tarea que mueve el adjunto a la papelera no borra esas filas. El borrado completo es el botón <strong>Eliminar</strong>. Restaurar desde esta sección no es lo mismo que restaurar el adjunto en <strong>Medios → Papelera</strong>: esto solo lo devuelve al catálogo.
+                La tarea que mueve el adjunto a la papelera no borra esas filas. El borrado completo es el botón <strong>Eliminar</strong>, después de confirmar. Restaurar desde esta sección no es lo mismo que restaurar el adjunto en <strong>Medios → Papelera</strong>: esto solo lo devuelve al catálogo.
             </div>
 
             <hr>

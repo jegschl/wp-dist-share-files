@@ -143,7 +143,7 @@ En **Opciones → Sistema** se cambia lo que WordPress muestra en el menú later
 
 **Label para la opción del menú** es un texto de hasta 40 caracteres. Si se deja vacío, el menú muestra **Distribución de archivos**.
 
-**Icono del menú** es uno de los iconos estándar de WordPress. El predeterminado es el de formulario. Una vista previa muestra el icono y el texto juntos. Al guardar un cambio de texto o de icono, la página se recarga para que el menú lateral lo refleje. Gestión y Ayuda siguen como submenús de esa entrada.
+**Icono del menú** es uno de los iconos estándar de WordPress. El predeterminado es el de formulario. Debajo de la cuadrícula, **Vista previa del menú lateral** muestra el icono y el texto juntos, antes de **Certificados vencidos**. Cambia al escribir el texto o al elegir otro icono, sin guardar. Al guardar un cambio de texto o de icono, la página se recarga para que el menú lateral lo refleje. Gestión y Ayuda siguen como submenús de esa entrada.
 
 ## Archivo del certificado
 
@@ -166,9 +166,9 @@ En **Opciones → Sistema → Certificados vencidos** se listan los certificados
 |---|---|
 | Descargar | Entrega el PDF en esa pantalla, con la sesión de administrador. No publica una URL. |
 | Restaurar | Lo deja en el catálogo para asignarlo al crear o editar un certificado. El certificado vencido sigue sin ofrecerse al público y la URL del adjunto no vuelve. |
-| Eliminar | Borra el PDF de `dosf_private_files`. Si un certificado vigente usa el mismo archivo, el botón queda desactivado. |
+| Eliminar | Abre el cuadro **Eliminar PDF** y pide confirmación. Si se confirma, borra el PDF de `dosf_private_files`. **Cancelar** no borra nada. Si un certificado vigente usa el mismo archivo, el botón queda desactivado. |
 
-La tarea que mueve el adjunto a la papelera no borra esas filas. El borrado completo es el botón **Eliminar**. Restaurar desde esta sección no es lo mismo que restaurar el adjunto en **Medios → Papelera**: esto solo lo devuelve al catálogo.
+La tarea que mueve el adjunto a la papelera no borra esas filas. El borrado completo es el botón **Eliminar**, después de confirmar. Restaurar desde esta sección no es lo mismo que restaurar el adjunto en **Medios → Papelera**: esto solo lo devuelve al catálogo.
 
 ## Mensajes de vigencia en el frontend
 
@@ -364,6 +364,10 @@ ALTER TABLE `umm_dosf_private_files`
 ---
 
 ## Changelog
+
+### v1.4.1
+- `fix` La vista previa del menú queda debajo del selector de icono, antes de Certificados vencidos, y se actualiza al escribir el texto o al cambiar el icono
+- `fix` Eliminar un PDF de certificados vencidos pide confirmación en el cuadro Eliminar PDF. Cancelar deja el archivo en la tabla
 
 ### v1.4.0
 - `feat` El PDF del certificado se guarda en la base de datos y se borra de la carpeta pública. La URL del adjunto deja de entregarlo. Un código vigente obtiene un enlace de un solo uso, válido 2 minutos

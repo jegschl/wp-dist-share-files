@@ -414,6 +414,7 @@ class Wp_Dosf_Admin {
 		?>
 
 		<div id="confirm-del-dlg" title="Confirmación de eliminiación de certificado(s)">Se eliminarán los certificados seleccionados de la sección pública. Por favor confirme.</div>
+		<div id="dosf-expired-delete-dlg" title="Eliminar PDF" style="display:none"><p>Se borrará el PDF de la tabla del plugin. Esta acción no se puede deshacer.</p></div>
 
 		<div class="dosf-admin-header">
 			
@@ -749,6 +750,10 @@ class Wp_Dosf_Admin {
 							<?php endforeach; ?>
 						</div>
 						<p class="description">Iconos estándar de WordPress. El elegido se muestra junto al título en el menú lateral. Ahora: <strong id="dosf-menu-icon-name"><?= esc_html( $menu_icon_names[ $menu_icon_saved ] ) ?></strong>.</p>
+						<div class="dosf-menu-preview-wrap">
+							<p class="description">Vista previa del menú lateral.</p>
+							<p class="dosf-menu-preview" aria-hidden="true"><span id="dosf-menu-preview-icon" class="dashicons <?= esc_attr( $menu_icon_saved ) ?>"></span><span id="dosf-menu-preview-label"><?= esc_html( self::menu_label( $plus_options ) ) ?></span></p>
+						</div>
 					</div>
 										<div class="dosf-expired-files">
 						<h3>Certificados vencidos</h3>
@@ -783,7 +788,6 @@ class Wp_Dosf_Admin {
 						</table>
 						<?php endif; ?>
 					</div>
-					<p class="dosf-menu-preview" aria-hidden="true"><span id="dosf-menu-preview-icon" class="dashicons <?= esc_attr( $menu_icon_saved ) ?>"></span><span id="dosf-menu-preview-label"><?= esc_html( self::menu_label( $plus_options ) ) ?></span></p>
 				</div>
 			</div>
 			<input type="hidden" name="plus-options-update-nonce" id="plus-options-update-nonce" value="<?= wp_create_nonce(DOSF_NONCE_ACTION_PLUS_OPTS_UPDATE) ?>">
