@@ -498,14 +498,28 @@ class Dosf_Series {
 
 		$attachment_id   = isset( $data['wp_obj_file_id'] ) ? intval( $data['wp_obj_file_id'] ) : 0;
 		$file_unavailable = 0;
+		$restored_file    = false;
 		if ( $attachment_id > 0 ) {
+			$restored_file = Dosf_Private_Files::is_restored( $attachment_id );
+			if ( $restored_file ) {
+				$attachment_post = get_post( $attachment_id );
+				if ( $attachment_post && $attachment_post->post_status === 'trash' ) {
+					Dosf_Private_Files::$suppress_public_restore = true;
+					wp_untrash_post( $attachment_id );
+					Dosf_Private_Files::$suppress_public_restore = false;
+				}
+			}
 			$sibling_marked = $wpdb->get_var(
 				$wpdb->prepare(
-					"SELECT id FROM {$tables['certs']} WHERE wp_file_obj_id = %d AND file_unavailable = 1 LIMIT 1",
-					$attachment_id
+					"SELECT id FROM {$tables['certs']} WHERE wp_file_obj_id = %d AND file_unavailable = 1 AND id <> %d LIMIT 1",
+					$attachment_id,
+					$update_id ? intval( $update_id ) : 0
 				)
 			);
-			if ( $sibling_marked || ! Wp_Dosf_Admin::attachment_is_downloadable( $attachment_id ) ) {
+			$has_private_bytes = Dosf_Private_Files::attachment_has_bytes( $attachment_id );
+			if ( ! $has_private_bytes && ! Wp_Dosf_Admin::attachment_is_downloadable( $attachment_id ) ) {
+				$file_unavailable = 1;
+			} elseif ( ! $restored_file && $sibling_marked ) {
 				$file_unavailable = 1;
 			}
 		}
@@ -528,6 +542,9 @@ class Dosf_Series {
 		if ( $update_id ) {
 			$wpdb->update( $tables['certs'], $row, array( 'id' => $update_id ) );
 			self::sync_ruts( $serie_id, isset( $data['linked_ruts'] ) ? $data['linked_ruts'] : array() );
+			if ( $attachment_id > 0 && ! Dosf_Private_Files::protect_certificate_attachment( $attachment_id ) ) {
+				delete_option( Dosf_Private_Files::OPTION_READY );
+			}
 			return array(
 				'error'     => false,
 				'operation' => 'UPDATE',
@@ -540,6 +557,9 @@ class Dosf_Series {
 		$wpdb->insert( $tables['certs'], $row );
 		$id = intval( $wpdb->insert_id );
 		self::sync_ruts( $serie_id, isset( $data['linked_ruts'] ) ? $data['linked_ruts'] : array() );
+		if ( $attachment_id > 0 && ! Dosf_Private_Files::protect_certificate_attachment( $attachment_id ) ) {
+			delete_option( Dosf_Private_Files::OPTION_READY );
+		}
 
 		$file_path = '';
 		if ( ! empty( $row['wp_file_obj_id'] ) ) {

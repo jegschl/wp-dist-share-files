@@ -415,3 +415,8 @@ table{
 	border-radius: 4px;
 }
 .dosf-menu-preview .dashicons { width: 20px; height: 20px; font-size: 20px; color: #f0f0f1; }
+.dosf-expired-files { margin-top: 22px; padding-top: 16px; border-top: 1px solid #dcdcde; }
+.dosf-expired-files table { margin-top: 8px; }
+.dosf-expired-actions .button { margin: 0 4px 4px 0; }
+.dosf-file-source { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+#dosf-catalog-list .dosf-catalog-pick { display: block; width: 100%; text-align: left; margin: 0 0 6px; white-space: normal; height: auto; }

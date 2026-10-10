@@ -118,6 +118,7 @@ class Wp_Dosf {
 		 * The class responsible for defining all actions that occur in the admin area.
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-dosf-series.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-dosf-private-files.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-wp-dosf-admin.php';
 
 		/**
@@ -181,6 +182,13 @@ class Wp_Dosf {
 		$this->loader->add_action( 'trashed_post', $plugin_admin, 'on_attachment_trashed' );
 		$this->loader->add_action( 'delete_attachment', $plugin_admin, 'on_attachment_deleted' );
 		$this->loader->add_action( 'untrashed_post', $plugin_admin, 'on_attachment_restored' );
+
+		$private_files = new Dosf_Private_Files();
+		$this->loader->add_action( 'init', $private_files, 'protect_linked_certificate_files' );
+		$this->loader->add_action( 'template_redirect', $private_files, 'block_certificate_attachment_page', 0 );
+		$this->loader->add_action( 'wp_ajax_dosf_private_file', $private_files, 'ajax_private_file' );
+		$this->loader->add_action( 'wp_ajax_dosf_expired_file', $private_files, 'ajax_expired_file' );
+		$this->loader->add_filter( 'wp_get_attachment_url', $private_files, 'filter_private_attachment_url', 10, 2 );
 
 	}
 

@@ -151,6 +151,16 @@ class Wp_Dosf_Public {
                 'permission_callback' => '__return_true',
             )
         );
+
+		register_rest_route(
+			DOSF_APIREST_BASE_ROUTE,
+			'file/(?P<token>[A-Za-z0-9]+)',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( new Dosf_Private_Files(), 'stream_granted_file' ),
+				'permission_callback' => '__return_true',
+			)
+		);
 	}
 
 	public function receive_object_download_code($r){
@@ -196,7 +206,8 @@ class Wp_Dosf_Public {
 			);
 		}
 
-		$url = wp_get_attachment_url( intval( $row->wp_file_obj_id ) );
+		Dosf_Private_Files::protect_certificate_attachment( $row->wp_file_obj_id );
+		$url = Dosf_Private_Files::issue_download_grant( $row->id );
 		if ( empty( $url ) ) {
 			return array(
 				'error'   => true,

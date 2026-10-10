@@ -934,6 +934,91 @@ if ( $('#dosf-email-preview-dialog').length ) {
 			});
 
 
+
+			let restoredCatalog = $.isArray( dosf_config.restoredCatalog ) ? dosf_config.restoredCatalog : [];
+
+			function renderRestoredCatalog() {
+				const $list = $('#dosf-catalog-list');
+				$list.empty();
+				if ( ! restoredCatalog.length ) {
+					$list.append( '<p>No hay archivos restaurados.</p>' );
+					return;
+				}
+				$.each( restoredCatalog, function( index, item ) {
+					const button = $('<button type="button" class="button dosf-catalog-pick"></button>');
+					button.attr( 'data-id', item.id );
+					button.attr( 'data-filename', item.filename );
+					button.text( item.label );
+					$list.append( button );
+				});
+			}
+
+			if ( $('#dosf-catalog-dialog').length ) {
+				$('#dosf-catalog-dialog').dialog({
+					modal: true,
+					autoOpen: false,
+					width: Math.min( 520, $(window).width() - 48 ),
+					title: 'Catálogo del plugin',
+					closeText: 'Cerrar'
+				});
+			}
+
+			$('#browse-catalog').on('click', function( event ) {
+				event.preventDefault();
+				renderRestoredCatalog();
+				$('#dosf-catalog-dialog').dialog('open');
+			});
+
+			$(document).on('click', '.dosf-catalog-pick', function() {
+				$('#dosf_attachment_id').val( $(this).attr('data-id') );
+				$('#dosf-file-selectd').text( $(this).attr('data-filename') );
+				$('#dosf-catalog-dialog').dialog('close');
+			});
+
+			function expiredFileRequest( op, attachmentId, $button ) {
+				$button.prop( 'disabled', true );
+				$.post( ajaxurl, {
+					action: 'dosf_expired_file',
+					op: op,
+					attachment_id: attachmentId,
+					_ajax_nonce: dosf_config.expiredNonce
+				}).done(function( response ) {
+					if ( ! response || ! response.success ) {
+						window.alert( response && response.data && response.data.message ? response.data.message : 'No se pudo completar la acción.' );
+						$button.prop( 'disabled', false );
+						return;
+					}
+					restoredCatalog = $.isArray( response.data.catalog ) ? response.data.catalog : [];
+					if ( op === 'delete' ) {
+						$('.dosf-expired-files tr[data-attachment="' + attachmentId + '"]').remove();
+						if ( ! $('.dosf-expired-files tbody tr').length ) {
+							$('.dosf-expired-files table').replaceWith( '<p>No hay certificados vencidos con un archivo guardado.</p>' );
+						}
+						return;
+					}
+					$('.dosf-expired-restore[data-attachment="' + attachmentId + '"]').prop( 'disabled', true ).text( 'En el catálogo' );
+				}).fail(function( xhr ) {
+					let message = 'No se pudo completar la acción.';
+					if ( xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message ) {
+						message = xhr.responseJSON.data.message;
+					}
+					window.alert( message );
+					$button.prop( 'disabled', false );
+				});
+			}
+
+			$(document).on('click', '.dosf-expired-restore', function() {
+				expiredFileRequest( 'restore', $(this).attr('data-attachment'), $(this) );
+			});
+
+			$(document).on('click', '.dosf-expired-delete', function() {
+				const attachmentId = $(this).attr('data-attachment');
+				if ( ! window.confirm( 'Se borrará el PDF de la tabla del plugin. No se puede deshacer.' ) ) {
+					return;
+				}
+				expiredFileRequest( 'delete', attachmentId, $(this) );
+			});
+
 		});
 
 	})( jQuery );

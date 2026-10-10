@@ -9,7 +9,8 @@ Plugin para **compartir y distribuir documentos** con control de vencimiento, pr
 - Gestión de certificados/documentos compartidos desde el panel de administración
 - Búsqueda pública por **RUT** o **número de serie** del equipo
 - Control de **fecha de emisión y vencimiento** con indicador visual (vigente / vencido)
-- Descarga protegida mediante **código de autorización enviado por correo electrónico**. Cada solicitud de descarga genera un código nuevo y anula el anterior. El plazo de validez (minuto, hora, día o semana) se configura en **Opciones**.
+- Descarga protegida mediante **código de autorización enviado por correo electrónico**. Cada solicitud de descarga genera un código nuevo y anula el anterior. El plazo de validez (minuto, hora, día o semana) se configura en **Opciones**. El PDF no queda en una URL pública: se guarda en la base de datos y solo se entrega después de un código vigente
+- En **Opciones → Sistema → Certificados vencidos** un administrador descarga ese PDF, lo restaura al catálogo o lo borra de la tabla. El catálogo se elige al crear o editar un certificado, junto con la biblioteca de medios
 - Papelera automática del archivo vencido, con un plazo de gracia desde el vencimiento, y marca de archivo no disponible si el adjunto se elimina o se mueve a la papelera
 - Avisos automáticos de vencimiento próximo por email. Los conjuntos de destinatarios se crean, renombran y asignan a cada correo
 - Integración con **Popup Maker**: el popup se elige en una lista, no escribiendo su ID
@@ -124,7 +125,7 @@ Agrega este shortcode en la página donde los usuarios buscarán sus certificado
 
 El menú **Distribución de archivos** (Gestión y Ayuda) está disponible para quien tenga la capacidad `jgb_collab_access`: el rol **Gestor de Certificados** y el administrador de WordPress.
 
-En Gestión, el botón **Opciones** abre un popup con la configuración en cinco pestañas: **Búsqueda**, **Vigencia**, **Descarga**, **Correos** y **Sistema**. Búsqueda define la consulta pública. Vigencia define el plazo, los mensajes de vigente o vencido, los avisos y la papelera. Descarga define el código y su popup. Correos define los conjuntos de destinatarios, a quién llega cada mensaje y las plantillas. Sistema define el texto y el icono del menú lateral de WordPress. El botón solo se muestra si la sesión actual es de un administrador de WordPress (capacidad `manage_options`).
+En Gestión, el botón **Opciones** abre un popup con la configuración en cinco pestañas: **Búsqueda**, **Vigencia**, **Descarga**, **Correos** y **Sistema**. Búsqueda define la consulta pública. Vigencia define el plazo, los mensajes de vigente o vencido, los avisos y la papelera. Descarga define el código y su popup. Correos define los conjuntos de destinatarios, a quién llega cada mensaje y las plantillas. Sistema define el texto y el icono del menú lateral, y administra los PDF de los certificados vencidos. El botón solo se muestra si la sesión actual es de un administrador de WordPress (capacidad `manage_options`).
 
 Un gestor de certificados sigue pudiendo crear, editar y eliminar certificados. No ve el botón **Opciones**. La ruta de la API que guarda esa configuración también exige `manage_options`: si alguien más la llama, WordPress la rechaza.
 
@@ -143,6 +144,31 @@ En **Opciones → Sistema** se cambia lo que WordPress muestra en el menú later
 **Label para la opción del menú** es un texto de hasta 40 caracteres. Si se deja vacío, el menú muestra **Distribución de archivos**.
 
 **Icono del menú** es uno de los iconos estándar de WordPress. El predeterminado es el de formulario. Una vista previa muestra el icono y el texto juntos. Al guardar un cambio de texto o de icono, la página se recarga para que el menú lateral lo refleje. Gestión y Ayuda siguen como submenús de esa entrada.
+
+## Archivo del certificado
+
+Al guardar un certificado, el plugin copia el PDF a la tabla `{prefix}dosf_private_files` y lo borra de `wp-content/uploads`. La URL del adjunto deja de existir: responde 404. No hace falta una regla en Apache o nginx, porque el archivo ya no está en una carpeta pública.
+
+Mientras el PDF solo está en la biblioteca de medios, antes de guardar el certificado, esa URL sigue pública. Un archivo de la biblioteca que nunca se asocia a un certificado también sigue público.
+
+Quien ingresa el código vigente recibe un enlace de un solo uso, válido 2 minutos. Ese enlace pasa por WordPress y entrega el PDF. Abrirlo de nuevo ya no funciona. La ficha pública del adjunto también responde 404.
+
+En el formulario de alta o edición hay dos botones:
+
+- **Biblioteca de medios** elige o sube un archivo nuevo. Al guardar, pasa a la tabla y sale de la carpeta pública.
+- **Catálogo del plugin** lista los PDF restaurados desde certificados vencidos. Esos archivos no tienen URL pública.
+
+## Certificados vencidos
+
+En **Opciones → Sistema → Certificados vencidos** se listan los certificados vencidos que todavía tienen el PDF en la tabla. Solo lo ve un administrador.
+
+| Acción | Qué hace |
+|---|---|
+| Descargar | Entrega el PDF en esa pantalla, con la sesión de administrador. No publica una URL. |
+| Restaurar | Lo deja en el catálogo para asignarlo al crear o editar un certificado. El certificado vencido sigue sin ofrecerse al público y la URL del adjunto no vuelve. |
+| Eliminar | Borra el PDF de `dosf_private_files`. Si un certificado vigente usa el mismo archivo, el botón queda desactivado. |
+
+La tarea que mueve el adjunto a la papelera no borra esas filas. El borrado completo es el botón **Eliminar**. Restaurar desde esta sección no es lo mismo que restaurar el adjunto en **Medios → Papelera**: esto solo lo devuelve al catálogo.
 
 ## Mensajes de vigencia en el frontend
 
@@ -184,7 +210,7 @@ El HTML es el mensaje completo, con el encabezado y el pie. Los marcadores se re
 
 En **Opciones** se puede activar **Mover a la papelera el archivo del certificado después de vencer** e indicar cuántos días, semanas, meses o años deben pasar desde el vencimiento. Un plazo de 0 mueve el archivo en cuanto vence.
 
-El vencimiento es la fecha de emisión más el plazo de **Vencimiento a los**. Una tarea diaria de WordPress mueve el adjunto con `wp_delete_attachment` sin borrado permanente. El archivo sigue en el disco y se restaura desde **Medios → Papelera** cuando `wp-config.php` define `MEDIA_TRASH` como `true`. Sin esa constante el adjunto queda en estado papelera y el archivo no se borra, pero la pantalla de medios no muestra la papelera.
+El vencimiento es la fecha de emisión más el plazo de **Vencimiento a los**. Una tarea diaria de WordPress mueve el adjunto con `wp_delete_attachment` sin borrado permanente. El PDF ya no está en la carpeta pública: está en `{prefix}dosf_private_files`. Esta tarea no borra esas filas. El adjunto se restaura desde **Medios → Papelera** cuando `wp-config.php` define `MEDIA_TRASH` como `true`. Sin esa constante el adjunto queda en estado papelera, pero la pantalla de medios no muestra la papelera.
 
 Si el mismo adjunto está vinculado a varios certificados, solo pasa a la papelera cuando todos ellos ya cumplieron ese plazo.
 
@@ -200,7 +226,8 @@ La duración se configura en **Opciones**, en **El código de descarga es válid
 |---|---|
 | Código distinto al vigente | Código de descarga no válido |
 | Código vencido, o certificado sin hora de emisión | El código de descarga venció. Solicita la descarga nuevamente. |
-| Archivo en la papelera, eliminado o marcado como no disponible | Certificado no disponible |
+| Archivo en la papelera, eliminado de la tabla o marcado como no disponible | Certificado no disponible |
+| Código vigente | Un enlace de un solo uso, válido 2 minutos, que entrega el PDF. La URL del adjunto no sirve |
 
 Ingresar un código correcto no genera otro. Un código nuevo aparece solo cuando se vuelve a solicitar la descarga. Un certificado antiguo sin hora de emisión se trata como vencido hasta esa nueva solicitud.
 
@@ -248,6 +275,7 @@ El plugin crea automáticamente las siguientes tablas al activarse:
 | `{prefix}dosf_shared_objs` | Certificados/documentos registrados |
 | `{prefix}dosf_so_ruts_links` | Relación certificado — RUTs autorizados |
 | `{prefix}dosf_expiration_warnig_email_queue` | Cola de avisos de vencimiento por email |
+| `{prefix}dosf_private_files` | PDF de cada certificado, en trozos, fuera de la carpeta pública |
 
 ### Creación manual de tablas (si el plugin falla al inicializarlas)
 
@@ -311,9 +339,36 @@ Después de ejecutar el SQL, desactiva y reactiva el plugin en **Plugins → Plu
 > ```
 > Al cargar el plugin, si la versión de base de datos guardada no es 1.5, la migración agrega esas columnas sola. Los correos de conjuntos creados después de los tres iniciales se guardan en `recipient_extra`.
 
+La tabla `{prefix}dosf_private_files` la crea el plugin la primera vez que carga. No cambia la marca de versión 1.5. Si hiciera falta crearla a mano:
+
+```sql
+CREATE TABLE IF NOT EXISTS `umm_dosf_private_files` (
+    `attachment_id` bigint(20) unsigned NOT NULL,
+    `seq` smallint unsigned NOT NULL,
+    `filename` varchar(255) NOT NULL,
+    `mime` varchar(100) NOT NULL DEFAULT '',
+    `byte_length` int unsigned NOT NULL DEFAULT 0,
+    `chunk_b64` longtext NOT NULL,
+    `restored` tinyint(1) NOT NULL DEFAULT 0,
+    PRIMARY KEY (`attachment_id`, `seq`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+`chunk_b64` es un trozo del PDF. `restored` vale 1 cuando el archivo está en el catálogo del plugin. Si la tabla ya existe y falta esa columna:
+
+```sql
+ALTER TABLE `umm_dosf_private_files`
+  ADD COLUMN `restored` tinyint(1) NOT NULL DEFAULT 0;
+```
+
 ---
 
 ## Changelog
+
+### v1.4.0
+- `feat` El PDF del certificado se guarda en la base de datos y se borra de la carpeta pública. La URL del adjunto deja de entregarlo. Un código vigente obtiene un enlace de un solo uso, válido 2 minutos
+- `feat` En Sistema, Certificados vencidos permite descargar el PDF solo desde el admin, restaurarlo al catálogo o borrarlo de la tabla. Eliminar se desactiva si un certificado vigente usa el mismo archivo
+- `feat` Al crear o editar un certificado se puede elegir un archivo de la biblioteca de medios o uno restaurado del catálogo del plugin
 
 ### v1.3.0
 - `feat` La configuración queda en un popup con las pestañas Búsqueda, Vigencia, Descarga, Correos y Sistema

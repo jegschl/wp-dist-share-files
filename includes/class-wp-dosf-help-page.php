@@ -59,6 +59,8 @@ class Wp_Dosf_Help_Page {
                 <li><a href="#dosf-access">Quién puede configurar el plugin</a></li>
                 <li><a href="#dosf-admin-list">Listado de certificados</a></li>
                 <li><a href="#dosf-menu">Menú del plugin</a></li>
+                <li><a href="#dosf-private-file">Archivo del certificado</a></li>
+                <li><a href="#dosf-expired-files">Certificados vencidos</a></li>
                 <li><a href="#dosf-status-templates">Mensajes de vigencia</a></li>
                 <li><a href="#dosf-file-trash">Papelera de archivos vencidos</a></li>
                 <li><a href="#dosf-download-code">Código de descarga</a></li>
@@ -79,7 +81,7 @@ class Wp_Dosf_Help_Page {
 
             <h2 id="dosf-access">Quién puede configurar el plugin</h2>
             <p>El menú <strong>Distribución de archivos</strong> (Gestión y esta ayuda) está disponible para quien tenga la capacidad <code>jgb_collab_access</code>: el rol <strong>Gestor de Certificados</strong> y el administrador de WordPress.</p>
-            <p>En Gestión, el botón <strong>Opciones</strong> abre un popup con la configuración en cinco pestañas: <strong>Búsqueda</strong>, <strong>Vigencia</strong>, <strong>Descarga</strong>, <strong>Correos</strong> y <strong>Sistema</strong>. Búsqueda define la consulta pública. Vigencia define el plazo, los mensajes de vigente o vencido, los avisos y la papelera. Descarga define el código y su popup. Correos define los conjuntos de destinatarios, a quién llega cada mensaje y las plantillas. Sistema define el texto y el icono del menú lateral de WordPress. El botón solo se muestra si la sesión actual es de un administrador de WordPress (capacidad <code>manage_options</code>).</p>
+            <p>En Gestión, el botón <strong>Opciones</strong> abre un popup con la configuración en cinco pestañas: <strong>Búsqueda</strong>, <strong>Vigencia</strong>, <strong>Descarga</strong>, <strong>Correos</strong> y <strong>Sistema</strong>. Búsqueda define la consulta pública. Vigencia define el plazo, los mensajes de vigente o vencido, los avisos y la papelera. Descarga define el código y su popup. Correos define los conjuntos de destinatarios, a quién llega cada mensaje y las plantillas. Sistema define el texto y el icono del menú lateral, y administra los PDF de los certificados vencidos. El botón solo se muestra si la sesión actual es de un administrador de WordPress (capacidad <code>manage_options</code>).</p>
             <div class="dosf-info">
                 Un gestor de certificados sigue pudiendo crear, editar y eliminar certificados. No ve el botón <strong>Opciones</strong>. La ruta de la API que guarda esa configuración también exige <code>manage_options</code>: si alguien más la llama, WordPress la rechaza.
             </div>
@@ -96,6 +98,28 @@ class Wp_Dosf_Help_Page {
                 <li><strong>Icono del menú</strong> es uno de los iconos estándar de WordPress. El predeterminado es el de formulario. Una vista previa, debajo de la cuadrícula, muestra el icono y el texto juntos.</li>
             </ul>
             <p>Al guardar un cambio de texto o de icono, la página se recarga para que el menú lateral lo refleje. Gestión y Ayuda siguen como submenús de esa entrada.</p>
+
+            <h2 id="dosf-private-file">Archivo del certificado</h2>
+            <p>Al guardar un certificado, el plugin copia el PDF a la tabla <code>dosf_private_files</code> y lo borra de <code>wp-content/uploads</code>. La URL del adjunto deja de existir y responde 404. No hace falta configurar el servidor web: el archivo ya no está en una carpeta pública.</p>
+            <p>Mientras el PDF solo está en la biblioteca de medios, antes de guardar el certificado, esa URL sigue pública. Un archivo de la biblioteca que nunca se asocia a un certificado también sigue público.</p>
+            <p>Quien ingresa el código vigente recibe un enlace de un solo uso, válido 2 minutos. Ese enlace pasa por WordPress y entrega el PDF. Abrirlo de nuevo ya no funciona. La ficha pública del adjunto también responde 404.</p>
+            <p>En el formulario de alta o edición hay dos botones:</p>
+            <ul>
+                <li><strong>Biblioteca de medios</strong> elige o sube un archivo nuevo. Al guardar, pasa a la tabla y sale de la carpeta pública.</li>
+                <li><strong>Catálogo del plugin</strong> lista los PDF restaurados desde certificados vencidos. Esos archivos no tienen URL pública.</li>
+            </ul>
+
+            <h2 id="dosf-expired-files">Certificados vencidos</h2>
+            <p>En <strong>Opciones → Sistema → Certificados vencidos</strong> se listan los certificados vencidos que todavía tienen el PDF en la tabla. Solo lo ve un administrador.</p>
+            <table>
+                <tr><th>Acción</th><th>Qué hace</th></tr>
+                <tr><td>Descargar</td><td>Entrega el PDF en esa pantalla, con la sesión de administrador. No publica una URL.</td></tr>
+                <tr><td>Restaurar</td><td>Lo deja en el catálogo para asignarlo al crear o editar un certificado. El certificado vencido sigue sin ofrecerse al público y la URL del adjunto no vuelve.</td></tr>
+                <tr><td>Eliminar</td><td>Borra el PDF de <code>dosf_private_files</code>. Si un certificado vigente usa el mismo archivo, el botón queda desactivado.</td></tr>
+            </table>
+            <div class="dosf-info">
+                La tarea que mueve el adjunto a la papelera no borra esas filas. El borrado completo es el botón <strong>Eliminar</strong>. Restaurar desde esta sección no es lo mismo que restaurar el adjunto en <strong>Medios → Papelera</strong>: esto solo lo devuelve al catálogo.
+            </div>
 
             <hr>
 
@@ -124,7 +148,7 @@ class Wp_Dosf_Help_Page {
                 <li>Indica cuánto tiempo debe pasar <strong>desde la fecha de vencimiento</strong> (días, semanas, meses o años).</li>
                 <li>Guarda con <strong>Guardar opciones</strong>.</li>
             </ol>
-            <p>La fecha de vencimiento es la de emisión más el plazo de <strong>Vencimiento a los</strong>. La tarea corre sola, una vez al día, con el programador de WordPress. Llama a <code>wp_delete_attachment</code> sin borrado permanente, que es el procedimiento de WordPress para mandar un adjunto a la papelera. El archivo sigue en el disco y se restaura desde <strong>Medios → Papelera</strong>.</p>
+            <p>La fecha de vencimiento es la de emisión más el plazo de <strong>Vencimiento a los</strong>. La tarea corre sola, una vez al día, con el programador de WordPress. Llama a <code>wp_delete_attachment</code> sin borrado permanente, que es el procedimiento de WordPress para mandar un adjunto a la papelera. El PDF ya no está en la carpeta pública: está en <code>dosf_private_files</code>. Esta tarea no borra esas filas. El adjunto se restaura desde <strong>Medios → Papelera</strong>.</p>
             <div class="dosf-info">
                 Esa pantalla aparece si en <code>wp-config.php</code> está <code>define( 'MEDIA_TRASH', true );</code>. Sin esa constante el adjunto igual queda en estado papelera y el archivo no se borra, pero WordPress no muestra la papelera de medios.
             </div>
@@ -141,7 +165,8 @@ class Wp_Dosf_Help_Page {
                 <tr><th>Situación</th><th>Qué ve quien descarga</th></tr>
                 <tr><td>Código distinto al vigente</td><td>Código de descarga no válido</td></tr>
                 <tr><td>Código vencido, o certificado sin hora de emisión</td><td>El código de descarga venció. Solicita la descarga nuevamente.</td></tr>
-                <tr><td>Archivo en la papelera, eliminado o marcado como no disponible</td><td>Certificado no disponible</td></tr>
+                <tr><td>Archivo en la papelera, eliminado de la tabla o marcado como no disponible</td><td>Certificado no disponible</td></tr>
+                <tr><td>Código vigente</td><td>Un enlace de un solo uso, válido 2 minutos, que entrega el PDF. La URL del adjunto no sirve</td></tr>
             </table>
             <div class="dosf-info">
                 Ingresar un código correcto no genera otro. Un código nuevo aparece solo cuando se vuelve a solicitar la descarga. Un certificado antiguo sin hora de emisión se trata como vencido hasta esa nueva solicitud.
@@ -278,6 +303,7 @@ add_filter( 'dosf-admin/admin-menu-title', fn( $t ) => 'Certificados' );</code><
                 <tr><td><code><?php echo esc_html( $GLOBALS['wpdb']->prefix ); ?>dosf_shared_objs</code></td><td>Certificados/documentos registrados</td></tr>
                 <tr><td><code><?php echo esc_html( $GLOBALS['wpdb']->prefix ); ?>dosf_so_ruts_links</code></td><td>Relación certificado — RUTs autorizados</td></tr>
                 <tr><td><code><?php echo esc_html( $GLOBALS['wpdb']->prefix ); ?>dosf_expiration_warnig_email_queue</code></td><td>Cola de avisos de vencimiento por email</td></tr>
+                <tr><td><code><?php echo esc_html( $GLOBALS['wpdb']->prefix ); ?>dosf_private_files</code></td><td>PDF de cada certificado, en trozos, fuera de la carpeta pública. <code>restored</code> indica si está en el catálogo</td></tr>
             </table>
 
             <!-- TABLAS MANUAL -->
@@ -335,7 +361,7 @@ CREATE TABLE IF NOT EXISTS `<?php echo esc_html( $GLOBALS['wpdb']->prefix ); ?>d
                 <pre style="margin:8px 0 0;"><code>ALTER TABLE `<?php echo esc_html( $GLOBALS['wpdb']->prefix ); ?>dosf_shared_objs`
   ADD COLUMN `file_unavailable` tinyint(1) NOT NULL DEFAULT 0 AFTER `wp_file_obj_id`,
   ADD COLUMN `download_code_issued` datetime NULL AFTER `download_code`;</code></pre>
-                Al cargar el plugin, si la versión de base de datos guardada no es 1.5, la migración agrega esas columnas sola. Los correos de conjuntos creados después de los tres iniciales se guardan en <code>recipient_extra</code>.
+                Al cargar el plugin, si la versión de base de datos guardada no es 1.5, la migración agrega esas columnas sola. Los correos de conjuntos creados después de los tres iniciales se guardan en <code>recipient_extra</code>. La tabla <code>dosf_private_files</code> se crea sola la primera vez que el plugin carga, sin cambiar esa marca de versión. Si ya existe y le falta <code>restored</code>, el plugin agrega la columna. <code>chunk_b64</code> guarda cada trozo del PDF y <code>restored</code> vale 1 cuando el archivo está en el catálogo.
             </div>
 
             <p>Después de ejecutar el SQL, ve a <strong>Plugins → Plugins instalados</strong>, <strong>desactiva</strong> y vuelve a <strong>activar</strong> el plugin <code>jgb-dosf</code>.</p>

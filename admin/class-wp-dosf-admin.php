@@ -181,6 +181,8 @@ class Wp_Dosf_Admin {
 				'restNonce' 				=> wp_create_nonce( 'wp_rest' ),
 				'recipientSets'			=> self::recipient_sets(),
 				'useIssueDate'	 			=> isset( $this->plus_options['use-issue-date'] ) && $this->plus_options['use-issue-date'],
+				'restoredCatalog'			=> Dosf_Private_Files::restored_catalog(),
+				'expiredNonce'			=> wp_create_nonce( 'dosf_expired_file' ),
 				'expirityBefDayC'			=> self::get_dosf_validity_total_days(),
 				'lastDayRangeForExprWrng'	=> self::get_last_range_days_before_expiration()
 			) 
@@ -441,9 +443,15 @@ class Wp_Dosf_Admin {
 				<?php endif; ?>
 				<div class="fld-so">
 					<label>Archivo del certificado</label>
-					<button class="dosf-button" id="browse-file" type="button">Buscar...</button>
+					<button class="dosf-button" id="browse-file" type="button">Biblioteca de medios</button>
+					<button class="dosf-button" id="browse-catalog" type="button">Catálogo del plugin</button>
 					<div class="file-selected" id="dosf-file-selectd"></div>
 					<input type='hidden' name='dosf_fl_attachment_id' id='dosf_attachment_id' value='' />
+					<p class="description">La biblioteca de medios sube un archivo nuevo. El catálogo lista los PDF restaurados desde certificados vencidos.</p>
+					<div id="dosf-catalog-dialog" title="Catálogo del plugin" style="display:none">
+						<p class="description">Estos archivos no tienen URL pública.</p>
+						<div id="dosf-catalog-list"></div>
+					</div>
 				</div>
 				<div class="fld-ruts">
 					<label for="dosf_so_ruts_linked">RUTs asociados</label>
@@ -741,6 +749,39 @@ class Wp_Dosf_Admin {
 							<?php endforeach; ?>
 						</div>
 						<p class="description">Iconos estándar de WordPress. El elegido se muestra junto al título en el menú lateral. Ahora: <strong id="dosf-menu-icon-name"><?= esc_html( $menu_icon_names[ $menu_icon_saved ] ) ?></strong>.</p>
+					</div>
+										<div class="dosf-expired-files">
+						<h3>Certificados vencidos</h3>
+						<p class="description">PDF guardados en la tabla del plugin. Descargar solo funciona en esta pantalla. Restaurar los deja en el catálogo para asignarlos al crear o editar un certificado, sin volver a publicar la URL. Eliminar borra el PDF de la tabla.</p>
+						<?php $expired_files = Dosf_Private_Files::expired_certificate_rows(); ?>
+						<?php if ( ! count( $expired_files ) ) : ?>
+							<p>No hay certificados vencidos con un archivo guardado.</p>
+						<?php else : ?>
+						<table class="widefat striped">
+							<thead>
+								<tr>
+									<th>Serie</th>
+									<th>Título</th>
+									<th>Archivo</th>
+									<th>Acciones</th>
+								</tr>
+							</thead>
+							<tbody>
+							<?php foreach ( $expired_files as $expired_file ) : ?>
+								<tr data-attachment="<?= intval( $expired_file['attachment_id'] ) ?>">
+									<td><?= esc_html( $expired_file['serie'] ) ?></td>
+									<td><?= esc_html( $expired_file['title'] ) ?></td>
+									<td><?= esc_html( $expired_file['filename'] ) ?></td>
+									<td class="dosf-expired-actions">
+										<a class="button button-small" href="<?= esc_url( Dosf_Private_Files::admin_download_url( $expired_file['attachment_id'] ) ) ?>">Descargar</a>
+										<button type="button" class="button button-small dosf-expired-restore" data-attachment="<?= intval( $expired_file['attachment_id'] ) ?>" <?= $expired_file['restored'] ? 'disabled' : '' ?>><?= $expired_file['restored'] ? 'En el catálogo' : 'Restaurar' ?></button>
+										<button type="button" class="button button-small dosf-expired-delete" data-attachment="<?= intval( $expired_file['attachment_id'] ) ?>" <?= $expired_file['delete_blocked'] ? 'disabled' : '' ?> title="<?= $expired_file['delete_blocked'] ? 'Hay un certificado vigente que usa este archivo' : '' ?>">Eliminar</button>
+									</td>
+								</tr>
+							<?php endforeach; ?>
+							</tbody>
+						</table>
+						<?php endif; ?>
 					</div>
 					<p class="dosf-menu-preview" aria-hidden="true"><span id="dosf-menu-preview-icon" class="dashicons <?= esc_attr( $menu_icon_saved ) ?>"></span><span id="dosf-menu-preview-label"><?= esc_html( self::menu_label( $plus_options ) ) ?></span></p>
 				</div>
@@ -1158,6 +1199,9 @@ class Wp_Dosf_Admin {
 	}
 
 	public function on_attachment_restored( $post_id ) {
+		if ( class_exists( 'Dosf_Private_Files' ) && Dosf_Private_Files::$suppress_public_restore ) {
+			return;
+		}
 		$post = get_post( intval( $post_id ) );
 		if ( ! $post || $post->post_type !== 'attachment' ) {
 			return;
