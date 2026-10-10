@@ -26,7 +26,7 @@ Plugin para **compartir y distribuir documentos** con control de vencimiento, pr
 | Componente | Versión mínima |
 |---|---|
 | WordPress | 5.8+ |
-| PHP | 7.4+ (recomendado 8.x) |
+| PHP | 8.3. Producción y el contenedor local usan 8.3.31 |
 | Plugin: Popup Maker | 1.x — **requerido** para la descarga con código |
 
 ---
@@ -136,6 +136,8 @@ En Gestión, cada serie muestra sus certificados en una tabla. La columna **Tít
 Los correos de los conjuntos van en una sola columna, **Email**, que es la más ancha: 30 % con fecha de emisión y 40 % sin ella. Solo aparecen los conjuntos que tienen direcciones. El nombre del conjunto va en negrita y los grupos se separan con un guion. Por ejemplo: **Emails de colaboradores:** julio@gmail.com, jegschl@gmail.com - **Emails de operadores:** luciano@aol.com.
 
 Los iconos de **Acciones** muestran un tooltip: Editar certificado, Enviar código de descarga, Enviar aviso de vencimiento y Eliminar certificado. El aviso de vencimiento solo aparece cuando el certificado está dentro del plazo de aviso.
+
+En PHP 8 el listado calcula los días de vigencia con un método estático. Si ese método no es estático, la petición se corta y DataTables muestra un error de Ajax.
 
 ## Menú del plugin
 
@@ -364,6 +366,9 @@ ALTER TABLE `umm_dosf_private_files`
 ---
 
 ## Changelog
+
+### v1.4.2
+- `fix` El listado de Gestión vuelve a cargar en PHP 8.3. El cálculo de los días de vigencia es un método estático. En PHP 8 llamarlo de otra forma es un error fatal y DataTables muestra un error de Ajax
 
 ### v1.4.1
 - `fix` La vista previa del menú queda debajo del selector de icono, antes de Certificados vencidos, y se actualiza al escribir el texto o al cambiar el icono

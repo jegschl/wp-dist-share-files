@@ -913,7 +913,7 @@ class Wp_Dosf_Admin {
 		return new WP_REST_Response( $res );
 	}
 
-	function get_dosf_validity_total_days(){
+	public static function get_dosf_validity_total_days(){
 		$plus_options = get_option(DOSF_WP_OPT_NM_PLUS_OPTIONS);
 		if( isset( $plus_options['use-issue-date'] ) && $plus_options['use-issue-date'] ){
 			$punits =  intval($plus_options['expire-period-nmb']);

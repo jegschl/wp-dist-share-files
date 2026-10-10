@@ -90,6 +90,7 @@ class Wp_Dosf_Help_Page {
             <p>En Gestión, cada serie muestra sus certificados en una tabla. La columna <strong>Título</strong> ocupa el 20&nbsp;% del ancho cuando hay fecha de emisión, y el 26&nbsp;% cuando no. Si el título no cabe, se corta con puntos suspensivos y, al pasar el mouse, un tooltip muestra el título completo. Los títulos cortos se ven enteros y no muestran tooltip.</p>
             <p>Los correos de los conjuntos van en una sola columna, <strong>Email</strong>, que es la más ancha: 30&nbsp;% con fecha de emisión y 40&nbsp;% sin ella. Solo aparecen los conjuntos que tienen direcciones. El nombre del conjunto va en negrita y los grupos se separan con un guion. Por ejemplo: <strong>Emails de colaboradores:</strong> julio@gmail.com, jegschl@gmail.com - <strong>Emails de operadores:</strong> luciano@aol.com.</p>
             <p>Los iconos de la columna <strong>Acciones</strong> muestran un tooltip: Editar certificado, Enviar código de descarga, Enviar aviso de vencimiento y Eliminar certificado. El aviso de vencimiento solo aparece cuando el certificado está dentro del plazo de aviso.</p>
+            <p>Producción y el entorno local corren <strong>PHP 8.3</strong>. El listado calcula los días de vigencia con un método estático. En PHP 8, si ese método no es estático, la petición se corta y DataTables muestra un error de Ajax.</p>
 
             <h2 id="dosf-menu">Menú del plugin</h2>
             <p>En <strong>Opciones → Sistema</strong> se cambia lo que WordPress muestra en el menú lateral.</p>
