@@ -163,7 +163,7 @@ Si un cuadro queda vacío, el texto usado es:
 {cert_title} de la serie {serie} se encuentra actualmente {estado}.
 ```
 
-`{estado}` conserva el color verde o rojo. El resto del mensaje, y también el texto del campo de búsqueda por número de serie, admite HTML de formato en una parte del texto o en todo: `<b>`, `<strong>`, `<u>`, `<i>`, `<em>`, `<br>` y `<span style="...">` para color, tipo de letra, tamaño, negrita o subrayado. El resto de etiquetas se descarta. Los valores que sustituyen a los marcadores se publican como texto. Las plantillas de correo siguen siendo HTML completo y no usan esta lista.
+`{estado}` conserva el color verde o rojo. El mensaje ya no lleva negrita forzada: el peso, la cursiva y el tamaño salen del HTML del cuadro. El resto del mensaje, y también el texto del campo de búsqueda por número de serie, admite HTML de formato en una parte del texto o en todo: `<b>`, `<strong>`, `<u>`, `<i>`, `<em>`, `<br>` y `<span style="...">` para color, tipo de letra, tamaño, negrita o subrayado. El resto de etiquetas se descarta. Los valores que sustituyen a los marcadores se publican como texto. Las plantillas de correo siguen siendo HTML completo y no usan esta lista.
 
 ## Plantillas de correo
 
@@ -323,6 +323,7 @@ Después de ejecutar el SQL, desactiva y reactiva el plugin en **Plugins → Plu
 - `feat` El marcador `{validez_codigo}` indica en el correo del código cuánto tiempo vale, según el plazo configurado
 - `feat` En el listado, el título se recorta con puntos suspensivos y tooltip, y los correos quedan en una sola columna Email
 - `feat` El texto y el icono del menú lateral se eligen en Sistema. Si el texto queda vacío, el menú sigue como Distribución de archivos
+- `fix` El mensaje de vigencia en el sitio público ya no fuerza la negrita. El peso de la fuente sale del HTML del campo. `{estado}` conserva el verde o el rojo
 
 ### Cambios recientes
 - `feat` La configuración se abre con el botón Opciones, solo visible para un administrador de WordPress. La ruta que la guarda exige el mismo permiso. El gestor de certificados sigue gestionando los certificados

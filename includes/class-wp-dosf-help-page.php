@@ -112,7 +112,7 @@ class Wp_Dosf_Help_Page {
             <p>Si un cuadro se deja vacío, se usa este texto:</p>
             <pre><code>{cert_title} de la serie {serie} se encuentra actualmente {estado}.</code></pre>
             <div class="dosf-info">
-                El marcador <code>{estado}</code> sigue en verde o rojo. El resto del mensaje admite HTML de formato, en una parte del texto o en todo: <code>&lt;b&gt;</code>, <code>&lt;strong&gt;</code>, <code>&lt;u&gt;</code>, <code>&lt;i&gt;</code>, <code>&lt;em&gt;</code>, <code>&lt;br&gt;</code> y <code>&lt;span style="..."&gt;</code> (color, tipo de letra, tamaño, negrita o subrayado). El mismo formato vale para el texto del campo de búsqueda por número de serie. Cualquier otra etiqueta se descarta. Los valores de los marcadores se publican como texto. Las plantillas de correo siguen siendo HTML completo.
+                El marcador <code>{estado}</code> sigue en verde o rojo. El mensaje ya no lleva negrita forzada: el peso, la cursiva y el tamaño salen del HTML del cuadro. El resto del mensaje admite HTML de formato, en una parte del texto o en todo: <code>&lt;b&gt;</code>, <code>&lt;strong&gt;</code>, <code>&lt;u&gt;</code>, <code>&lt;i&gt;</code>, <code>&lt;em&gt;</code>, <code>&lt;br&gt;</code> y <code>&lt;span style="..."&gt;</code> (color, tipo de letra, tamaño, negrita o subrayado). El mismo formato vale para el texto del campo de búsqueda por número de serie. Cualquier otra etiqueta se descarta. Los valores de los marcadores se publican como texto. Las plantillas de correo siguen siendo HTML completo.
             </div>
 
             <hr>
