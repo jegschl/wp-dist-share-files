@@ -125,7 +125,7 @@ Agrega este shortcode en la página donde los usuarios buscarán sus certificado
 
 El menú **Distribución de archivos** (Gestión y Ayuda) está disponible para quien tenga la capacidad `jgb_collab_access`: el rol **Gestor de Certificados** y el administrador de WordPress.
 
-En Gestión, el botón **Opciones** abre un popup con la configuración en cinco pestañas: **Búsqueda**, **Vigencia**, **Descarga**, **Correos** y **Sistema**. Búsqueda define la consulta pública. Vigencia define el plazo, los mensajes de vigente o vencido, los avisos y la papelera. Descarga define el código y su popup. Correos define los conjuntos de destinatarios, a quién llega cada mensaje y las plantillas. Sistema define el texto y el icono del menú lateral, y administra los PDF de los certificados vencidos. El botón solo se muestra si la sesión actual es de un administrador de WordPress (capacidad `manage_options`).
+En Gestión, el botón **Opciones** abre un popup con la configuración en cinco pestañas: **Búsqueda**, **Vigencia**, **Descarga**, **Correos** y **Sistema**. Búsqueda define la consulta pública. Vigencia define el plazo, los mensajes de vigente o vencido, los avisos y la papelera. Descarga define el código y su popup. Correos define los conjuntos de destinatarios, a quién llega cada mensaje y las plantillas. Sistema define el título de la pantalla de Gestión, el texto y el icono del menú lateral, y administra los PDF de los certificados vencidos. El título y el texto del menú son independientes. El botón solo se muestra si la sesión actual es de un administrador de WordPress (capacidad `manage_options`).
 
 Un gestor de certificados sigue pudiendo crear, editar y eliminar certificados. No ve el botón **Opciones**. La ruta de la API que guarda esa configuración también exige `manage_options`: si alguien más la llama, WordPress la rechaza.
 
@@ -143,13 +143,15 @@ Los iconos de **Acciones** muestran un tooltip: Editar certificado, Enviar códi
 
 En PHP 8 el listado calcula los días de vigencia con un método estático. Si ese método no es estático, la petición se corta y DataTables muestra un error de Ajax.
 
-## Menú del plugin
+## Título y menú del plugin
 
-En **Opciones → Sistema** se cambia lo que WordPress muestra en el menú lateral.
+En **Opciones → Sistema** se cambia el título de la pantalla de Gestión y lo que WordPress muestra en el menú lateral. Los dos textos son independientes.
+
+**Título de la pantalla de Gestión** es el texto de arriba, sobre los botones. Admite hasta 80 caracteres. Si se deja vacío, se muestra **Compartir o distribuir archivos**.
 
 **Label para la opción del menú** es un texto de hasta 40 caracteres. Si se deja vacío, el menú muestra **Distribución de archivos**.
 
-**Icono del menú** es uno de los iconos estándar de WordPress. El predeterminado es el de formulario. Debajo de la cuadrícula, **Vista previa del menú lateral** muestra el icono y el texto juntos, antes de **Certificados vencidos**. Cambia al escribir el texto o al elegir otro icono, sin guardar. Al guardar un cambio de texto o de icono, la página se recarga para que el menú lateral lo refleje. Gestión y Ayuda siguen como submenús de esa entrada.
+**Icono del menú** es uno de los iconos estándar de WordPress. El predeterminado es el de formulario. Debajo de la cuadrícula, **Vista previa del menú lateral** muestra el icono y el texto juntos, antes de **Certificados vencidos**. Cambia al escribir el texto o al elegir otro icono, sin guardar. Al guardar un cambio de título, de texto o de icono, la página se recarga para que la pantalla y el menú lateral lo reflejen. Gestión y Ayuda siguen como submenús de esa entrada.
 
 ## Archivo del certificado
 
@@ -370,6 +372,9 @@ ALTER TABLE `umm_dosf_private_files`
 ---
 
 ## Changelog
+
+### v1.4.5
+- `feat` En Sistema, **Título de la pantalla de Gestión** cambia el texto de arriba de los botones. Admite hasta 80 caracteres. Si queda vacío, se muestra Compartir o distribuir archivos. No cambia el texto del menú lateral
 
 ### v1.4.4
 - `feat` En Vigencia, **Avisos máximos antes de vencer** limita los envíos automáticos. Solo cuenta un correo que salió sin error. El botón manual sigue disponible durante todo el plazo de aviso

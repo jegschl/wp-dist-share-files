@@ -53,13 +53,14 @@ class Wp_Dosf_Help_Page {
             <h1>📘 Documentación — Distribución de archivos (jgb-dosf)</h1>
             <p>Versión <?php echo esc_html( WP_DOSF_VERSION ); ?> | Autor: <a href="https://phonix.dev" target="_blank">Jorge Garrido</a></p>
             <p>Los cambios de hoy —el máximo de avisos antes de vencer, la columna <strong>Emails Previos al Vencimiento</strong> con fecha, hora y errores, la reutilización del código de descarga y los colores de la tabla de Gestión— son de la versión <strong>1.4.4</strong>.</p>
+            <p>El título de la pantalla de Gestión, el texto que aparece sobre los botones, se configura en <strong>Opciones → Sistema</strong> desde la versión <strong>1.4.5</strong>. Es independiente del texto del menú lateral.</p>
 
             <!-- ÍNDICE -->
             <ul>
                 <li><a href="#dosf-shortcode">Shortcode público</a></li>
                 <li><a href="#dosf-access">Quién puede configurar el plugin</a></li>
                 <li><a href="#dosf-admin-list">Listado de certificados</a></li>
-                <li><a href="#dosf-menu">Menú del plugin</a></li>
+                <li><a href="#dosf-menu">Título y menú del plugin</a></li>
                 <li><a href="#dosf-private-file">Archivo del certificado</a></li>
                 <li><a href="#dosf-expired-files">Certificados vencidos</a></li>
                 <li><a href="#dosf-status-templates">Mensajes de vigencia</a></li>
@@ -82,7 +83,7 @@ class Wp_Dosf_Help_Page {
 
             <h2 id="dosf-access">Quién puede configurar el plugin</h2>
             <p>El menú <strong>Distribución de archivos</strong> (Gestión y esta ayuda) está disponible para quien tenga la capacidad <code>jgb_collab_access</code>: el rol <strong>Gestor de Certificados</strong> y el administrador de WordPress.</p>
-            <p>En Gestión, el botón <strong>Opciones</strong> abre un popup con la configuración en cinco pestañas: <strong>Búsqueda</strong>, <strong>Vigencia</strong>, <strong>Descarga</strong>, <strong>Correos</strong> y <strong>Sistema</strong>. Búsqueda define la consulta pública. Vigencia define el plazo, los mensajes de vigente o vencido, los avisos y la papelera. Descarga define el código y su popup. Correos define los conjuntos de destinatarios, a quién llega cada mensaje y las plantillas. Sistema define el texto y el icono del menú lateral, y administra los PDF de los certificados vencidos. El botón solo se muestra si la sesión actual es de un administrador de WordPress (capacidad <code>manage_options</code>).</p>
+            <p>En Gestión, el botón <strong>Opciones</strong> abre un popup con la configuración en cinco pestañas: <strong>Búsqueda</strong>, <strong>Vigencia</strong>, <strong>Descarga</strong>, <strong>Correos</strong> y <strong>Sistema</strong>. Búsqueda define la consulta pública. Vigencia define el plazo, los mensajes de vigente o vencido, los avisos y la papelera. Descarga define el código y su popup. Correos define los conjuntos de destinatarios, a quién llega cada mensaje y las plantillas. Sistema define el título de Gestión, el texto y el icono del menú lateral, y administra los PDF de los certificados vencidos. El botón solo se muestra si la sesión actual es de un administrador de WordPress (capacidad <code>manage_options</code>).</p>
             <div class="dosf-info">
                 Un gestor de certificados sigue pudiendo crear, editar y eliminar certificados. No ve el botón <strong>Opciones</strong>. La ruta de la API que guarda esa configuración también exige <code>manage_options</code>: si alguien más la llama, WordPress la rechaza.
             </div>
@@ -93,14 +94,15 @@ class Wp_Dosf_Help_Page {
             <p>Los iconos de la columna <strong>Acciones</strong> muestran un tooltip: Editar certificado, Enviar código de descarga, Enviar aviso de vencimiento y Eliminar certificado. El aviso de vencimiento aparece cuando el certificado está dentro del plazo de aviso configurado y todavía no vence. La columna <strong>Emails Previos al Vencimiento</strong> muestra cuántos correos de aviso se enviaron y la fecha y hora de cada envío exitoso. La fecha usa el formato de <strong>Formato de la fecha de vigencia</strong>, más la hora y el minuto. Si algún intento falló, también indica cuántos terminaron con error. Esos datos siguen visibles cuando el certificado ya venció. Vuelven a cero solo si cambia la fecha de emisión. En <strong>Opciones → Vigencia</strong>, <strong>Avisos máximos antes de vencer</strong> limita la cola automática. Solo suma un envío sin error. El botón de la fila sigue disponible durante el plazo aunque ya se haya llegado a ese máximo.</p>
             <p>Producción y el entorno local corren <strong>PHP 8.3</strong>. El listado calcula los días de vigencia con un método estático. En PHP 8, si ese método no es estático, la petición se corta y DataTables muestra un error de Ajax.</p>
 
-            <h2 id="dosf-menu">Menú del plugin</h2>
-            <p>En <strong>Opciones → Sistema</strong> se cambia lo que WordPress muestra en el menú lateral.</p>
+            <h2 id="dosf-menu">Título y menú del plugin</h2>
+            <p>En <strong>Opciones → Sistema</strong> se cambia el título de la pantalla de Gestión y lo que WordPress muestra en el menú lateral.</p>
             <ul>
+                <li><strong>Título de la pantalla de Gestión</strong> es el texto de arriba, sobre los botones. Admite hasta 80 caracteres. Si se deja vacío, se muestra <strong>Compartir o distribuir archivos</strong>. No cambia el texto del menú lateral.</li>
                 <li><strong>Label para la opción del menú</strong> es un texto de hasta 40 caracteres. Si se deja vacío, el menú muestra <strong>Distribución de archivos</strong>.</li>
                 <li><strong>Icono del menú</strong> es uno de los iconos estándar de WordPress. El predeterminado es el de formulario.</li>
                 <li><strong>Vista previa del menú lateral</strong> queda debajo de la cuadrícula y antes de <strong>Certificados vencidos</strong>. Muestra el icono y el texto juntos, y cambia al escribir el texto o al elegir otro icono, sin guardar.</li>
             </ul>
-            <p>Al guardar un cambio de texto o de icono, la página se recarga para que el menú lateral lo refleje. Gestión y Ayuda siguen como submenús de esa entrada.</p>
+            <p>Al guardar un cambio de título, de texto o de icono, la página se recarga para que la pantalla y el menú lateral lo reflejen. Gestión y Ayuda siguen como submenús de esa entrada.</p>
 
             <h2 id="dosf-private-file">Archivo del certificado</h2>
             <p>Al guardar un certificado, el plugin copia el PDF a la tabla <code>dosf_private_files</code> y lo borra de <code>wp-content/uploads</code>. La URL del adjunto deja de existir y responde 404. No hace falta configurar el servidor web: el archivo ya no está en una carpeta pública.</p>

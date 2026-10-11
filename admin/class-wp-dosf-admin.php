@@ -273,6 +273,20 @@ class Wp_Dosf_Admin {
 		);
 	}
 
+	public static function page_heading( $plus_options = null ) {
+		if ( $plus_options === null ) {
+			$plus_options = get_option( DOSF_WP_OPT_NM_PLUS_OPTIONS );
+		}
+		$heading = '';
+		if ( is_array( $plus_options ) && isset( $plus_options['page-heading'] ) ) {
+			$heading = trim( (string) $plus_options['page-heading'] );
+		}
+		if ( $heading === '' ) {
+			$heading = 'Compartir o distribuir archivos';
+		}
+		return $heading;
+	}
+
 	public static function menu_label( $plus_options = null ) {
 		if ( $plus_options === null ) {
 			$plus_options = get_option( DOSF_WP_OPT_NM_PLUS_OPTIONS );
@@ -332,7 +346,7 @@ class Wp_Dosf_Admin {
 		?>
 		<!-- <form action='options.php' method='post'> -->
 
-			<h2>Compartir o distribuir archivos</h2>
+			<h2><?php echo esc_html( self::page_heading() ); ?></h2>
 			<div class="dosf-admin-main-container">
 			<?php
 			//settings_fields( 'dosf' );
@@ -758,12 +772,18 @@ class Wp_Dosf_Admin {
 					</div>
 				</div>
 				<div id="dosf-tab-system">
-					<p class="description">Texto e icono del menú lateral de WordPress para este plugin.</p>
+					<p class="description">Título de la pantalla de Gestión, y texto e icono del menú lateral de WordPress para este plugin.</p>
 					<?php
 						$menu_label_saved = ( is_array( $plus_options ) && isset( $plus_options['menu-label'] ) ) ? (string) $plus_options['menu-label'] : '';
 						$menu_icon_saved  = self::menu_icon( $plus_options );
 						$menu_icon_names  = self::menu_icon_choices();
 					?>
+					<div class="input">
+						<label for="dosf-page-heading">Título de la pantalla de Gestión</label>
+						<?php $page_heading_saved = ( is_array( $plus_options ) && isset( $plus_options['page-heading'] ) ) ? (string) $plus_options['page-heading'] : ''; ?>
+						<input id="dosf-page-heading" type="text" class="regular-text" maxlength="80" data-saved="<?= esc_attr( $page_heading_saved ) ?>" value="<?= esc_attr( $page_heading_saved ) ?>" placeholder="Compartir o distribuir archivos">
+						<p class="description">Es el título que aparece arriba de los botones. Si se deja vacío, se muestra «Compartir o distribuir archivos».</p>
+					</div>
 					<div class="input">
 						<label for="dosf-menu-label">Label para la opción del menú</label>
 						<input id="dosf-menu-label" type="text" class="regular-text" maxlength="40" data-saved="<?= esc_attr( $menu_label_saved ) ?>" value="<?= esc_attr( $menu_label_saved ) ?>" placeholder="Distribución de archivos">
@@ -1632,6 +1652,14 @@ class Wp_Dosf_Admin {
 			$menu_label = substr( $menu_label, 0, 40 );
 		}
 		$data['menu-label'] = $menu_label;
+		$page_heading = isset( $data['page-heading'] ) ? sanitize_text_field( $data['page-heading'] ) : '';
+		$page_heading = trim( $page_heading );
+		if ( function_exists( 'mb_substr' ) ) {
+			$page_heading = mb_substr( $page_heading, 0, 80 );
+		} else {
+			$page_heading = substr( $page_heading, 0, 80 );
+		}
+		$data['page-heading'] = $page_heading;
 		$menu_icon = isset( $data['menu-icon'] ) ? sanitize_text_field( $data['menu-icon'] ) : '';
 		if ( ! isset( self::menu_icon_choices()[ $menu_icon ] ) ) {
 			$menu_icon = 'dashicons-forms';

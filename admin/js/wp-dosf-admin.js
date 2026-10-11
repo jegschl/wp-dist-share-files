@@ -755,6 +755,7 @@ if ( $('#dosf-email-preview-dialog').length ) {
 					'email-tpl-download-html'		: $('#email-tpl-download-html').val(),
 					'email-tpl-expire-subject'	: $('#email-tpl-expire-subject').val(),
 					'email-tpl-expire-html'		: $('#email-tpl-expire-html').val(),
+					'page-heading'				: $('#dosf-page-heading').val(),
 					'menu-label'					: $('#dosf-menu-label').val(),
 					'menu-icon'					: $('#dosf-menu-icon').val()
 				};
@@ -806,6 +807,7 @@ if ( $('#dosf-email-preview-dialog').length ) {
 					},
 					success: function(data,  textStatus,  jqXHR){
 						var menuDirty = $('#dosf-menu-label').length && (
+							$('#dosf-page-heading').val() !== $('#dosf-page-heading').attr('data-saved') ||
 							$('#dosf-menu-label').val() !== $('#dosf-menu-label').attr('data-saved') ||
 							$('#dosf-menu-icon').val() !== $('#dosf-menu-icon').attr('data-saved')
 						);
