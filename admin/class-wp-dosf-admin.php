@@ -612,7 +612,7 @@ class Wp_Dosf_Admin {
 								}
 							?>
 							<input id="expire-warn-max" type="number" name="expire-warn-max" min="1" value="<?= $expire_warn_max ?>">
-							<p class="description">Cuántos correos de aviso se envían como máximo mientras el certificado sigue dentro del plazo y todavía no vence. Al llegar a ese número no se envían más. El contador vuelve a cero si cambia la fecha de emisión o si el certificado sale de ese plazo.</p>
+							<p class="description">Cuántos correos de aviso se envían como máximo mientras el certificado sigue dentro del plazo y todavía no vence. Al llegar a ese número no se envían más. El contador y la fecha de cada envío exitoso se conservan cuando el certificado vence. Vuelven a cero solo si cambia la fecha de emisión.</p>
 						</div>
 						<div class="input">
 							<label for="monitor-expire-interval">Monitorear vencimientos cada </label>
@@ -1840,6 +1840,15 @@ class Wp_Dosf_Admin {
 				$mail_sent_res = self::send_expiration_warning_email($rc[0]);
 				if ( $mail_sent_res === true ) {
 					self::increment_expire_warn_sent( intval( $rc[0]['id'] ) );
+				} elseif ( is_wp_error( $mail_sent_res ) ) {
+					self::increment_expire_warn_failed( intval( $rc[0]['id'] ) );
+					return array(
+						'error' => true,
+						'error_code' => 3,
+						'error_msg' => 'No se pudo enviar el aviso de vencimiento',
+						'dosfExprtWrngSend_email_sent' => false,
+						'expire_warn_attempt' => true,
+					);
 				} else {
 					return array(
 						'error' => true,
@@ -2124,18 +2133,18 @@ class Wp_Dosf_Admin {
 			return false;
 		}
 
+		$days_left = self::get_dosf_validity_days_before_expiration( $args['emision'] );
+		$warn_window = self::get_last_range_days_before_expiration();
+		if ( $days_left === null || $warn_window === null || $days_left <= 0 || $days_left > $warn_window ) {
+			return false;
+		}
+
 		$email = apply_filters(
 			'dosf_eml_expiration_warning_str_dest_recipts',
 			self::mail_recipients( $plus_options, 'expire', $args )
 		);
 		if ( $email === '' ) {
-			return false;
-		}
-
-		$days_left = self::get_dosf_validity_days_before_expiration( $args['emision'] );
-		$warn_window = self::get_last_range_days_before_expiration();
-		if ( $days_left === null || $warn_window === null || $days_left <= 0 || $days_left > $warn_window ) {
-			return false;
+			return new WP_Error( 'dosf_warn_mail', 'sin destinatarios' );
 		}
 
 				if ( ! empty( $args['id'] ) && class_exists( 'Dosf_Series' ) ) {
@@ -2158,18 +2167,18 @@ class Wp_Dosf_Admin {
 			self::fill_email_template( self::email_template_value( $plus_options, 'expire-subject' ), $pairs, false )
 		);
 
-		$mail_sent_res = false;
-		if ( $content !== '' ) {
-			$header = array('Content-Type: text/html; charset=UTF-8');
-			$header = apply_filters(
-						'dosf_eml_expiration_warning_eml_header',
-						$header
-					);
-			
-			$mail_sent_res = self::html_mail_without_error( $email, $subject, $content, $header );
+		if ( $content === '' ) {
+			return new WP_Error( 'dosf_warn_mail', 'sin contenido' );
 		}
-
-		return $mail_sent_res === true;
+		$header = array('Content-Type: text/html; charset=UTF-8');
+		$header = apply_filters(
+					'dosf_eml_expiration_warning_eml_header',
+					$header
+				);
+		if ( ! self::html_mail_without_error( $email, $subject, $content, $header ) ) {
+			return new WP_Error( 'dosf_warn_mail', 'envio fallido' );
+		}
+		return true;
 	}
 
 	public static function html_mail_without_error( $email, $subject, $content, $header ) {
@@ -2223,14 +2232,75 @@ class Wp_Dosf_Admin {
 	}
 
 	public static function increment_expire_warn_sent( $cert_id ) {
+		self::increment_expire_warn_column( $cert_id, 'expire_warn_sent' );
+		self::append_expire_warn_sent_at( $cert_id );
+	}
+
+	public static function append_expire_warn_sent_at( $cert_id, $mysql_time = null ) {
 		global $wpdb;
 
 		if ( class_exists( 'Dosf_Series' ) ) {
 			Dosf_Series::ensure_expire_warn_column();
 		}
+		$raw = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT expire_warn_sent_at FROM {$wpdb->prefix}dosf_shared_objs WHERE id = %d",
+				intval( $cert_id )
+			)
+		);
+		$list = json_decode( (string) $raw, true );
+		if ( ! is_array( $list ) ) {
+			$list = array();
+		}
+		$stamp = is_string( $mysql_time ) && $mysql_time !== '' ? $mysql_time : current_time( 'mysql' );
+		$list[] = $stamp;
+		$wpdb->update(
+			$wpdb->prefix . 'dosf_shared_objs',
+			array( 'expire_warn_sent_at' => wp_json_encode( array_values( $list ) ) ),
+			array( 'id' => intval( $cert_id ) ),
+			array( '%s' ),
+			array( '%d' )
+		);
+	}
+
+	public static function expire_warn_sent_labels( $raw ) {
+		$list = json_decode( (string) $raw, true );
+		if ( ! is_array( $list ) ) {
+			return array();
+		}
+		$plus_options = get_option( DOSF_WP_OPT_NM_PLUS_OPTIONS );
+		$format = self::validity_date_format( $plus_options ) . ' H:i';
+		$labels = array();
+		foreach ( $list as $item ) {
+			$item = trim( (string) $item );
+			if ( $item === '' ) {
+				continue;
+			}
+			$dt = date_create( $item, wp_timezone() );
+			if ( ! $dt ) {
+				continue;
+			}
+			$labels[] = wp_date( $format, $dt->getTimestamp() );
+		}
+		return $labels;
+	}
+
+	public static function increment_expire_warn_failed( $cert_id ) {
+		self::increment_expire_warn_column( $cert_id, 'expire_warn_failed' );
+	}
+
+	private static function increment_expire_warn_column( $cert_id, $column ) {
+		global $wpdb;
+
+		if ( $column !== 'expire_warn_sent' && $column !== 'expire_warn_failed' ) {
+			return;
+		}
+		if ( class_exists( 'Dosf_Series' ) ) {
+			Dosf_Series::ensure_expire_warn_column();
+		}
 		$wpdb->query(
 			$wpdb->prepare(
-				"UPDATE {$wpdb->prefix}dosf_shared_objs SET expire_warn_sent = expire_warn_sent + 1 WHERE id = %d",
+				"UPDATE {$wpdb->prefix}dosf_shared_objs SET {$column} = {$column} + 1 WHERE id = %d",
 				intval( $cert_id )
 			)
 		);
@@ -2247,7 +2317,7 @@ class Wp_Dosf_Admin {
 
 		$max    = self::expire_warn_max();
 		$window = self::get_last_range_days_before_expiration();
-		$isql = "SELECT id, emision, expire_warn_sent FROM $tbl_nm_shared_objs";
+		$isql = "SELECT id, emision, expire_warn_sent, expire_warn_failed FROM $tbl_nm_shared_objs";
 		$results = $wpdb->get_results( $isql );
 
 		foreach( $results as $r ){
@@ -2257,14 +2327,7 @@ class Wp_Dosf_Admin {
 			if ( $inside && $sent < $max ) {
 				$wpdb->delete($tbl_nm_ewmq, [ 'so_id' => $r->id ] );
 				$wpdb->insert($tbl_nm_ewmq, [ 'so_id' => $r->id ] );
-			} elseif ( ! $inside && $sent > 0 ) {
-				$wpdb->update(
-					$tbl_nm_shared_objs,
-					array( 'expire_warn_sent' => 0 ),
-					array( 'id' => intval( $r->id ) ),
-					array( '%d' ),
-					array( '%d' )
-				);
+			} elseif ( ! $inside ) {
 				$wpdb->delete( $tbl_nm_ewmq, array( 'so_id' => $r->id ) );
 			}
 		}
@@ -2318,8 +2381,11 @@ class Wp_Dosf_Admin {
 						'email3'	=> $r->email3,
 						'emision'	=> $r->emision
 					];
-					if ( self::send_expiration_warning_email( $args ) === true ) {
+					$warn_result = self::send_expiration_warning_email( $args );
+					if ( $warn_result === true ) {
 						self::increment_expire_warn_sent( intval( $r->id ) );
+					} elseif ( is_wp_error( $warn_result ) ) {
+						self::increment_expire_warn_failed( intval( $r->id ) );
 					}
 				}
 				$wpdb->delete($tbl_nm_ewmq,['id' => $r->ewmq_id]);

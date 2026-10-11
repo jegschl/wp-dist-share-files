@@ -44,6 +44,12 @@
         return data;
     }
 
+	function inExpireWarnPeriod(vdbe) {
+		const days = Number(vdbe);
+		const windowDays = Number(dosf_config.lastDayRangeForExprWrng);
+		return !isNaN(days) && !isNaN(windowDays) && days > 0 && days <= windowDays;
+	}
+
 	function actions_data_render(data, type, row){
 		if (type === 'display') {
 			var output = '';
@@ -80,10 +86,22 @@
 	'use strict';
 		let recipientChoices = {};
 		let recipientSetsDirty = false;
-		function inExpireWarnPeriod(vdbe) {
-			const days = Number(vdbe);
-			const windowDays = Number(dosf_config.lastDayRangeForExprWrng);
-			return !isNaN(days) && !isNaN(windowDays) && days > 0 && days <= windowDays;
+		function warnSentHtml(cert) {
+			const sent = parseInt(cert.expire_warn_sent, 10) || 0;
+			const failed = parseInt(cert.expire_warn_failed, 10) || 0;
+			const times = Array.isArray(cert.expire_warn_sent_at) ? cert.expire_warn_sent_at : [];
+			if (sent < 1 && failed < 1 && times.length < 1) {
+				return '0';
+			}
+			const sentWord = sent === 1 ? 'enviado' : 'enviados';
+			const parts = [escHtml(sent + ' ' + sentWord)];
+			times.forEach(function (when) {
+				parts.push('<span class="dosf-warn-sent-at">' + escHtml(when) + '</span>');
+			});
+			if (failed > 0) {
+				parts.push('<span class="dosf-warn-failed">' + escHtml(failed + ' con error') + '</span>');
+			}
+			return parts.join('<br>');
 		}
 
 		function escHtml(value) {
@@ -107,7 +125,7 @@
 			html += '<col class="dosf-col-file"><col class="dosf-col-email"><col class="dosf-col-actions"></colgroup>';
 			html += '<thead><tr><th></th><th class="dosf-cert-title-col">Título</th>';
 			if (dated) {
-				html += '<th>Emisión</th><th>Días</th><th>Estado</th><th>Avisos</th>';
+				html += '<th>Emisión</th><th>Días</th><th>Estado</th><th>Emails Previos al Vencimiento</th>';
 			}
 			html += '<th>Archivo</th><th>Email</th><th>Acciones</th></tr></thead><tbody>';
 			(row.certificates || []).forEach(function(cert) {
@@ -128,7 +146,7 @@
 					html += '<td>' + escHtml(cert.emision) + '</td>';
 					html += '<td>' + escHtml(cert.vdbe) + '</td>';
 					html += '<td>' + escHtml(cert.status) + '</td>';
-					html += '<td class="dosf-warn-sent">' + (inExpireWarnPeriod(cert.vdbe) ? escHtml(parseInt(cert.expire_warn_sent, 10) || 0) : '') + '</td>';
+					html += '<td class="dosf-warn-sent">' + warnSentHtml(cert) + '</td>';
 				}
 				html += '<td>' + escHtml(cert.file_name) + (parseInt(cert.file_unavailable, 10) === 1 ? ' <span class="dosf-file-unavailable">No disponible</span>' : '') + '</td>';
 				let emailParts = [];
@@ -466,7 +484,7 @@ if ( $('#dosf-email-preview-dialog').length ) {
 			}
 
 			function onDosfReqSendExprWrngSuccess( data,  textStatus,  jqXHR ){
-				if ( data && data.dosfExprtWrngSend_email_sent && dttbl ) {
+				if ( data && dttbl && ( data.dosfExprtWrngSend_email_sent || data.expire_warn_attempt ) ) {
 					dttbl.ajax.reload( null, false );
 				}
 			}

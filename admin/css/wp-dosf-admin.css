@@ -346,13 +346,16 @@ table{
 .dosf-cert-tree .dosf-col-email { width: 40%; }
 .dosf-cert-tree .dosf-col-actions { width: 12%; }
 .dosf-cert-tree-dated .dosf-col-check { width: 4%; }
-.dosf-cert-tree-dated .dosf-col-title { width: 20%; }
+.dosf-cert-tree-dated .dosf-col-title { width: 14%; }
 .dosf-cert-tree-dated .dosf-col-emision { width: 12%; }
 .dosf-cert-tree-dated .dosf-col-days { width: 6%; }
 .dosf-cert-tree-dated .dosf-col-status { width: 8%; }
-.dosf-cert-tree-dated .dosf-col-warns { width: 6%; }
+.dosf-cert-tree-dated .dosf-col-warns { width: 22%; }
 .dosf-cert-tree-dated .dosf-col-file { width: 12%; }
-.dosf-cert-tree-dated .dosf-col-email { width: 24%; }
+.dosf-cert-tree-dated .dosf-col-email { width: 14%; }
+.dosf-cert-tree .dosf-warn-sent { white-space: normal; }
+.dosf-cert-tree .dosf-warn-sent-at { display: block; white-space: nowrap; }
+.dosf-cert-tree .dosf-warn-failed { color: #d63638; }
 .dosf-cert-tree-dated .dosf-col-actions { width: 8%; }
 .dosf-cert-tree .dosf-cert-title-tip {
 	position: relative;

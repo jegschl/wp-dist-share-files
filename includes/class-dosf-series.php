@@ -149,6 +149,8 @@ class Dosf_Series {
 	public static function ensure_expire_warn_column() {
 		$tables = self::table_names();
 		self::ensure_column( $tables['certs'], 'expire_warn_sent', 'int unsigned NOT NULL DEFAULT 0' );
+		self::ensure_column( $tables['certs'], 'expire_warn_failed', 'int unsigned NOT NULL DEFAULT 0' );
+		self::ensure_column( $tables['certs'], 'expire_warn_sent_at', 'longtext NULL' );
 	}
 
 	private static function ensure_column( $table, $column, $definition ) {
@@ -557,6 +559,8 @@ class Dosf_Series {
 			$new_ts      = ! empty( $new_emision ) ? strtotime( $new_emision ) : 0;
 			if ( $old_ts !== $new_ts ) {
 				$row['expire_warn_sent'] = 0;
+				$row['expire_warn_failed'] = 0;
+				$row['expire_warn_sent_at'] = '';
 			}
 			$wpdb->update( $tables['certs'], $row, array( 'id' => $update_id ) );
 			self::sync_ruts( $serie_id, isset( $data['linked_ruts'] ) ? $data['linked_ruts'] : array() );
@@ -741,6 +745,8 @@ class Dosf_Series {
 						'status'        => Wp_Dosf_Admin::get_dosf_status( $cert->emision ),
 						'vdbe'          => Wp_Dosf_Admin::get_dosf_validity_days_before_expiration( $cert->emision ),
 						'expire_warn_sent' => isset( $cert->expire_warn_sent ) ? intval( $cert->expire_warn_sent ) : 0,
+						'expire_warn_failed' => isset( $cert->expire_warn_failed ) ? intval( $cert->expire_warn_failed ) : 0,
+						'expire_warn_sent_at' => Wp_Dosf_Admin::expire_warn_sent_labels( isset( $cert->expire_warn_sent_at ) ? $cert->expire_warn_sent_at : '' ),
 					);
 				}
 
