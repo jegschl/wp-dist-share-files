@@ -44,6 +44,7 @@ class Dosf_Series {
 		self::ensure_column( $tables['certs'], 'file_unavailable', 'tinyint(1) NOT NULL DEFAULT 0' );
 		self::ensure_column( $tables['certs'], 'download_code_issued', 'datetime NULL' );
 		self::ensure_column( $tables['certs'], 'recipient_extra', 'longtext NULL' );
+		self::ensure_expire_warn_column();
 		self::ensure_column( $tables['ruts'], 'serie_id', 'int unsigned NULL' );
 
 		$titles = $wpdb->get_col( "SELECT DISTINCT title FROM {$tables['certs']} WHERE title <> ''" );
@@ -143,6 +144,11 @@ class Dosf_Series {
 		}
 
 		return 'Certificado ' . intval( $cert->id );
+	}
+
+	public static function ensure_expire_warn_column() {
+		$tables = self::table_names();
+		self::ensure_column( $tables['certs'], 'expire_warn_sent', 'int unsigned NOT NULL DEFAULT 0' );
 	}
 
 	private static function ensure_column( $table, $column, $definition ) {
@@ -540,6 +546,13 @@ class Dosf_Series {
 		);
 
 		if ( $update_id ) {
+			self::ensure_expire_warn_column();
+			$new_emision = isset( $row['emision'] ) ? $row['emision'] : null;
+			$old_ts      = ( $current && ! empty( $current->emision ) ) ? strtotime( $current->emision ) : 0;
+			$new_ts      = ! empty( $new_emision ) ? strtotime( $new_emision ) : 0;
+			if ( $old_ts !== $new_ts ) {
+				$row['expire_warn_sent'] = 0;
+			}
 			$wpdb->update( $tables['certs'], $row, array( 'id' => $update_id ) );
 			self::sync_ruts( $serie_id, isset( $data['linked_ruts'] ) ? $data['linked_ruts'] : array() );
 			if ( $attachment_id > 0 && ! Dosf_Private_Files::protect_certificate_attachment( $attachment_id ) ) {
@@ -646,6 +659,8 @@ class Dosf_Series {
 	public static function datatables_response( $params ) {
 		global $wpdb;
 
+		self::ensure_expire_warn_column();
+
 		$tables = self::table_names();
 		$draw   = isset( $params['draw'] ) ? intval( $params['draw'] ) : 0;
 		$start  = isset( $params['start'] ) ? max( 0, intval( $params['start'] ) ) : 0;
@@ -720,6 +735,7 @@ class Dosf_Series {
 						'recipients'    => self::recipient_map( $cert ),
 						'status'        => Wp_Dosf_Admin::get_dosf_status( $cert->emision ),
 						'vdbe'          => Wp_Dosf_Admin::get_dosf_validity_days_before_expiration( $cert->emision ),
+						'expire_warn_sent' => isset( $cert->expire_warn_sent ) ? intval( $cert->expire_warn_sent ) : 0,
 					);
 				}
 

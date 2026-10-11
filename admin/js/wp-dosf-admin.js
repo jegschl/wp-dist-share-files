@@ -57,7 +57,7 @@
 			output += '<i class="fas fa-paper-plane"></i>';
 			output += '</div>';
 
-			if( row['vdbe'] <= dosf_config.lastDayRangeForExprWrng ){
+			if( inExpireWarnPeriod(row['vdbe']) ){
 				output += '<div class="action send-dosf-expirity-alert-request" data-tip="Enviar aviso de vencimiento" aria-label="Enviar aviso de vencimiento">';
 				output += '<i class="fas fa-paper-plane"></i>';
 				output += '</div>';
@@ -80,6 +80,12 @@
 	'use strict';
 		let recipientChoices = {};
 		let recipientSetsDirty = false;
+		function inExpireWarnPeriod(vdbe) {
+			const days = Number(vdbe);
+			const windowDays = Number(dosf_config.lastDayRangeForExprWrng);
+			return !isNaN(days) && !isNaN(windowDays) && days > 0 && days <= windowDays;
+		}
+
 		function escHtml(value) {
 			return String(value == null ? '' : value)
 				.replace(/&/g, '&amp;')
@@ -96,12 +102,12 @@
 			let html = '<table class="dosf-cert-tree' + (dated ? ' dosf-cert-tree-dated' : '') + '"><colgroup>';
 			html += '<col class="dosf-col-check"><col class="dosf-col-title">';
 			if (dated) {
-				html += '<col class="dosf-col-emision"><col class="dosf-col-days"><col class="dosf-col-status">';
+				html += '<col class="dosf-col-emision"><col class="dosf-col-days"><col class="dosf-col-status"><col class="dosf-col-warns">';
 			}
 			html += '<col class="dosf-col-file"><col class="dosf-col-email"><col class="dosf-col-actions"></colgroup>';
 			html += '<thead><tr><th></th><th class="dosf-cert-title-col">Título</th>';
 			if (dated) {
-				html += '<th>Emisión</th><th>Días</th><th>Estado</th>';
+				html += '<th>Emisión</th><th>Días</th><th>Estado</th><th>Avisos</th>';
 			}
 			html += '<th>Archivo</th><th>Email</th><th>Acciones</th></tr></thead><tbody>';
 			(row.certificates || []).forEach(function(cert) {
@@ -122,6 +128,7 @@
 					html += '<td>' + escHtml(cert.emision) + '</td>';
 					html += '<td>' + escHtml(cert.vdbe) + '</td>';
 					html += '<td>' + escHtml(cert.status) + '</td>';
+					html += '<td class="dosf-warn-sent">' + (inExpireWarnPeriod(cert.vdbe) ? escHtml(parseInt(cert.expire_warn_sent, 10) || 0) : '') + '</td>';
 				}
 				html += '<td>' + escHtml(cert.file_name) + (parseInt(cert.file_unavailable, 10) === 1 ? ' <span class="dosf-file-unavailable">No disponible</span>' : '') + '</td>';
 				let emailParts = [];
@@ -459,9 +466,9 @@ if ( $('#dosf-email-preview-dialog').length ) {
 			}
 
 			function onDosfReqSendExprWrngSuccess( data,  textStatus,  jqXHR ){
-				console.log('Solicitud de envío de alerta de vencimiento enviada al servidor exitosamente');
-				console.log('Respuesta del servidor:');
-				console.log(data);
+				if ( data && data.dosfExprtWrngSend_email_sent && dttbl ) {
+					dttbl.ajax.reload( null, false );
+				}
 			}
 
 			function onDosfReqSendExprWrngError( jqXHR, textStatus, errorThrown ){
@@ -713,6 +720,7 @@ if ( $('#dosf-email-preview-dialog').length ) {
 					'validity-date-format'		: $('#validity-date-format').val(),
 					'ebep-nmb'						: $('#ebep-nmb').val(),
 					'ebep-unit'						: $('#ebep-unit').val(),
+					'expire-warn-max'				: $('#expire-warn-max').val(),
 					'monitor-expire-interval'		: $('#monitor-expire-interval').val(),
 					'pm-download-code-popup-id'		: parseInt($('#pm-download-code-popup-id').val()) || 0,
 					'download-code-valid-nmb'		: $('#download-code-valid-nmb').val(),

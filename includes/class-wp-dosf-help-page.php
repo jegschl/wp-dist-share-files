@@ -88,8 +88,8 @@ class Wp_Dosf_Help_Page {
 
             <h2 id="dosf-admin-list">Listado de certificados</h2>
             <p>En Gestión, cada serie muestra sus certificados en una tabla. La columna <strong>Título</strong> ocupa el 20&nbsp;% del ancho cuando hay fecha de emisión, y el 26&nbsp;% cuando no. Si el título no cabe, se corta con puntos suspensivos y, al pasar el mouse, un tooltip muestra el título completo. Los títulos cortos se ven enteros y no muestran tooltip.</p>
-            <p>Los correos de los conjuntos van en una sola columna, <strong>Email</strong>, que es la más ancha: 30&nbsp;% con fecha de emisión y 40&nbsp;% sin ella. Solo aparecen los conjuntos que tienen direcciones. El nombre del conjunto va en negrita y los grupos se separan con un guion. Por ejemplo: <strong>Emails de colaboradores:</strong> julio@gmail.com, jegschl@gmail.com - <strong>Emails de operadores:</strong> luciano@aol.com.</p>
-            <p>Los iconos de la columna <strong>Acciones</strong> muestran un tooltip: Editar certificado, Enviar código de descarga, Enviar aviso de vencimiento y Eliminar certificado. El aviso de vencimiento solo aparece cuando el certificado está dentro del plazo de aviso.</p>
+            <p>Los correos de los conjuntos van en una sola columna, <strong>Email</strong>, que es la más ancha: 24&nbsp;% con fecha de emisión y 40&nbsp;% sin ella. Solo aparecen los conjuntos que tienen direcciones. El nombre del conjunto va en negrita y los grupos se separan con un guion. Por ejemplo: <strong>Emails de colaboradores:</strong> julio@gmail.com, jegschl@gmail.com - <strong>Emails de operadores:</strong> luciano@aol.com.</p>
+            <p>Los iconos de la columna <strong>Acciones</strong> muestran un tooltip: Editar certificado, Enviar código de descarga, Enviar aviso de vencimiento y Eliminar certificado. El aviso de vencimiento aparece cuando el certificado está dentro del plazo de aviso configurado y todavía no vence. La columna <strong>Avisos</strong> muestra, en ese mismo plazo, cuántos correos de aviso se enviaron sin error.</p>
             <p>Producción y el entorno local corren <strong>PHP 8.3</strong>. El listado calcula los días de vigencia con un método estático. En PHP 8, si ese método no es estático, la petición se corta y DataTables muestra un error de Ajax.</p>
 
             <h2 id="dosf-menu">Menú del plugin</h2>
@@ -183,7 +183,7 @@ class Wp_Dosf_Help_Page {
             <table>
                 <tr><th>Correo</th><th>Cuándo se envía</th><th>Marcadores</th></tr>
                 <tr><td>Código de descarga</td><td>Al crear el certificado y cada vez que se solicita la descarga</td><td><code>{cert_title}</code>, <code>{serie}</code>, <code>{download_code}</code>, <code>{validez_codigo}</code></td></tr>
-                <tr><td>Aviso de vencimiento</td><td>Cuando el certificado entra en el plazo de aviso configurado</td><td><code>{cert_title}</code>, <code>{serie}</code>, <code>{dias_vigencia}</code>, <code>{emision}</code>, <code>{id}</code></td></tr>
+                <tr><td>Aviso de vencimiento</td><td>Cuando el certificado está dentro del plazo de aviso y todavía no vence, hasta el máximo indicado en Vigencia</td><td><code>{cert_title}</code>, <code>{serie}</code>, <code>{dias_vigencia}</code>, <code>{emision}</code>, <code>{id}</code></td></tr>
             </table>
             <div class="dosf-info">
                 El HTML es el mensaje completo, con el encabezado y el pie. Los marcadores se reemplazan al enviar el correo.
