@@ -371,7 +371,7 @@ ALTER TABLE `umm_dosf_private_files`
 
 ## Changelog
 
-### v1.4.3
+### v1.4.4
 - `feat` En Vigencia, **Avisos máximos antes de vencer** limita los envíos automáticos. Solo cuenta un correo que salió sin error. El botón manual sigue disponible durante todo el plazo de aviso
 - `feat` La columna **Emails Previos al Vencimiento** muestra los envíos exitosos con fecha y hora, y los intentos con error. El historial permanece cuando el certificado vence y vuelve a cero solo si cambia la fecha de emisión
 - `feat` En Descarga, **Reutilizar el código si todavía le quedan al menos** evita anular un código que sigue vigente. Con 0 se reutiliza hasta que vence

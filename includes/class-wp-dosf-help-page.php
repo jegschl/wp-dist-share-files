@@ -52,6 +52,7 @@ class Wp_Dosf_Help_Page {
         <div class="wrap dosf-help-wrap">
             <h1>📘 Documentación — Distribución de archivos (jgb-dosf)</h1>
             <p>Versión <?php echo esc_html( WP_DOSF_VERSION ); ?> | Autor: <a href="https://phonix.dev" target="_blank">Jorge Garrido</a></p>
+            <p>Los cambios de hoy —el máximo de avisos antes de vencer, la columna <strong>Emails Previos al Vencimiento</strong> con fecha, hora y errores, la reutilización del código de descarga y los colores de la tabla de Gestión— son de la versión <strong>1.4.4</strong>.</p>
 
             <!-- ÍNDICE -->
             <ul>
