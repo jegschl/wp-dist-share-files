@@ -171,7 +171,7 @@ class Wp_Dosf_Help_Page {
                 <tr><td>Código vigente</td><td>Un enlace de un solo uso, válido 2 minutos, que entrega el PDF. La URL del adjunto no sirve</td></tr>
             </table>
             <div class="dosf-info">
-                Ingresar un código correcto no genera otro. Un código nuevo aparece solo cuando se vuelve a solicitar la descarga. Un certificado antiguo sin hora de emisión se trata como vencido hasta esa nueva solicitud.
+                Ingresar un código correcto no genera otro. Si se solicita la descarga otra vez y al código todavía le queda el tiempo indicado en Opciones, pestaña Descarga, se reenvía el mismo y sigue sirviendo. Si queda menos, se genera otro y el anterior deja de servir. Un certificado antiguo sin hora de emisión se trata como vencido hasta esa nueva solicitud.
             </div>
 
             <hr>
@@ -200,7 +200,7 @@ class Wp_Dosf_Help_Page {
             <ol>
                 <li>El usuario busca su certificado por RUT o número de serie.</li>
                 <li>Hace clic en el icono de descarga junto a su resultado.</li>
-                <li>El plugin genera un <strong>código de autorización nuevo</strong>, lo envía al correo registrado y abre el popup de Popup Maker. El código anterior deja de servir.</li>
+                <li>Si al código vigente todavía le queda el tiempo mínimo de Opciones, pestaña Descarga, el plugin reenvía ese mismo código. Si queda menos, genera uno nuevo y el anterior deja de servir. El correo sale en ambos casos y después se abre el popup de Popup Maker.</li>
                 <li>El código vale solo durante el plazo definido en <strong>Opciones</strong> (<strong>El código de descarga es válido durante</strong>). Si vence, hay que solicitar la descarga otra vez.</li>
                 <li>El usuario ingresa el código en el popup y hace clic en "Descargar".</li>
                 <li>Si el código es correcto, se inicia la descarga del archivo.</li>

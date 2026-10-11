@@ -408,14 +408,19 @@ class Dosf_Series {
 		}
 
 		$tables  = self::table_names();
-		$current = $wpdb->get_var( $wpdb->prepare( "SELECT download_code FROM {$tables['certs']} WHERE id = %d", $cert_id ) );
-		if ( $current === null ) {
+		$current = $wpdb->get_row( $wpdb->prepare( "SELECT download_code, download_code_issued FROM {$tables['certs']} WHERE id = %d", $cert_id ) );
+		if ( ! $current ) {
 			return '';
+		}
+
+		$existing = trim( (string) $current->download_code );
+		if ( $existing !== '' && Wp_Dosf_Admin::download_code_should_reuse( $current->download_code_issued ) ) {
+			return $existing;
 		}
 
 		$code  = self::generate_code();
 		$guard = 0;
-		while ( strtoupper( $code ) === strtoupper( (string) $current ) && $guard < 5 ) {
+		while ( strtoupper( $code ) === strtoupper( $existing ) && $guard < 5 ) {
 			$code = self::generate_code();
 			$guard++;
 		}

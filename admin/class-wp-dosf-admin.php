@@ -659,7 +659,25 @@ class Wp_Dosf_Admin {
 							<option value="day" <?= $code_valid_unit === 'day' ? 'selected' : '' ?>>día(s)</option>
 							<option value="week" <?= $code_valid_unit === 'week' ? 'selected' : '' ?>>semana(s)</option>
 						</select>
-						<p class="description">El plazo empieza cuando se solicita la descarga y se envía el código. Pasado ese tiempo hay que solicitar la descarga otra vez.</p>
+						<p class="description">El plazo empieza cuando se genera el código. Pasado ese tiempo hay que solicitar la descarga otra vez.</p>
+					</div>
+					<div class="input">
+						<label for="download-code-reuse-nmb">Reutilizar el código si todavía le quedan al menos</label>
+						<?php
+							$code_reuse_nmb  = isset( $plus_options['download-code-reuse-nmb'] ) ? max( 0, intval( $plus_options['download-code-reuse-nmb'] ) ) : 0;
+							$code_reuse_unit = isset( $plus_options['download-code-reuse-unit'] ) ? $plus_options['download-code-reuse-unit'] : 'minute';
+							if ( ! in_array( $code_reuse_unit, array( 'minute', 'hour', 'day', 'week' ), true ) ) {
+								$code_reuse_unit = 'minute';
+							}
+						?>
+						<input id="download-code-reuse-nmb" type="number" name="download-code-reuse-nmb" min="0" value="<?= $code_reuse_nmb ?>">
+						<select id="download-code-reuse-unit" name="download-code-reuse-unit">
+							<option value="minute" <?= $code_reuse_unit === 'minute' ? 'selected' : '' ?>>minuto(s)</option>
+							<option value="hour" <?= $code_reuse_unit === 'hour' ? 'selected' : '' ?>>hora(s)</option>
+							<option value="day" <?= $code_reuse_unit === 'day' ? 'selected' : '' ?>>día(s)</option>
+							<option value="week" <?= $code_reuse_unit === 'week' ? 'selected' : '' ?>>semana(s)</option>
+						</select>
+						<p class="description">Si una solicitud nueva llega y al código vigente todavía le queda al menos ese tiempo, se reenvía el mismo y el anterior sigue sirviendo. Con 0 se reutiliza durante todo el plazo de validez. Si queda menos, se genera otro código y el anterior deja de servir. El vencimiento original no se alarga.</p>
 					</div>
 					<div class="input">
 						<label for="pm-download-code-popup-id">Popup (Popup Maker) para ingreso de código de descarga</label>
@@ -1083,6 +1101,54 @@ class Wp_Dosf_Admin {
 		return new DateTime( current_time( 'mysql' ) ) <= $expires;
 	}
 
+	public static function download_code_should_reuse( $issued_at ) {
+		if ( ! self::download_code_is_current( $issued_at ) ) {
+			return false;
+		}
+
+		$plus   = get_option( DOSF_WP_OPT_NM_PLUS_OPTIONS );
+		$amount = 0;
+		$unit   = 'minute';
+		$units  = array( 'minute', 'hour', 'day', 'week' );
+		if ( is_array( $plus ) ) {
+			if ( isset( $plus['download-code-reuse-nmb'] ) ) {
+				$amount = max( 0, intval( $plus['download-code-reuse-nmb'] ) );
+			}
+			if ( ! empty( $plus['download-code-reuse-unit'] ) && in_array( $plus['download-code-reuse-unit'], $units, true ) ) {
+				$unit = $plus['download-code-reuse-unit'];
+			}
+		}
+		if ( $amount < 1 ) {
+			return true;
+		}
+
+		$valid_amount = 1;
+		$valid_unit   = 'hour';
+		if ( is_array( $plus ) ) {
+			if ( isset( $plus['download-code-valid-nmb'] ) ) {
+				$valid_amount = max( 1, intval( $plus['download-code-valid-nmb'] ) );
+			}
+			if ( ! empty( $plus['download-code-valid-unit'] ) && in_array( $plus['download-code-valid-unit'], $units, true ) ) {
+				$valid_unit = $plus['download-code-valid-unit'];
+			}
+		}
+
+		try {
+			$issued = new DateTime( $issued_at );
+			$now    = new DateTime( current_time( 'mysql' ) );
+		} catch ( Exception $e ) {
+			return false;
+		}
+
+		$expires = self::add_calendar_interval( $issued, $valid_amount, $valid_unit );
+		$limit   = self::add_calendar_interval( $now, $amount, $unit );
+		if ( ! $expires || ! $limit ) {
+			return false;
+		}
+
+		return $expires >= $limit;
+	}
+
 	public static function certificate_expiration_datetime( $plus_options, $emision ) {
 		if ( ! is_array( $plus_options ) || empty( $emision ) ) {
 			return null;
@@ -1487,6 +1553,19 @@ class Wp_Dosf_Admin {
 		$code_valid_units = array( 'minute', 'hour', 'day', 'week' );
 		if ( empty( $data['download-code-valid-unit'] ) || ! in_array( $data['download-code-valid-unit'], $code_valid_units, true ) ) {
 			$data['download-code-valid-unit'] = 'hour';
+		}
+		if ( isset( $data['download-code-reuse-nmb'] ) ) {
+			$data['download-code-reuse-nmb'] = max( 0, intval( $data['download-code-reuse-nmb'] ) );
+		} else {
+			$stored_code = get_option( DOSF_WP_OPT_NM_PLUS_OPTIONS );
+			$data['download-code-reuse-nmb'] = ( is_array( $stored_code ) && isset( $stored_code['download-code-reuse-nmb'] ) )
+				? max( 0, intval( $stored_code['download-code-reuse-nmb'] ) )
+				: 0;
+		}
+		if ( empty( $data['download-code-reuse-unit'] ) || ! in_array( $data['download-code-reuse-unit'], $code_valid_units, true ) ) {
+			$stored_code = isset( $stored_code ) ? $stored_code : get_option( DOSF_WP_OPT_NM_PLUS_OPTIONS );
+			$reuse_unit  = ( is_array( $stored_code ) && ! empty( $stored_code['download-code-reuse-unit'] ) ) ? $stored_code['download-code-reuse-unit'] : 'minute';
+			$data['download-code-reuse-unit'] = in_array( $reuse_unit, $code_valid_units, true ) ? $reuse_unit : 'minute';
 		}
 
 		$formats = array_keys( self::validity_date_formats() );

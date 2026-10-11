@@ -725,6 +725,8 @@ if ( $('#dosf-email-preview-dialog').length ) {
 					'pm-download-code-popup-id'		: parseInt($('#pm-download-code-popup-id').val()) || 0,
 					'download-code-valid-nmb'		: $('#download-code-valid-nmb').val(),
 					'download-code-valid-unit'		: $('#download-code-valid-unit').val(),
+					'download-code-reuse-nmb'		: $('#download-code-reuse-nmb').val(),
+					'download-code-reuse-unit'		: $('#download-code-reuse-unit').val(),
 					'status-tpl-vigente'			: $('#status-tpl-vigente').val(),
 					'status-tpl-vencido'			: $('#status-tpl-vencido').val(),
 					'delete-file-after-expire'	: $('#delete-file-after-expire').is(':checked'),
