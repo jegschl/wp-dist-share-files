@@ -9,10 +9,10 @@ Plugin para **compartir y distribuir documentos** con control de vencimiento, pr
 - Gestión de certificados/documentos compartidos desde el panel de administración
 - Búsqueda pública por **RUT** o **número de serie** del equipo
 - Control de **fecha de emisión y vencimiento** con indicador visual (vigente / vencido)
-- Descarga protegida mediante **código de autorización enviado por correo electrónico**. Cada solicitud de descarga genera un código nuevo y anula el anterior. El plazo de validez (minuto, hora, día o semana) se configura en **Opciones**. El PDF no queda en una URL pública: se guarda en la base de datos y solo se entrega después de un código vigente
+- Descarga protegida mediante **código de autorización enviado por correo electrónico**. Si el código vigente todavía tiene el tiempo mínimo de **Opciones → Descarga**, la solicitud siguiente reenvía ese mismo código. Si queda menos, se genera otro y el anterior deja de valer. El plazo de validez (minuto, hora, día o semana) se configura en **Opciones**. El PDF no queda en una URL pública: se guarda en la base de datos y solo se entrega después de un código vigente
 - En **Opciones → Sistema → Certificados vencidos** un administrador descarga ese PDF, lo restaura al catálogo o lo borra de la tabla. El catálogo se elige al crear o editar un certificado, junto con la biblioteca de medios
 - Papelera automática del archivo vencido, con un plazo de gracia desde el vencimiento, y marca de archivo no disponible si el adjunto se elimina o se mueve a la papelera
-- Avisos automáticos de vencimiento próximo por email. Los conjuntos de destinatarios se crean, renombran y asignan a cada correo
+- Avisos de vencimiento por email, con un máximo de envíos exitosos. La columna **Emails Previos al Vencimiento** conserva el conteo, los intentos con error y la fecha y hora de cada envío, también después de vencer. Los conjuntos de destinatarios se crean, renombran y asignan a cada correo
 - Integración con **Popup Maker**: el popup se elige en una lista, no escribiendo su ID
 - La configuración se abre con el botón **Opciones** y solo la ve un administrador de WordPress. El gestor de certificados sigue administrando los certificados
 - Textos públicos con formato HTML acotado, plantillas de correo en HTML completo y vista previa del correo antes de guardarlo
@@ -131,11 +131,15 @@ Un gestor de certificados sigue pudiendo crear, editar y eliminar certificados. 
 
 ## Listado de certificados
 
-En Gestión, cada serie muestra sus certificados en una tabla. La columna **Título** ocupa el 20 % del ancho cuando hay fecha de emisión, y el 26 % cuando no. Si el título no cabe, se corta con puntos suspensivos y, al pasar el mouse, un tooltip muestra el título completo. Los títulos cortos se ven enteros y no muestran tooltip.
+En Gestión, cada serie muestra sus certificados en una tabla. La cabecera de las series y la de cada certificado usan el azul del sitio (`#13398E`) con una línea naranja (`#FE6B00`). El texto es el carbón del sitio (`#293133`). **Vigente** se ve en una pastilla azul y **Vencido** en una pastilla naranja.
 
-Los correos de los conjuntos van en una sola columna, **Email**, que es la más ancha: 30 % con fecha de emisión y 40 % sin ella. Solo aparecen los conjuntos que tienen direcciones. El nombre del conjunto va en negrita y los grupos se separan con un guion. Por ejemplo: **Emails de colaboradores:** julio@gmail.com, jegschl@gmail.com - **Emails de operadores:** luciano@aol.com.
+La columna **Título** ocupa el 14 % del ancho cuando hay fecha de emisión, y el 26 % cuando no. Si el título no cabe, se corta con puntos suspensivos y, al pasar el mouse, un tooltip muestra el título completo. Los títulos cortos se ven enteros y no muestran tooltip.
 
-Los iconos de **Acciones** muestran un tooltip: Editar certificado, Enviar código de descarga, Enviar aviso de vencimiento y Eliminar certificado. El aviso de vencimiento solo aparece cuando el certificado está dentro del plazo de aviso.
+Los correos de los conjuntos van en una sola columna, **Email**. Con fecha de emisión ocupa el 14 %. Sin fecha de emisión ocupa el 40 %. Solo aparecen los conjuntos que tienen direcciones. El nombre del conjunto va en negrita y los grupos se separan con un guion. Por ejemplo: **Emails de colaboradores:** julio@gmail.com, jegschl@gmail.com - **Emails de operadores:** luciano@aol.com.
+
+Con fecha de emisión, la columna **Emails Previos al Vencimiento** muestra cuántos avisos se enviaron y la fecha y hora de cada envío exitoso. Si algún intento falló, indica cuántos terminaron con error. Esos datos siguen visibles cuando el certificado ya venció. Vuelven a cero solo si cambia la fecha de emisión. El formato de la fecha es el de **Formato de la fecha de vigencia**, más la hora y el minuto.
+
+Los iconos de **Acciones** muestran un tooltip: Editar certificado, Enviar código de descarga, Enviar aviso de vencimiento y Eliminar certificado. El aviso de vencimiento aparece mientras el certificado está dentro del plazo de aviso y todavía no vence, aunque ya se haya llegado al máximo de envíos automáticos.
 
 En PHP 8 el listado calcula los días de vigencia con un método estático. Si ese método no es estático, la petición se corta y DataTables muestra un error de Ajax.
 
@@ -204,7 +208,7 @@ En **Opciones → Correos → Plantillas de correo** se editan el asunto y el c�
 | Correo | Cuándo se envía | Marcadores |
 |---|---|---|
 | Código de descarga | Al crear el certificado y cada vez que se solicita la descarga | `{cert_title}`, `{serie}`, `{download_code}`, `{validez_codigo}` |
-| Aviso de vencimiento | Cuando el certificado entra en el plazo de aviso configurado | `{cert_title}`, `{serie}`, `{dias_vigencia}`, `{emision}`, `{id}` |
+| Aviso de vencimiento | Dentro del plazo de aviso y antes de vencer. La cola automática se detiene al llegar a **Avisos máximos antes de vencer**. El botón manual de la fila sigue disponible en ese plazo. Solo un envío sin error suma al máximo y guarda su fecha y hora | `{cert_title}`, `{serie}`, `{dias_vigencia}`, `{emision}`, `{id}` |
 
 El HTML es el mensaje completo, con el encabezado y el pie. Los marcadores se reemplazan al enviar el correo.
 
@@ -220,7 +224,7 @@ Cuando el adjunto pasa a la papelera o se elimina, cada certificado que lo usa q
 
 ## Código de descarga
 
-Cada clic en el icono de descarga genera un código nuevo, guarda la fecha y hora de emisión y lo envía al correo del certificado. El código anterior deja de valer en ese momento.
+Cada clic en el icono de descarga envía un código al correo del certificado. Si al código vigente todavía le queda el tiempo de **Reutilizar el código si todavía le quedan al menos**, se reenvía ese mismo código y sigue sirviendo. Un valor 0 reutiliza el código durante toda la validez que le quede. Si queda menos que ese mínimo, o el código ya venció, se genera otro, se guarda la nueva hora de emisión y el anterior deja de valer.
 
 La duración se configura en **Opciones**, en **El código de descarga es válido durante**. El número mínimo es 1. Las unidades son minuto, hora, día o semana. Si no hay un plazo guardado, se usa **1 hora**. El plazo empieza cuando se solicita la descarga, no cuando se creó el certificado. El alta de un certificado también registra la hora de emisión del código que sale en el correo inicial. En la plantilla de ese correo, `{validez_codigo}` se reemplaza por ese plazo en palabras, por ejemplo **30 minutos** o **1 hora**.
 
@@ -231,7 +235,7 @@ La duración se configura en **Opciones**, en **El código de descarga es válid
 | Archivo en la papelera, eliminado de la tabla o marcado como no disponible | Certificado no disponible |
 | Código vigente | Un enlace de un solo uso, válido 2 minutos, que entrega el PDF. La URL del adjunto no sirve |
 
-Ingresar un código correcto no genera otro. Un código nuevo aparece solo cuando se vuelve a solicitar la descarga. Un certificado antiguo sin hora de emisión se trata como vencido hasta esa nueva solicitud.
+Ingresar un código correcto no genera otro. Un código nuevo aparece cuando se vuelve a solicitar la descarga y al anterior ya no le queda el tiempo mínimo. Un certificado antiguo sin hora de emisión se trata como vencido hasta esa nueva solicitud.
 
 ---
 
@@ -367,6 +371,12 @@ ALTER TABLE `umm_dosf_private_files`
 
 ## Changelog
 
+### v1.4.3
+- `feat` En Vigencia, **Avisos máximos antes de vencer** limita los envíos automáticos. Solo cuenta un correo que salió sin error. El botón manual sigue disponible durante todo el plazo de aviso
+- `feat` La columna **Emails Previos al Vencimiento** muestra los envíos exitosos con fecha y hora, y los intentos con error. El historial permanece cuando el certificado vence y vuelve a cero solo si cambia la fecha de emisión
+- `feat` En Descarga, **Reutilizar el código si todavía le quedan al menos** evita anular un código que sigue vigente. Con 0 se reutiliza hasta que vence
+- `feat` La tabla de Gestión usa el azul, el naranja y el carbón del sitio
+
 ### v1.4.2
 - `fix` El listado de Gestión vuelve a cargar en PHP 8.3. El cálculo de los días de vigencia es un método estático. En PHP 8 llamarlo de otra forma es un error fatal y DataTables muestra un error de Ajax
 
@@ -391,7 +401,7 @@ ALTER TABLE `umm_dosf_private_files`
 
 ### Cambios recientes
 - `feat` La configuración se abre con el botón Opciones, solo visible para un administrador de WordPress. La ruta que la guarda exige el mismo permiso. El gestor de certificados sigue gestionando los certificados
-- `feat` El código de descarga cambia en cada solicitud. El anterior deja de valer. La validez se configura en minutos, horas, días o semanas; por defecto, 1 hora, contada desde el envío del código
+- `feat` El código de descarga se reenvía mientras le quede el tiempo mínimo configurado. Si queda menos, se genera otro y el anterior deja de valer. La validez se configura en minutos, horas, días o semanas; por defecto, 1 hora, contada desde el envío del código
 - `feat` El archivo vencido puede pasar a la papelera de medios tras un plazo de gracia, con la tarea diaria de WordPress y `wp_delete_attachment`. Un adjunto compartido solo se mueve cuando todos los certificados que lo usan ya cumplieron el plazo
 - `feat` Si el adjunto se elimina o va a la papelera, los certificados que lo usan quedan marcados. El público ve «Certificado no disponible» y el admin «No disponible». Restaurar el adjunto quita la marca
 - `feat` El popup de Popup Maker se elige en una lista (título y número), no escribiendo el ID

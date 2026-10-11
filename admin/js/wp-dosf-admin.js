@@ -145,7 +145,8 @@
 				if (dosf_config.useIssueDate) {
 					html += '<td>' + escHtml(cert.emision) + '</td>';
 					html += '<td>' + escHtml(cert.vdbe) + '</td>';
-					html += '<td>' + escHtml(cert.status) + '</td>';
+					const statusKey = String(cert.status || '').toLowerCase() === 'vigente' ? 'vigente' : 'vencido';
+					html += '<td><span class="dosf-status dosf-status-' + statusKey + '">' + escHtml(cert.status) + '</span></td>';
 					html += '<td class="dosf-warn-sent">' + warnSentHtml(cert) + '</td>';
 				}
 				html += '<td>' + escHtml(cert.file_name) + (parseInt(cert.file_unavailable, 10) === 1 ? ' <span class="dosf-file-unavailable">No disponible</span>' : '') + '</td>';
